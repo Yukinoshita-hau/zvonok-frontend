@@ -1,0 +1,87 @@
+.layout {
+	background-color: rgba(39, 40, 43, 1);
+	display: flex;
+	height: 100vh;
+	flex: 1;
+}
+
+.sidebar {
+	width: 240px;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	padding: 12px;
+	gap: 8px;
+}
+
+.chat {
+	flex: 1;
+	background: rgba(49, 51, 56, 1);
+	border-left: 1px solid rgba(39, 40, 43, 1);
+	display: flex;
+	flex-direction: column;
+}
+
+.inbox-header {
+	display: flex;
+	height: 30px;
+	gap: 8px;
+	background: rgba(43, 45, 49, 1);
+}
+
+
+.messages-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.messages-header-filter {
+	flex: 1;
+	height: 40px;
+	border-radius: 20px;
+	border: none;
+	outline: none;
+	cursor: pointer;
+
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 16px;
+
+	background: rgba(255, 255, 255, 0.03);
+	font-family: Open Sans;
+	font-style: SemiBold;
+	color: rgba(140, 140, 142, 1);
+	font-size: 16px;
+	font-weight: 600;
+
+	transition: background-color 0.15s ease;
+}
+
+.messages-header-filter:hover {
+	background-color: rgba(43, 45, 49, 1);
+}
+
+.add-room-button {
+	width: 40px;
+	height: 40px;
+	border-radius: 20px;
+	border: none;
+	outline: none;
+	cursor: pointer;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
+	background-color: rgba(46, 47, 50, 1);
+	
+	transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.add-room-button:hover {
+	background-color: rgba(43, 45, 49, 1);
+	transform: translateY(-1px);
+}
