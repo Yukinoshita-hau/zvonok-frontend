@@ -1,0 +1,147 @@
+.backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.55);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+
+.modal {
+	width: 360px;
+	background: #2b2d31;
+	border-radius: 14px;
+	overflow: hidden;
+	box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+	border: 1px solid rgba(255,255,255,0.06);
+}
+
+.header {
+	padding: 16px 18px;
+	font-weight: 700;
+	color: #e3e5e8;
+	background: #313338;
+	border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.body {
+	padding: 16px 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.label {
+	font-size: 12px;
+	font-weight: 700;
+	color: #b5bac1;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
+.input {
+	height: 40px;
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.08);
+	background: #1e1f22;
+	color: #e3e5e8;
+	padding: 0 12px;
+	outline: none;
+}
+
+.dropdown {
+	position: relative;
+}
+
+.dropdown-button {
+	width: 100%;
+	height: 40px;
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.08);
+	background: #1e1f22;
+	color: #e3e5e8;
+	padding: 0 12px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.dropdown-menu {
+	position: absolute;
+	top: 48px;
+	left: 0;
+	right: 0;
+	background: #1f2023;
+	border: 1px solid rgba(255,255,255,0.08);
+	border-radius: 8px;
+	padding: 8px;
+	z-index: 10;
+}
+
+.search {
+	width: 100%;
+	height: 32px;
+	margin-bottom: 8px;
+	border-radius: 6px;
+	border: 1px solid rgba(255,255,255,0.08);
+	background: #2b2d31;
+	color: #e3e5e8;
+	padding: 0 8px;
+}
+
+.list {
+	max-height: 140px;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.checkbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: #d3d6db;
+	font-size: 14px;
+}
+
+.limit {
+	font-size: 12px;
+	color: #9da1a6;
+}
+
+.footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding: 12px 18px 16px;
+	background: #2b2d31;
+	border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.btn-secondary, .btn-primary {
+	height: 36px;
+	padding: 0 16px;
+	border-radius: 8px;
+	border: none;
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.btn-secondary {
+	background: transparent;
+	color: #d3d6db;
+}
+
+.btn-secondary:hover {
+	background: rgba(255,255,255,0.06);
+}
+
+.btn-primary {
+	background: #5865f2;
+	color: white;
+}
+
+.btn-primary:hover {
+	background: #4752c4;
+}

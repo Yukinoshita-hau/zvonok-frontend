@@ -9,6 +9,8 @@ export interface MessageState {
 	error: string | null;
 	hasMore: boolean;
 	oldestMessageId: number | null;
+	activeRoomId: number | null;
+	pendingPrivateUsername: string | null;
 }
 
 const initialState: MessageState = {
@@ -17,6 +19,8 @@ const initialState: MessageState = {
 	error: null,
 	hasMore: true,
 	oldestMessageId: null,
+	activeRoomId: null,
+	pendingPrivateUsername: null
 };
 
 export const fetchRoomMessages = createAsyncThunk(
@@ -35,22 +39,44 @@ export const messageSlice = createSlice({
 	name: "message",
 	initialState: initialState,
 	reducers: {
-		addMessage: (currentState, action: PayloadAction<ShortMessage>) => {
+		execEventMessage: (currentState, action: PayloadAction<ShortMessage>) => {
 			const incomingMessage = action.payload;
+			console.log("Reducer caught event:", incomingMessage.eventType, "for ID:", incomingMessage.id);
 
-			const isDuplicate = currentState.messages.some(m => m.id === incomingMessage.id);
-			if (isDuplicate) {
+			const isForActiveRoom = currentState.activeRoomId !== null &&
+				incomingMessage.room?.id === currentState.activeRoomId;
+
+
+			if (!isForActiveRoom) {
 				return;
 			}
 
-			if (currentState.messages.length > 0) {
-				const currentActiveRoomId = currentState.messages[0].room.id;
-
-				if (incomingMessage.room.id === currentActiveRoomId) {
-					currentState.messages.push(incomingMessage);
+			switch (incomingMessage.eventType) {
+				case "MESSAGE": {
+					const isDuplicate = currentState.messages.some(msg => msg.id === incomingMessage.id);
+					if (!isDuplicate) {
+						currentState.messages.push(incomingMessage);
+					}
+					break;
 				}
-			} else {
-				currentState.messages.push(incomingMessage);
+
+				case "MESSAGE_EDIT": {
+					const index = currentState.messages.findIndex(msg => msg.id === incomingMessage.id)
+					if (index !== -1) {
+						currentState.messages[index] = {
+							...currentState.messages[index],
+							content: incomingMessage.content,
+							type: incomingMessage.type,
+							eventType: incomingMessage.eventType
+						}
+					}
+					break;
+				}
+
+				case "MESSAGE_DELETE": {
+					currentState.messages = currentState.messages.filter(msg => msg.id !== incomingMessage.id);
+					break;
+				}
 			}
 
 		},
@@ -58,11 +84,29 @@ export const messageSlice = createSlice({
 			roomId: string | number;
 			content: string
 		}>) => { },
+		sendPrivateMessage: (currentState, action: PayloadAction<{
+			receiver: string,
+			content: string
+		}>) => { },
+		editMessage: (currentState, action: PayloadAction<{
+			messageId: number;
+			newContent: string
+		}>) => { },
+		deleteMessage: (currentState, action: PayloadAction<{
+			messageId: number;
+		}>) => { },
 		clearMessages: (currentState) => {
 			currentState.messages = [];
 			currentState.oldestMessageId = null;
 			currentState.hasMore = true;
 			currentState.status = "idle";
+		},
+		setPendingPrivate: (currentState, action: PayloadAction<string | null>) => {
+			currentState.pendingPrivateUsername = action.payload;
+		},
+		setActiveRoom: (currentState, action: PayloadAction<number | null>) => {
+			currentState.activeRoomId = action.payload;
+			console.log(`Active room set to: ${action.payload}`);
 		}
 	},
 	extraReducers: builder => {

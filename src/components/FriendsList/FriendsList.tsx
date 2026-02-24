@@ -1,13 +1,8 @@
 import styles from "./FriendsList.module.css";
-import { useNavigate } from "react-router-dom";
 import type { FriendsListProps } from "./FriendsList.props";
-import type { RootState } from "../../store/store";
-import { useSelector } from "react-redux";
 
 
-export function FriendsList({ friends }: FriendsListProps) {
-	const navigate = useNavigate();
-	const { myUser } = useSelector((s: RootState) => s.user)
+export function FriendsList({ friends, onClick }: FriendsListProps) {
 
 	if (friends.length === 0) {
 		return (
@@ -18,6 +13,29 @@ export function FriendsList({ friends }: FriendsListProps) {
 	}
 
 	return (
-		<></>
+		<div className={styles["list"]}>
+			{friends.map(friend => (
+				<button
+					key={friend.friendId}
+					className={styles["item"]}
+					onClick={() => onClick(friend.friendUsername)}
+				>
+					<div className={styles["avatar-wrapper"]}>
+						<div className={styles["avatar"]}>
+							{}
+						</div>
+						<span className={styles["status-dot"]} />
+					</div>
+
+					<div className={styles["content"]}>
+						<div className={styles["title-row"]}>
+							<span className={styles["title"]}>
+								{friend.friendUsername ?? "Unknown"}
+							</span>
+						</div>
+					</div>
+				</button>
+			))}
+		</div>
 	)
 }

@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { Room } from "../../entities/room";
 import { roomApi } from "../../api/roomApi";
+import type { CreateGroupBody } from "../../api/interfaces/CreateGroupBody";
 
 export interface RoomState {
 	rooms: Room[];
@@ -22,6 +23,18 @@ export const fetchMyRooms = createAsyncThunk(
 			return data;
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load rooms");
+		}
+	}
+)
+
+export const createGroupRoom = createAsyncThunk(
+	"room/createGroup",
+	async (body: CreateGroupBody, thunkAPI) => {
+		try {
+			const { data } = await roomApi.createGroup(body);
+			return data;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue(e?.message ?? "Failed to create group room");
 		}
 	}
 )

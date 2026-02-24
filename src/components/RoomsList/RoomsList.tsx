@@ -8,7 +8,6 @@ import { formatTime } from "../../utils/timeHelpers";
 export function RoomsList({ rooms }: RoomsListProps) {
 	const navigate = useNavigate();
 	const { myUser } = useSelector((s: RootState) => s.user)
-	const messages = useSelector((s: RootState) => s.message.messages)
 
 	if (rooms.length === 0) {
 		return (
@@ -17,8 +16,6 @@ export function RoomsList({ rooms }: RoomsListProps) {
 			</div>
 		)
 	}
-
-	console.log(messages)
 
 	return (
 		<div className={styles["list"]}>

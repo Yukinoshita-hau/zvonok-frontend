@@ -1,16 +1,21 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import styles from "./InboxLayout.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
-import { fetchMyRooms } from "../../store/slices/room.slice";
+import { createGroupRoom, fetchMyRooms } from "../../store/slices/room.slice";
 import { RoomsList } from "../../components/RoomsList/RoomsList";
 import { InboxHeaderButton } from "../../components/InboxHeaderButton/InboxHeaderButton";
-import { fetchMyFriends } from "../../store/slices/friend.slice";
+import { fetchMyFriends, sendFriendRequest } from "../../store/slices/friend.slice";
+import type { CreateGroupBody } from "../../api/interfaces/CreateGroupBody";
+import { GroupRoomModal } from "../../components/GroupRoomModal/GroupRoomModal";
+import { FriendRequestModal } from "../../components/FriendRequestModal/FriendRequestModal";
+import { FriendsList } from "../../components/FriendsList/FriendsList";
 
 export type buttonModeType = "Messages" | "Friends";
 
 export function InboxLayout() {
+	const navigate = useNavigate();
 	const [filterMode, setFilterMode] = useState<"Newest" | "Oldest">("Newest");
 	const [buttonMode, setButtonMode] = useState<buttonModeType>("Messages");
 	const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
@@ -21,7 +26,7 @@ export function InboxLayout() {
 	const room = useSelector((s: RootState) => s.room);
 	const friend = useSelector((s: RootState) => s.friend)
 	const { rooms } = room;
-	const { friends } = friend;
+	const { friends } = friend
 
 	useEffect(() => {
 		if (room.status === "idle") {
@@ -35,6 +40,32 @@ export function InboxLayout() {
 		}
 	}, [dispatch, friend.status])
 
+	useEffect(() => {
+		if (buttonMode === "Messages") {
+			setIsFriendModalOpen(false);
+		} else {
+			setIsRoomModalOpen(false)
+		}
+	}, [buttonMode])
+
+	const handleAddClick = () => {
+		if (buttonMode === "Messages") {
+			setIsRoomModalOpen(true);
+		} else {
+			setIsFriendModalOpen(true);
+		}
+	}
+
+	const handleSendFriendRequest = (username: string) => {
+		dispatch(sendFriendRequest(username));
+		setIsFriendModalOpen(false);
+	}
+
+	const handleCreateGroup = async (body: CreateGroupBody) => {
+		await dispatch(createGroupRoom(body));
+		dispatch(fetchMyRooms());
+		setIsRoomModalOpen(false);
+	}
 
 	const sortedRooms = useMemo(() => {
 		return [...rooms].sort((a, b) => {
@@ -62,6 +93,19 @@ export function InboxLayout() {
 		})
 	}, [friends, filterMode])
 
+	const handleFriendClick = (friendUsername: string) => {
+		const existing = rooms.find(r =>
+			r.type === "PRIVATE" &&
+			r.members?.some(m => m.username === friendUsername)
+		)
+
+		if (existing) {
+			navigate(`${existing.id}`)
+		} else {
+			navigate(`/dm/${friendUsername}`)
+		}
+	}
+
 	return (
 		<div className={styles["layout"]} >
 			<div className={styles["sidebar"]}>
@@ -80,7 +124,7 @@ export function InboxLayout() {
 						{filterMode}
 					</button>
 
-					<button className={styles["add-room-button"]}>
+					<button className={styles["add-button"]} onClick={handleAddClick}>
 						<img src="../../../public/add-room-icon.png" />
 					</button>
 				</div>
@@ -89,10 +133,13 @@ export function InboxLayout() {
 					{buttonMode == "Messages" ? (
 						<RoomsList rooms={sortedRooms} />
 					) : (
-						<>{sortedFriends.length}</>
+						<FriendsList friends={sortedFriends} onClick={handleFriendClick} />
 					)}
 				</div>
 			</div>
+
+			{isRoomModalOpen && (<GroupRoomModal isOpen={isRoomModalOpen} friends={sortedFriends} onClose={() => setIsRoomModalOpen(false)} onCreate={handleCreateGroup} />)}
+			{isFriendModalOpen && (<FriendRequestModal isOpen={isFriendModalOpen} onClose={() => setIsFriendModalOpen(false)} onSubmit={handleSendFriendRequest} />)}
 
 			<div className={styles["chat"]}>
 				<Outlet />

@@ -1,5 +1,6 @@
 import type { Room } from "../entities/room";
 import { api } from "./api";
+import type { CreateGroupBody } from "./interfaces/CreateGroupBody";
 import type { GetRoomMessageParams } from "./interfaces/GetRoomMessagesParams";
 import type { RoomApiInterface } from "./interfaces/RoomApiInterface";
 
@@ -12,5 +13,6 @@ export const roomApi: RoomApiInterface = {
 			beforeMessageId,
 			limit
 		}
-	})
+	}),
+	createGroup: (body: CreateGroupBody) => api.post(`${ROOM_API_PREFIX}/createGroup`, body),
 }

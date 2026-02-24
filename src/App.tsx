@@ -52,6 +52,10 @@ export function App() {
 							element: (
 								<DmChat />
 							)
+						},
+						{
+							path: "dm/:username",
+							element: <DmChat />
 						}
 					]
 				},
