@@ -1,3 +1,4 @@
+import cn from "classnames";
 import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import styles from "./DmItemsList.module.css";
 import { fetchRoomMessages, messageActions } from "../../store/slices/message.slice";
@@ -6,24 +7,55 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import type { ShortMessage } from "../../entities/shortMessage";
 import { formatTime, isSameDay } from "../../utils/timeHelpers";
+import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
+
+type ContextMenuState = {
+	x: number;
+	y: number;
+	messageId: number;
+} | null;
 
 export function DmItemsList() {
-	const scrollRef = useRef<HTMLDivElement>(null);
 	const { roomId } = useParams();
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const isAtBottom = useRef<boolean>(true);
 	const dispatch = useDispatch<AppDispatch>()
 	const { messages, status, hasMore, oldestMessageId } = useSelector((s: RootState) => s.message);
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
 	const [editContent, setEditContent] = useState("");
+	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
 
 	useEffect(() => {
-		if (status === "succeeded" && messages.length <= 15 && scrollRef.current) {
+		isAtBottom.current = true;
+	}, [roomId])
+
+	useEffect(() => {
+		if (status === "succeeded" && scrollRef.current &&
+			isAtBottom.current) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [status])
+	}, [status, messages])
+
+	useEffect(() => {
+		const close = () => setContextMenu(null);
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") close();
+		}
+		window.addEventListener("click", close);
+		window.addEventListener("scroll", close);
+		window.addEventListener("keydown", onKey);
+
+		return () => {
+			window.removeEventListener("click", close);
+			window.removeEventListener("scroll", close);
+			window.removeEventListener("keydown", onKey);
+		}
+	}, [])
 
 	const handleScroll = async (e: UIEvent<HTMLDivElement>) => {
 		const container = e.currentTarget;
+		isAtBottom.current = (container.scrollHeight - container.scrollTop - container.clientHeight) < 60;
 
 		if (container.scrollTop === 0 && hasMore && status !== "loading") {
 			const scrollHeightBefore = container.scrollHeight;
@@ -65,6 +97,25 @@ export function DmItemsList() {
 		setEditContent("");
 	}
 
+	const openContextMenu = (e: React.MouseEvent, msg: ShortMessage) => {
+		e.preventDefault();
+
+		const menuWidth = 160;
+		const menuHeight = 96;
+
+		let x = e.clientX;
+		let y = e.clientY;
+
+		if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+		if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+
+		setContextMenu({
+			x,
+			y,
+			messageId: msg.id
+		});
+	}
+
 	const chatItems = useMemo(() => {
 		const itemArr: (
 			{ type: "divider"; label: string; rawDate: string; key: string } |
@@ -93,15 +144,9 @@ export function DmItemsList() {
 		return itemArr;
 	}, [messages])
 
-	useEffect(() => {
-		if (status === "succeeded" && messages.length <= 15 && scrollRef.current) {
-			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-		}
-	}, [status])
-
 	return (
 		<div className={styles["messages"]} onScroll={handleScroll} ref={scrollRef}>
-
+			{status === "loading" && <MessagesSkeleton />}
 			{chatItems.map(item => {
 				if (item.type === "divider") {
 					return (
@@ -116,16 +161,24 @@ export function DmItemsList() {
 				const isEdited = item.payload.eventType === "MESSAGE_EDIT";
 
 				return (
-					<div key={item.key} className={styles["message-row"]}>
+					<div key={item.key}
+						className={styles["message-row"]}
+						onContextMenu={(e) => {
+							isMyMessage && openContextMenu(e, item.payload)
+						}}>
 						<div className={styles["msg-avatar"]} />
 						<div className={styles["msg-body"]}>
 							<div className={styles["msg-meta"]}>
 								<span className={styles["msg-author"]}>{item.payload.sender.username}</span>
 								<span className={styles["msg-time"]}>{formatTime(item.payload.sentAt)}</span>
+								{isEdited && (
+									<span className={styles["edited-badge"]}>edited</span>
+								)}
 							</div>
 							{isEditing ? (
-								<div className={styles["msg-edit-container"]}>
+								<div className={styles["edit-box"]}>
 									<input
+										className={styles["edit-input"]}
 										value={editContent}
 										onChange={(e) => setEditContent(e.target.value)}
 										onKeyDown={(e) => {
@@ -134,27 +187,51 @@ export function DmItemsList() {
 										}}
 										autoFocus
 									/>
-									<button onClick={() => handleSaveEdit(item.payload.id)}>Save</button>
-									<button onClick={() => handleCancelEdit()}>Cancel</button>
+									<div className={styles["edit-actions"]}>
+										<button className={styles["btn-primary"]} onClick={() => handleSaveEdit(item.payload.id)}>Save</button>
+										<button className={styles["btn-secondary"]} onClick={() => handleCancelEdit()}>Cancel</button>
+									</div>
 								</div>
 							) : (
 
 								<div className={styles["msg-text"]}>
 									{item.payload.content}
-									{isEdited && <span> Edited </span>}
 								</div>
 							)}
 
-							{isMyMessage && !isEditing && (
-								<div className={styles["msg-actions"]}>
-									<button onClick={() => handleStartEdit(item.payload.id, item.payload.content)}>Edit</button>
-									<button onClick={() => handleDelete(item.payload.id)}>Delete</button>
-								</div>
-							)}
 						</div>
 					</div>
 				)
 			})}
+
+			{contextMenu && (
+				<div
+					className={cn(styles["context-menu"], styles["menu-animate"])}
+					style={{ top: contextMenu.y, left: contextMenu.x }}
+					onClick={(e) => e.stopPropagation()}
+				>
+					<button
+						onClick={() => {
+							const msg = messages.find(m => m.id === contextMenu.messageId);
+							if (msg) handleStartEdit(msg.id, msg.content);
+							setContextMenu(null);
+						}}>
+						✏ Edit
+					</button>
+
+					<div className={styles["menu-divider"]} />
+
+					<button
+						className={styles["danger"]}
+						onClick={() => {
+							handleDelete(contextMenu.messageId);
+							setContextMenu(null);
+						}}
+					>
+						🗑 Delete
+					</button>
+				</div>
+			)}
 		</div>
 	)
 }

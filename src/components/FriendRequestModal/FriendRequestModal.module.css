@@ -117,3 +117,62 @@
 .btn-primary:hover {
 	background: #4752c4;
 }
+
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		opacity: 0;
+		transform: scale(0.96) translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes scaleOut {
+	from {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+
+	to {
+		opacity: 0;
+		transform: scale(0.96) translateY(8px);
+	}
+}
+
+.backdrop[data-state="open"] {
+  animation: fadeIn 0.18s ease forwards;
+}
+.backdrop[data-state="close"] {
+  animation: fadeOut 0.18s ease forwards;
+}
+
+.modal[data-state="open"] {
+  animation: scaleIn 0.2s ease forwards;
+}
+.modal[data-state="close"] {
+  animation: scaleOut 0.18s ease forwards;
+}

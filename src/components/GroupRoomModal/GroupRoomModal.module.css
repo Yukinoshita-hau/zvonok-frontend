@@ -6,6 +6,7 @@
 	align-items: center;
 	justify-content: center;
 	z-index: 9999;
+
 }
 
 .modal {
@@ -13,8 +14,10 @@
 	background: #2b2d31;
 	border-radius: 14px;
 	overflow: hidden;
-	box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-	border: 1px solid rgba(255,255,255,0.06);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+
+	transform-origin: center;
 }
 
 .header {
@@ -22,7 +25,7 @@
 	font-weight: 700;
 	color: #e3e5e8;
 	background: #313338;
-	border-bottom: 1px solid rgba(255,255,255,0.06);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .body {
@@ -30,6 +33,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	max-height: 60vh;
+	overflow-y: auto;
 }
 
 .label {
@@ -43,22 +48,18 @@
 .input {
 	height: 40px;
 	border-radius: 8px;
-	border: 1px solid rgba(255,255,255,0.08);
+	border: 1px solid rgba(255, 255, 255, 0.08);
 	background: #1e1f22;
 	color: #e3e5e8;
 	padding: 0 12px;
 	outline: none;
 }
 
-.dropdown {
-	position: relative;
-}
-
 .dropdown-button {
 	width: 100%;
 	height: 40px;
 	border-radius: 8px;
-	border: 1px solid rgba(255,255,255,0.08);
+	border: 1px solid rgba(255, 255, 255, 0.08);
 	background: #1e1f22;
 	color: #e3e5e8;
 	padding: 0 12px;
@@ -66,16 +67,14 @@
 	cursor: pointer;
 }
 
-.dropdown-menu {
-	position: absolute;
-	top: 48px;
-	left: 0;
-	right: 0;
+.dropdown-panel {
 	background: #1f2023;
-	border: 1px solid rgba(255,255,255,0.08);
+	border: 1px solid rgba(255, 255, 255, 0.08);
 	border-radius: 8px;
 	padding: 8px;
-	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .search {
@@ -83,7 +82,7 @@
 	height: 32px;
 	margin-bottom: 8px;
 	border-radius: 6px;
-	border: 1px solid rgba(255,255,255,0.08);
+	border: 1px solid rgba(255, 255, 255, 0.08);
 	background: #2b2d31;
 	color: #e3e5e8;
 	padding: 0 8px;
@@ -110,16 +109,67 @@
 	color: #9da1a6;
 }
 
+.checkbox-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: #d3d6db;
+	font-size: 14px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.checkbox-row input {
+	display: none;
+}
+
+.custom-checkbox {
+	width: 16px;
+	height: 16px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	background: #2b2d31;
+	display: inline-block;
+	transition: all 0.15s ease;
+	position: relative;
+}
+
+.checkbox-row input:checked+.custom-checkbox {
+	background: #5865f2;
+	border-color: #5865f2;
+}
+
+.checkbox-row input:checked+.custom-checkbox::after {
+	content: "";
+	position: absolute;
+	left: 4px;
+	top: 1px;
+	width: 4px;
+	height: 8px;
+	border: solid white;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+.limit {
+	font-size: 12px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: #9da1a6;
+}
+
 .footer {
 	display: flex;
 	justify-content: flex-end;
 	gap: 10px;
 	padding: 12px 18px 16px;
 	background: #2b2d31;
-	border-top: 1px solid rgba(255,255,255,0.06);
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.btn-secondary, .btn-primary {
+.btn-secondary,
+.btn-primary {
 	height: 36px;
 	padding: 0 16px;
 	border-radius: 8px;
@@ -134,7 +184,7 @@
 }
 
 .btn-secondary:hover {
-	background: rgba(255,255,255,0.06);
+	background: rgba(255, 255, 255, 0.06);
 }
 
 .btn-primary {
@@ -145,3 +195,62 @@
 .btn-primary:hover {
 	background: #4752c4;
 }
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		opacity: 0;
+		transform: scale(0.96) translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes scaleOut {
+	from {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+
+	to {
+		opacity: 0;
+		transform: scale(0.96) translateY(8px);
+	}
+}
+
+.backdrop[data-state="open"] {
+  animation: fadeIn 0.18s ease forwards;
+}
+.backdrop[data-state="close"] {
+  animation: fadeOut 0.18s ease forwards;
+}
+
+.modal[data-state="open"] {
+  animation: scaleIn 0.2s ease forwards;
+}
+.modal[data-state="close"] {
+  animation: scaleOut 0.18s ease forwards;
+}
+

@@ -1,6 +1,7 @@
 import styles from "./GroupRoomModal.module.css";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { GroupRoomModalProps } from "./GroupRoomModal.props";
+import { useModalAnimation } from "../../hooks/useModalAnimation";
 
 
 export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoomModalProps) {
@@ -8,19 +9,9 @@ export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoom
 	const [selected, setSelected] = useState<string[]>([]);
 	const [isOpenDropdown, setIsOpenDropdown] = useState(false);
 	const [query, setQuery] = useState("");
-	const dropdownRef = useRef<HTMLDivElement>(null);
+	const isVisible = useModalAnimation(isOpen);
 
-	useEffect(() => {
-		const onClickOutside = (e: MouseEvent) => {
-			if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-				setIsOpenDropdown(false);
-			}
-		};
-		document.addEventListener("mousedown", onClickOutside);
-		return () => document.removeEventListener("mousedown", onClickOutside);
-	}, [])
-
-	if (!isOpen) return null;
+	if (!isVisible) return null;
 
 	const toggle = (username: string) => {
 		setSelected(prev => {
@@ -33,8 +24,14 @@ export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoom
 	const filtered = friends.filter(f => f.friendUsername.toLowerCase().includes(query.toLowerCase()));
 
 	return (
-		<div className={styles["backdrop"]} onClick={onClose}>
-			<div className={styles["modal"]} onClick={(e) => e.stopPropagation()}>
+		<div
+			className={styles["backdrop"]}
+			data-state={isOpen ? "open" : "close"}
+			onClick={onClose}>
+			<div
+				className={styles["modal"]}
+				data-state={isOpen ? "open" : "close"}
+				onClick={(e) => e.stopPropagation()}>
 				<div className={styles["header"]}>Создать группу</div>
 
 				<div className={styles["body"]}>
@@ -46,41 +43,42 @@ export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoom
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 					/>
+
 					<div className={styles["label"]}>Участники</div>
-					<div className={styles["dropdown"]} ref={dropdownRef}>
-						<button
-							className={styles["dropdown-button"]}
-							onClick={() => setIsOpenDropdown(prev => !prev)}
-						>
-							{selected.length > 0
-								? `Выбрано: ${selected.length}`
-								: "Выбрать участников"}
-						</button>
 
-						{isOpenDropdown && (
-							<div className={styles["dropdown-menu"]}>
-								<input
-									className={styles["search"]}
-									placeholder="Поиск"
-									value={query}
-									onChange={(e) => setQuery(e.target.value)}
-								/>
+					<button
+						className={styles["dropdown-button"]}
+						onClick={() => setIsOpenDropdown(prev => !prev)}
+					>
+						{selected.length > 0
+							? `Выбрано: ${selected.length}`
+							: "Выбрать участников"}
+					</button>
 
-								<div className={styles["list"]}>
-									{filtered.map(friend => (
-										<label key={friend.friendId} className={styles["checkbox"]}>
-											<input
-												type="checkbox"
-												checked={selected.includes(friend.friendUsername)}
-												onChange={() => toggle(friend.friendUsername)}
-											/>
-											{friend.friendUsername}
-										</label>
-									))}
-								</div>
+					{isOpenDropdown && (
+						<div className={styles["dropdown-panel"]}>
+							<input
+								className={styles["search"]}
+								placeholder="Поиск"
+								value={query}
+								onChange={(e) => setQuery(e.target.value)}
+							/>
+
+							<div className={styles["list"]}>
+								{filtered.map(friend => (
+									<label key={friend.friendId} className={styles["checkbox-row"]}>
+										<input
+											type="checkbox"
+											checked={selected.includes(friend.friendUsername)}
+											onChange={() => toggle(friend.friendUsername)}
+										/>
+										<span className={styles["custom-checkbox"]} />
+										<span>{friend.friendUsername}</span>
+									</label>
+								))}
 							</div>
-						)}
-					</div>
+						</div>
+					)}
 
 					<div className={styles["limit"]}>
 						Выбрано: {selected.length} / 15
@@ -103,6 +101,6 @@ export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoom
 					>Create</button>
 				</div>
 			</div>
-		</div>
+		</div >
 	)
 }

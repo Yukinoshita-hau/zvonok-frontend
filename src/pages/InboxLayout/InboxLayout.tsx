@@ -138,8 +138,8 @@ export function InboxLayout() {
 				</div>
 			</div>
 
-			{isRoomModalOpen && (<GroupRoomModal isOpen={isRoomModalOpen} friends={sortedFriends} onClose={() => setIsRoomModalOpen(false)} onCreate={handleCreateGroup} />)}
-			{isFriendModalOpen && (<FriendRequestModal isOpen={isFriendModalOpen} onClose={() => setIsFriendModalOpen(false)} onSubmit={handleSendFriendRequest} />)}
+			{<GroupRoomModal isOpen={isRoomModalOpen} friends={sortedFriends} onClose={() => setIsRoomModalOpen(false)} onCreate={handleCreateGroup} />}
+			{<FriendRequestModal isOpen={isFriendModalOpen} onClose={() => setIsFriendModalOpen(false)} onSubmit={handleSendFriendRequest} />}
 
 			<div className={styles["chat"]}>
 				<Outlet />

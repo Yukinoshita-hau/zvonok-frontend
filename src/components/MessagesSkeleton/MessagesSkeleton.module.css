@@ -1,0 +1,104 @@
+.messages {
+	flex: 1;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	scrollbar-width: none;
+}
+
+.messages::-webkit-scrollbar {
+	display: none;
+}
+
+
+.data-divider {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 8px;
+	margin: 6px 0;
+}
+
+.data-divider::before,
+.data-divider::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+}
+
+.data-label {
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.08);
+	padding: 3px 19px 3px 19px;
+	font-size: 14px;
+	height: 20px;
+	width: 70px;
+}
+
+.message-row {
+	display: flex;
+	gap: 10px;
+	position: relative;
+	padding: 4px 6px;
+	border-radius: 8px;
+	transition: background 0.15s ease;
+}
+
+.message-row:hover {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.msg-avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 20px;
+}
+
+.msg-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-width: 70%;
+}
+
+.msg-meta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.msg-author {
+	height: 12px;
+}
+
+.msg-time {
+	font-size: 12px;
+	width: 30px;
+	height: 12px;
+}
+
+.msg-text {
+	height: 12px;
+}
+
+.shimmer {
+	background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+	background-size: 800% 800%;
+	animation: gradientMove 1.25s ease infinite;
+}
+
+@keyframes gradientMove {
+	0% {
+		background-position: 0% 50%;
+	}
+
+	50% {
+		background-position: 50% 100%;
+	}
+
+	100% {
+		background-position: 0% 50%;
+	}
+}

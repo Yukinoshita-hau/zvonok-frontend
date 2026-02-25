@@ -2,16 +2,24 @@ import styles from "./FriendRequestModal.module.css";
 import { useState } from "react";
 import cn from "classnames";
 import type { FriendRequestModalProps } from "./FriendRequestModal.props";
+import { useModalAnimation } from "../../hooks/useModalAnimation";
 
 
 export function FriendRequestModal({ isOpen, onClose, onSubmit }: FriendRequestModalProps) {
 	const [username, setUsername] = useState("");
+	const isVisible = useModalAnimation(isOpen);
 
-	if (!isOpen) return null;
+	if (!isVisible) return null;
 
 	return (
-		<div className={styles["backdrop"]} onClick={onClose}>
-			<div className={styles["modal"]} onClick={(e) => e.stopPropagation()}>
+		<div
+			className={styles["backdrop"]}
+			data-state={isOpen ? "open" : "close"}
+			onClick={onClose}>
+			<div
+				className={styles["modal"]}
+				data-state={isOpen ? "open" : "close"}
+				onClick={(e) => e.stopPropagation()}>
 				<div className={styles["header"]}>Добавить друга</div>
 
 				<div className={styles["body"]}>
@@ -31,7 +39,7 @@ export function FriendRequestModal({ isOpen, onClose, onSubmit }: FriendRequestM
 					<button
 						className={cn(styles["btn"], styles["btn-primary"])}
 						onClick={() => {
-							if (username.trim()) onSubmit(username.trim)
+							if (username.trim()) onSubmit(username.trim())
 							setUsername("");
 						}}
 					>
