@@ -20,6 +20,13 @@
 	gap: 8px;
 }
 
+.header-right {
+	display: flex;
+	gap: 8px;
+	justify-content: center;
+	align-items: center;
+}
+
 .avatar {
 	width: 24px;
 	height: 24px;
@@ -57,4 +64,14 @@
 	border: none;
 	outline: none;
 	cursor: pointer;
+}
+
+.call-button {
+	background-color: transparent;
+	border: none;
+	outline: none;
+	cursor: pointer;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }

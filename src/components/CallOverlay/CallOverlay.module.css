@@ -1,0 +1,63 @@
+.backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.55);
+	backdrop-filter: blur(2px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+
+.modal {
+	width: 250px;
+	max-width: 92vw;
+	background: #2b2d31;
+	border-radius: 14px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	gap: 10px;
+}
+
+
+.header {
+	padding: 16px 18px;
+	background: #313338;
+	border-bottom: 1px solid rgba(255,255,255,0.06);
+	font-size: 16px;
+	font-weight: 700;
+	color: #e3e5e8;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.body {
+	padding: 16px 18px;
+	display: flex;
+	justify-content: space-evenly;
+	gap: 12px;
+}
+
+.btn {
+	height: 50px;
+	padding: 0 16px;
+	border-radius: 18px;
+	border: none;
+	cursor: pointer;
+	font-weight: 600;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.accept-button {
+	background-color: green;
+}
+
+.decline-button {
+ background-color: red;
+}

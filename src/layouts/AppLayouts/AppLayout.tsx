@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "../../store/store";
 import { fetchMyServers } from "../../store/slices/server.slice";
 import { Outlet } from "react-router-dom";
+import { CallOverlay } from "../../components/CallOverlay/CallOverlay";
 
 export function AppLayout() {
 	const dispatch = useDispatch<AppDispatch>();
@@ -20,6 +21,7 @@ export function AppLayout() {
 		<NavigateBar servers={servers ? servers : []} />
 		<div className={styles["content"]}>
 			<Outlet />
+			<CallOverlay/>
 		</div>
 	</div>
 }

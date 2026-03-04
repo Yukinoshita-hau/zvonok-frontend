@@ -7,6 +7,9 @@ import { fetchRoomMessages, messageActions } from "../../store/slices/message.sl
 import { websocketActions } from "../../store/slices/websocket.slice";
 import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
 import { fetchMyRooms } from "../../store/slices/room.slice";
+import { callActions } from "../../store/slices/call.clice";
+import type { Room } from "../../entities/room";
+import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCallOverlay";
 
 export function DmChat() {
 	const { roomId, username } = useParams();
@@ -52,7 +55,7 @@ export function DmChat() {
 	}, [activeRoomId, pending])
 
 	const currentRoom = useMemo(() => {
-		return rooms?.find(room => room.id === Number(roomId))
+		return rooms?.find((room: Room) => room.id === Number(roomId)) as Room;
 	}, [rooms, roomId])
 
 	const roomName = useMemo(() => {
@@ -91,6 +94,31 @@ export function DmChat() {
 		if (e.key === "Enter") onSend();
 	}
 
+	const handleStartCall = () => {
+		if (!currentRoom) return;
+
+		const prefix = currentRoom.type === "GROUP" ? "group-" : "dm-";
+		const livekitRoomName = `${prefix}${currentRoom.id}`
+
+		const peerUsernames: string[] = currentRoom.members
+			.map(member => member.username)
+			.filter(username => username !== myUser?.username)
+
+		dispatch(callActions.startOutgoing({
+			chatRoomId: currentRoom.id,
+			livekitRoomName: livekitRoomName,
+			peerUsernames: peerUsernames
+		}));
+
+		dispatch({
+			type: "call/sendInvite",
+			payload: {
+				chatRoomId: currentRoom.id,
+				callType: "audio"
+			}
+		})
+	}
+
 
 	return (
 		<div className={styles["chat"]}>
@@ -102,9 +130,14 @@ export function DmChat() {
 					</span>
 				</div>
 				<div className={styles["header-right"]}>
+					<button className={styles["call-button"]} onClick={handleStartCall}>
+						<img src="../../../public/call_icon.svg" alt="иконка телефона" />
+					</button>
 					{/* Надо будет закинуться иконуи звонка / файла / поиска */}
 				</div>
 			</div>
+
+			{currentRoom !== undefined && <ActiveCallOverlay currentRoomId={currentRoom.id} />}
 
 			<DmItemsList />
 			<div className={styles["input-bar"]}>

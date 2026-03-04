@@ -1,3 +1,4 @@
+
 interface WsConnectAction {
 	type: "websocket/connectStart";
 }
@@ -22,4 +23,21 @@ interface DeleteMessageAction {
 	payload: { messageId: number };
 }
 
-export type Actions = WsConnectAction | SendMessageAction | SendPrivateMessageAction | EditMessageAction | DeleteMessageAction;
+interface CallInviteAction {
+	type: "call/sendInvite";
+	payload: { chatRoomId: number; callType: "audio" | "video" }
+}
+
+interface CallAcceptAction {
+	type: "call/sendAccept";
+	payload: { chatRoomId: number; callerUsername: string }
+}
+
+export type Actions =
+  | WsConnectAction
+  | SendMessageAction
+  | SendPrivateMessageAction
+  | EditMessageAction
+  | DeleteMessageAction
+  | CallInviteAction
+  | CallAcceptAction;

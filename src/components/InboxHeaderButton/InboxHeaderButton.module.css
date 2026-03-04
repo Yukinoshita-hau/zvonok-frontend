@@ -9,11 +9,11 @@
 	justify-content: center;
 	align-items: center;
 
-	border-radius: 18px;
+	border-radius: 10px;
 	background-color: transparent;
 	color: #b5bac1;
 	font-weight: 500;
-	font-size: 16px;
+	font-size: 15px;
 
 	transition: background-color 0.15s ease, color 0.15s ease;
 }

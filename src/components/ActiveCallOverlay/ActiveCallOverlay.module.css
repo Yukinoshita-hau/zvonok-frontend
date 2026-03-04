@@ -1,0 +1,48 @@
+.call-bar {
+	background-color: #202225;
+	border-bottom: 1px solid #3f4147;
+	display: flex;
+	padding: 0 12px;
+	align-items: center;
+}
+
+.room-wrapper {
+	width: 100%;
+	max-width: 900px;
+	display: flex;
+	flex-direction: column;
+}
+
+.room-container {
+	display: flex;
+	width: 100%;
+}
+
+.resize-handle {
+	height: 6px;
+	cursor: row-resize;
+	background: #2b2d31;
+}
+
+.resize-handle:hover {
+	background: #3f4147;
+}
+
+.controls {
+	display: flex;
+	justify-content: flex-end;
+	padding: 4px 12px;
+}
+
+.end-button {
+	height: 36px;
+	padding: 0 16px;
+	border-radius: 8px;
+	border: none;
+	cursor: pointer;
+	font-weight: 600;
+	background-color: transparent;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
