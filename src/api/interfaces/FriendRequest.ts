@@ -4,8 +4,10 @@ export interface FriendRequest {
 	requestId: number,
 	senderId: number,
 	senderUsername: string,
+	senderAvatarUrl: string;
 	receiverId: number,
 	receiverUsername: string,
+	receiverAvatarUrl: string,
 	status: FriendRequestStatus,
 	createdAt: string,
 	updatedAt: string

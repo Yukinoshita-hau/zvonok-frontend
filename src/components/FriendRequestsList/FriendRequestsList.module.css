@@ -1,0 +1,89 @@
+.request-list {
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	scrollbar-width: none;
+}
+
+
+.request-list::-webkit-scrollbar {
+	display: none;
+}
+
+.request {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 10px;
+	border-bottom: 1px solid var(--border);
+	border-radius: 10px;
+	transition: background-color 0.1s ease;
+}
+
+.request:hover {
+	background-color: var(--bg-hover);
+}
+
+.info {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 12px;
+	background-color: var(--bg-active);
+}
+
+.meta {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.username {
+	color: var(--text-primary);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.date {
+	color: var(--text-muted);
+	font-size: 11px;
+}
+
+.actions {
+	display: flex;
+	gap: 10px;
+}
+
+.btn {
+	height: 36px;
+	padding: 0 16px;
+	border-radius: 8px;
+	border: none;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: 14px;
+	transition: background-color 0.15s ease;
+}
+
+.btn-accept {
+	background: var(--accent-muted);
+	color: var(--accent);
+}
+
+.btn-accept:hover {
+	background: rgba(0, 200, 150, 0.2);
+}
+
+.btn-cancel {
+	background-color: var(--danger);
+	color: #fff;
+}
+
+.btn-cancel:hover {
+	background-color: var(--danger-hover);
+}

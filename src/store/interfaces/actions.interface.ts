@@ -33,11 +33,40 @@ interface CallAcceptAction {
 	payload: { chatRoomId: number; callerUsername: string }
 }
 
+interface SendFriendRequestAction {
+	type: "friend/sendFriendRequest";
+	payload: { username: string }
+}
+
+interface AcceptFriendRequestAction {
+	type: "friend/acceptFriendRequest";
+	payload: { requestId: number }
+}
+
+interface RejectFriendRequestAction {
+	type: "friend/rejectFriendRequest";
+	payload: { requestId: number }
+}
+
+interface CancelFriendRequestAction {
+	type: "friend/cancelFriendRequest";
+	payload: { requestId: number }
+}
+
+interface RemoveFriendAction {
+	type: "friend/removeFriend";
+	payload: { friendUsername: number }
+}
 export type Actions =
-  | WsConnectAction
-  | SendMessageAction
-  | SendPrivateMessageAction
-  | EditMessageAction
-  | DeleteMessageAction
-  | CallInviteAction
-  | CallAcceptAction;
+	| WsConnectAction
+	| SendMessageAction
+	| SendPrivateMessageAction
+	| EditMessageAction
+	| DeleteMessageAction
+	| CallInviteAction
+	| CallAcceptAction
+	| SendFriendRequestAction
+	| AcceptFriendRequestAction
+	| RejectFriendRequestAction
+	| CancelFriendRequestAction
+	| RemoveFriendAction;

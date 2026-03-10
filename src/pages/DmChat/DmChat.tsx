@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { useEffect, useMemo, useState } from "react";
 import { fetchRoomMessages, messageActions } from "../../store/slices/message.slice";
-import { websocketActions } from "../../store/slices/websocket.slice";
 import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
 import { fetchMyRooms } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.clice";
@@ -17,7 +16,6 @@ export function DmChat() {
 	const dispatch = useDispatch<AppDispatch>();
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
-	const wsStatus = useSelector((s: RootState) => s.websocket.status);
 	const activeRoomId = useSelector((s: RootState) => s.message.activeRoomId);
 	const pending = useSelector((s: RootState) => s.message.pendingPrivateUsername)
 	const navigate = useNavigate();
@@ -41,12 +39,6 @@ export function DmChat() {
 			dispatch(messageActions.setPendingPrivate(null))
 		}
 	}, [dispatch, roomId])
-
-	useEffect(() => {
-		if (wsStatus === "idle") {
-			dispatch(websocketActions.connectStart());
-		}
-	}, [dispatch, wsStatus])
 
 	useEffect(() => {
 		if (activeRoomId && pending === null && !roomId) {

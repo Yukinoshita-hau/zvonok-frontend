@@ -7,7 +7,7 @@ import { CallUi } from "../CallUi/CallUi";
 import { useState } from "react";
 
 export function ActiveCallOverlay({ currentRoomId }: ActiveCallOverlayProps) {
-	const [callHeight, setCallHeight] = useState(55); // это в vh типа 50vh
+	const [callHeight, setCallHeight] = useState(55); // это в vh типа 55vh
 
 	const call = useSelector((s: RootState) => s.call);
 

@@ -1,33 +1,32 @@
+
 .inbox-header-button {
-	border: none;
-	outline: none;
-	cursor: pointer;
-
-
-	display: flex;
-	flex: 1;
-	justify-content: center;
-	align-items: center;
-
-	border-radius: 10px;
-	background-color: transparent;
-	color: #b5bac1;
-	font-weight: 500;
-	font-size: 15px;
-
-	transition: background-color 0.15s ease, color 0.15s ease;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 15px;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .inbox-header-button:hover {
-	background-color: rgba(53, 55, 60, 1);
-	color: #ffffff;
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .inbox-header-button_active {
-	background: rgba(255, 255, 255, 0.1);
-	color: #ffffff;
+  background: var(--accent-muted);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .inbox-header-button_active:hover {
-	background-color: rgba(74, 77, 85, 1);
+  background-color: var(--accent-muted);
+  color: var(--accent-hover);
 }

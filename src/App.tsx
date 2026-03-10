@@ -3,11 +3,11 @@ import AuthLayout from './layouts/Auth/AuthLayout'
 import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
 import { RequireAuth } from './helpers/RequireAuth'
-import { AuthInitializator } from './helpers/AuthInitializer'
 import { InboxLayout } from './pages/InboxLayout/InboxLayout'
-import { ChatPlaceholder } from './pages/ChatPlaceholder/ChatPlaceholder'
 import { DmChat } from './pages/DmChat/DmChat'
 import { AppLayout } from './layouts/AppLayouts/AppLayout'
+import { ChatPlaceholder } from './pages/ChatPlaceholder/ChatPlaceholder'
+import { AuthInitializator } from './helpers/AppInitializer'
 
 export function App() {
 
@@ -85,7 +85,7 @@ export function App() {
 
 	return (
 		<AuthInitializator>
-			<RouterProvider router={router} />
+				<RouterProvider router={router} />
 		</AuthInitializator>
 	);
 }

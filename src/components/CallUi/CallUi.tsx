@@ -1,4 +1,4 @@
-import { TrackToggle, useTracks, VideoTrack } from "@livekit/components-react";
+import { AudioTrack, TrackToggle, useTracks, useTrackVolume, VideoTrack } from "@livekit/components-react";
 import styles from "./CallUi.module.css";
 import { Track } from "livekit-client";
 import { useDispatch } from "react-redux";
@@ -6,9 +6,13 @@ import type { AppDispatch } from "../../store/store";
 import { callActions } from "../../store/slices/call.clice";
 
 export function CallUi() {
-	const tracks = useTracks([
-		{ source: Track.Source.Camera, withPlaceholder: true }
+	const videoTracks = useTracks([
+		{ source: Track.Source.Camera, withPlaceholder: true },
 	]);
+
+	const audioTracks = useTracks([
+		{ source: Track.Source.Microphone, withPlaceholder: false }
+	])
 	const dispatch = useDispatch<AppDispatch>();
 
 	const onLeave = () => {
@@ -17,7 +21,7 @@ export function CallUi() {
 	return (
 		<div className={styles["call-root"]}>
 			<div className={styles["participants-grid"]}>
-				{tracks.map((trackRef, index) => {
+				{videoTracks.map((trackRef, index) => {
 					const { participant, publication } = trackRef;
 
 					const hasVideo = "publication" in trackRef && !!publication?.trackSid;
@@ -34,11 +38,23 @@ export function CallUi() {
 									</div>
 								)}
 							</div>
+							<AudioTrack trackRef={trackRef} />
 							<div className={styles["name"]}>{participant.identity}</div>
 						</div>
 					)
 				})}
 			</div>
+
+			<div style={{ display: "none" }}>
+				{audioTracks.map((trackRef, index) => {
+					const { publication } = trackRef;
+
+					if (!publication?.trackSid) return null;
+
+					return <AudioTrack key={publication.trackSid ?? index} trackRef={trackRef} />
+				})}
+			</div>
+
 			<div className={styles["controls-bar"]}>
 				<TrackToggle
 					source={Track.Source.Microphone}

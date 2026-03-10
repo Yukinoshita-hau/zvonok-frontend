@@ -1,62 +1,67 @@
+
 .navigate-bar {
-	width: 72px;
-	background-color: rgba(28, 28, 31, 1);
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	align-items: center;
-	padding: 12px;
-	gap: 8px 0;
-	overflow-y: auto;
-	scrollbar-width: none;
+  width: 72px;
+  background-color: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  gap: 8px 0;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.navigate-bar::-webkit-scrollbar {
-	display: none;
-}
+.navigate-bar::-webkit-scrollbar { display: none; }
 
 .top {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .middle {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-	margin: 8px 0px;
-	overflow-y: auto;
-	scrollbar-width: none;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0px;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.middle::-webkit-scrollbar {
-	display: none;
-	/* Chrome/Safari/Edge */
-}
+.middle::-webkit-scrollbar { display: none; }
 
 .bottom {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .user-button {
-	width: 48px;
-	height: 48px;
-	border-radius: 50%;
-	border: none;
-	background: #313338;
-	color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  background: var(--bg-active);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 16px;
+  transition: border-radius 0.2s ease, background-color 0.15s ease;
+}
+
+.user-button:hover {
+  border-radius: 10px;
+  background: var(--bg-hover);
 }
 
 .divider {
-	width: 32px;
-	height: 2px;
-	background-color: rgba(44, 45, 49, 1);
-	margin: 4px 0;
+  width: 32px;
+  height: 2px;
+  background-color: var(--border);
+  margin: 4px 0;
 }

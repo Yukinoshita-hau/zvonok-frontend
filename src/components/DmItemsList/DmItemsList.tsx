@@ -216,7 +216,7 @@ export function DmItemsList() {
 							if (msg) handleStartEdit(msg.id, msg.content);
 							setContextMenu(null);
 						}}>
-						✏ Edit
+						Edit
 					</button>
 
 					<div className={styles["menu-divider"]} />
@@ -228,7 +228,7 @@ export function DmItemsList() {
 							setContextMenu(null);
 						}}
 					>
-						🗑 Delete
+						Delete
 					</button>
 				</div>
 			)}

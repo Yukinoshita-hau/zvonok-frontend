@@ -33,5 +33,6 @@ export function AuthInitializator({ children }: { children: ReactNode }) {
 		run();
 	}, [dispatch])
 
+
 	return <>{children}</>
 }

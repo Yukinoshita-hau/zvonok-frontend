@@ -1,8 +1,15 @@
+import { useDispatch } from "react-redux";
 import styles from "./FriendsList.module.css";
 import type { FriendsListProps } from "./FriendsList.props";
-
+import type { AppDispatch } from "../../store/store";
+import { friendActions } from "../../store/slices/friend.slice";
 
 export function FriendsList({ friends, onClick }: FriendsListProps) {
+	const dispatch = useDispatch<AppDispatch>();
+
+	const removeHandle = (username: string) => {
+		dispatch(friendActions.removeFriend({ friendUsername: username }))
+	}
 
 	if (friends.length === 0) {
 		return (
@@ -15,7 +22,7 @@ export function FriendsList({ friends, onClick }: FriendsListProps) {
 	return (
 		<div className={styles["list"]}>
 			{friends.map(friend => (
-				<button
+				<div
 					key={friend.friendId}
 					className={styles["item"]}
 					onClick={() => onClick(friend.friendUsername)}
@@ -32,9 +39,16 @@ export function FriendsList({ friends, onClick }: FriendsListProps) {
 							<span className={styles["title"]}>
 								{friend.friendUsername ?? "Unknown"}
 							</span>
+							<button className={styles["remove-friend-btn"]}
+								onClick={(e) => {
+									e.stopPropagation();
+									removeHandle(friend.friendUsername);
+								}}>
+								<img src="../../../public/cross-icon.svg" />
+							</button>
 						</div>
 					</div>
-				</button>
+				</div>
 			))}
 		</div>
 	)

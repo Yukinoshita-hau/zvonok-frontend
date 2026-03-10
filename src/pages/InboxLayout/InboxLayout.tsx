@@ -6,7 +6,7 @@ import type { AppDispatch, RootState } from "../../store/store";
 import { createGroupRoom, fetchMyRooms } from "../../store/slices/room.slice";
 import { RoomsList } from "../../components/RoomsList/RoomsList";
 import { InboxHeaderButton } from "../../components/InboxHeaderButton/InboxHeaderButton";
-import { fetchMyFriends, sendFriendRequest } from "../../store/slices/friend.slice";
+import { fetchIncomingRequests, fetchMyFriends, fetchOutgoingRequests, friendActions } from "../../store/slices/friend.slice";
 import type { CreateGroupBody } from "../../api/interfaces/CreateGroupBody";
 import { GroupRoomModal } from "../../components/GroupRoomModal/GroupRoomModal";
 import { FriendRequestModal } from "../../components/FriendRequestModal/FriendRequestModal";
@@ -37,6 +37,8 @@ export function InboxLayout() {
 	useEffect(() => {
 		if (friend.status === "idle") {
 			dispatch(fetchMyFriends())
+			dispatch(fetchIncomingRequests())
+			dispatch(fetchOutgoingRequests())
 		}
 	}, [dispatch, friend.status])
 
@@ -57,7 +59,7 @@ export function InboxLayout() {
 	}
 
 	const handleSendFriendRequest = (username: string) => {
-		dispatch(sendFriendRequest(username));
+		dispatch(friendActions.sendFriendRequest({ username: username }))
 		setIsFriendModalOpen(false);
 	}
 
