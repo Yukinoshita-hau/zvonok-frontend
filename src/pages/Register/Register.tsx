@@ -59,7 +59,7 @@ export default function Register() {
 					<label htmlFor="password">пароль</label>
 					<AuthInput id="password" type="password" />
 				</div>
-				<AuthButton>Вход</AuthButton>
+				<AuthButton>Создать</AuthButton>
 			</form>
 			<div className={styles["links"]}>
 				<p>Уже есть аккаунт? <Link to={"/auth/login"} className={styles["login-link"]}>Войти</Link>

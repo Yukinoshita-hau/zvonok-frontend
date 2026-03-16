@@ -8,6 +8,8 @@ import friendSlice from "./slices/friend.slice";
 import websocketSlice from "./slices/websocket.slice";
 import { websocketMiddleware } from "./middlewares/websocket.middleware";
 import callSlice from "./slices/call.clice";
+import notificationSlice from "./slices/notification.slice";
+import toastSlice from "./slices/toast.slice";
 
 
 export const store = configureStore({
@@ -18,7 +20,9 @@ export const store = configureStore({
 		message: messageSlice,
 		friend: friendSlice,
 		websocket: websocketSlice,
-		call: callSlice
+		call: callSlice,
+		notification: notificationSlice,
+		toast: toastSlice
 	},
 	middleware: (getDefaultMiddleware) => {
 		return getDefaultMiddleware().concat(websocketMiddleware)

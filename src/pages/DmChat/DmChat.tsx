@@ -1,32 +1,42 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styles from "./DmChat.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { useEffect, useMemo, useState } from "react";
 import { fetchRoomMessages, messageActions } from "../../store/slices/message.slice";
 import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
-import { fetchMyRooms } from "../../store/slices/room.slice";
+import { fetchMyRooms, markRoomRead } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.clice";
 import type { Room } from "../../entities/room";
 import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCallOverlay";
 
 export function DmChat() {
-	const { roomId, username } = useParams();
+	const [searchParams] = useSearchParams();
+	const roomIdParam = searchParams.get("roomId")
+	const nameParam = searchParams.get("username")
+
 	const [text, setText] = useState("");
+
 	const dispatch = useDispatch<AppDispatch>();
+
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const activeRoomId = useSelector((s: RootState) => s.message.activeRoomId);
 	const pending = useSelector((s: RootState) => s.message.pendingPrivateUsername)
+	const { status } = useSelector((s: RootState) => s.call)
+
 	const navigate = useNavigate();
 
+	const roomId = roomIdParam ? Number(roomIdParam) : null
+	const username = nameParam || null;
 	useEffect(() => {
 		if (roomId) {
-			dispatch(messageActions.setActiveRoom(Number(roomId)));
+			const numericId = Number(roomId);
+			dispatch(messageActions.setActiveRoom(numericId));
 			dispatch(messageActions.setPendingPrivate(null));
 			dispatch(messageActions.clearMessages());
 			dispatch(fetchMyRooms())
-			dispatch(fetchRoomMessages({ roomId: Number(roomId) }))
+			dispatch(fetchRoomMessages({ roomId: numericId }))
 		} else if (username) {
 			dispatch(messageActions.setPendingPrivate(username));
 			dispatch(messageActions.setActiveRoom(null))
@@ -38,13 +48,13 @@ export function DmChat() {
 			dispatch(messageActions.setActiveRoom(null))
 			dispatch(messageActions.setPendingPrivate(null))
 		}
-	}, [dispatch, roomId])
+	}, [dispatch, roomId, username])
 
 	useEffect(() => {
 		if (activeRoomId && pending === null && !roomId) {
-			navigate(`/${activeRoomId}`)
+			navigate(`/dm?roomId=${activeRoomId}`)
 		}
-	}, [activeRoomId, pending])
+	}, [activeRoomId, pending, roomId, navigate])
 
 	const currentRoom = useMemo(() => {
 		return rooms?.find((room: Room) => room.id === Number(roomId)) as Room;
@@ -61,18 +71,15 @@ export function DmChat() {
 		return opponent?.username || "Unknown"
 	}, [currentRoom])
 
-
 	const onSend = () => {
 		if (!text.trim()) return;
 
 		if (roomId) {
-
 			dispatch(messageActions.sendMessage({
-				roomId: roomId,
+				roomId: Number(roomId),
 				content: text.trim()
 			}))
 		} else if (username) {
-
 			dispatch(messageActions.sendPrivateMessage({
 				receiver: username,
 				content: text.trim()
@@ -111,6 +118,12 @@ export function DmChat() {
 		})
 	}
 
+	const handleShowMembers = () => {
+		currentRoom.members.map(m => {
+			console.log(m.username)
+			return m;
+		})
+	}
 
 	return (
 		<div className={styles["chat"]}>
@@ -118,10 +131,14 @@ export function DmChat() {
 				<div className={styles["header-left"]}>
 					<div className={styles["avatar"]} />
 					<span className={styles["title"]}>
-						{roomName}
+						{username ?? roomName}
 					</span>
 				</div>
 				<div className={styles["header-right"]}>
+					<button className={styles["members-button"]} onClick={handleShowMembers}>
+						<img src="../../../public/members-icon.svg" />
+					</button>
+
 					<button className={styles["call-button"]} onClick={handleStartCall}>
 						<img src="../../../public/call_icon.svg" alt="иконка телефона" />
 					</button>

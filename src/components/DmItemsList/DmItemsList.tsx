@@ -2,12 +2,13 @@ import cn from "classnames";
 import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import styles from "./DmItemsList.module.css";
 import { fetchRoomMessages, messageActions } from "../../store/slices/message.slice";
-import { useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import type { ShortMessage } from "../../entities/shortMessage";
 import { formatTime, isSameDay } from "../../utils/timeHelpers";
 import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
+import { markRoomRead } from "../../store/slices/room.slice";
 
 type ContextMenuState = {
 	x: number;
@@ -16,26 +17,42 @@ type ContextMenuState = {
 } | null;
 
 export function DmItemsList() {
-	const { roomId } = useParams();
+	const [searchParams] = useSearchParams();
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const isAtBottom = useRef<boolean>(true);
 	const dispatch = useDispatch<AppDispatch>()
-	const { messages, status, hasMore, oldestMessageId } = useSelector((s: RootState) => s.message);
+	const { messages, status, hasMore, oldestMessageId, isAtBottom, newDividerMessageId } = useSelector((s: RootState) => s.message);
+	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
 	const [editContent, setEditContent] = useState("");
 	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
 
+	const roomId = searchParams.get("roomId")
+	const numericRoomId = Number(roomId);
+	const currentRoom = rooms?.find(r => r.id === Number(roomId));
+
 	useEffect(() => {
-		isAtBottom.current = true;
+		dispatch(messageActions.setIsAtBottom(true))
 	}, [roomId])
 
 	useEffect(() => {
+		if (isAtBottom && currentRoom && currentRoom?.unreadCount > 0) {
+			dispatch(markRoomRead({ roomId: numericRoomId }));
+		}
+	}, [isAtBottom, currentRoom?.id, currentRoom?.unreadCount, numericRoomId, dispatch])
+
+	useEffect(() => {
 		if (status === "succeeded" && scrollRef.current &&
-			isAtBottom.current) {
+			isAtBottom) {
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 		}
-	}, [status, messages])
+	}, [status, messages, isAtBottom, roomId])
+
+	useEffect(() => {
+		if (currentRoom && currentRoom.unreadCount > 0 && newDividerMessageId === null && currentRoom.firstUnreadMessageId != null) {
+			dispatch(messageActions.setNewDividerMessageId(currentRoom.firstUnreadMessageId))
+		}
+	}, [currentRoom?.unreadCount, currentRoom?.id, currentRoom?.firstUnreadMessageId, newDividerMessageId, dispatch])
 
 	useEffect(() => {
 		const close = () => setContextMenu(null);
@@ -55,7 +72,15 @@ export function DmItemsList() {
 
 	const handleScroll = async (e: UIEvent<HTMLDivElement>) => {
 		const container = e.currentTarget;
-		isAtBottom.current = (container.scrollHeight - container.scrollTop - container.clientHeight) < 60;
+		const atBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 60;
+
+		//isAtBottom.current = atBottom;
+		if (isAtBottom !== atBottom) {
+			if (!isAtBottom && atBottom) {
+				dispatch(markRoomRead({ roomId: numericRoomId }))
+			}
+			dispatch(messageActions.setIsAtBottom(atBottom));
+		}
 
 		if (container.scrollTop === 0 && hasMore && status !== "loading") {
 			const scrollHeightBefore = container.scrollHeight;
@@ -138,11 +163,16 @@ export function DmItemsList() {
 					itemArr.push({ type: "divider", label: new Date(currentMsg.sentAt).toLocaleDateString(), rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
 				}
 			}
+
+			if (newDividerMessageId && messages[i].id === newDividerMessageId) {
+				itemArr.push({ type: "divider", label: "New", rawDate: "New", key: `divider-${currentMsg.id}` });
+			}
+
 			itemArr.push({ type: "msg", payload: currentMsg, key: `${currentMsg.id}` });
 		}
 
 		return itemArr;
-	}, [messages])
+	}, [messages, currentRoom])
 
 	return (
 		<div className={styles["messages"]} onScroll={handleScroll} ref={scrollRef}>

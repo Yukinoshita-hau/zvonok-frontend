@@ -3,18 +3,36 @@ import styles from "./NavigateBar.module.css";
 import { ServerButton } from "../ServerButton/ServerButton";
 import type { NavigateBarProps } from "./NavigateBar.props";
 import { NavigateBarButton } from "../NavigateBarButton/NavigateBarButton";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store/store";
+import { notificationAction } from "../../store/slices/notification.slice";
 
 export function NavigateBar({ servers }: NavigateBarProps) {
 	const navigate = useNavigate();
+	const dispatch = useDispatch<AppDispatch>();
+	const friend = useSelector((s: RootState) => s.friend);
+	const { notifications } = useSelector((s: RootState) => s.notification);
+	const username = useSelector((s: RootState) => s.user.myUser?.username);
+
+	const requestsCount = friend.incomingRequests.length + friend.outgoingRequests.length;
+	const unreadNotification = notifications.filter(n => n.read === false).length;
 
 	const goToDM = () => {
 		navigate("/");
+	}
+
+	const notificationHandle = () => {
+		dispatch(notificationAction.markAllIsRead());
+		navigate("/notifications")
 	}
 
 	return <div className={styles["navigate-bar"]}>
 		<div className={styles["top"]}>
 			<NavigateBarButton onClick={goToDM}>
 				<img src="../../../public/message-nav-icon.png" />
+				{requestsCount > 0 && (
+					<span className={styles["messages-badge"]}></span>
+				)}
 			</NavigateBarButton>
 		</div>
 
@@ -35,10 +53,14 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 		</div>
 
 		<div className={styles["bottom"]}>
-			<NavigateBarButton>
+			<NavigateBarButton onClick={notificationHandle}>
 				<img src="../../../public/notify-icon.png" />
+
+				{unreadNotification > 0 && (
+					<span className={styles["messages-badge"]}></span>
+				)}
 			</NavigateBarButton>
-			<button className={styles["user-button"]}>U</button>
+			<button className={styles["user-button"]}>{username}</button>
 		</div>
 
 	</div >

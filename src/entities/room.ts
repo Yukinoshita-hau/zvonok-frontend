@@ -11,5 +11,7 @@ export interface Room {
 	lastMessageId: number | null;
 	lastMessageContent: string | null;
 	lastActivityAt: string | null;
+	unreadCount: number;
+	firstUnreadMessageId: number | null;
 	members: RoomMembers[]
 }

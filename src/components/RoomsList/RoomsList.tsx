@@ -23,7 +23,7 @@ export function RoomsList({ rooms }: RoomsListProps) {
 				<button
 					key={room.id}
 					className={styles["item"]}
-					onClick={() => navigate(`/${room.id}`)}
+					onClick={() => navigate(`/dm?roomId=${room.id}`)}
 				>
 					<div className={styles["avatar-wrapper"]}>
 						<div className={styles["avatar"]}>
@@ -35,16 +35,23 @@ export function RoomsList({ rooms }: RoomsListProps) {
 					<div className={styles["content"]}>
 						<div className={styles["title-row"]}>
 							<span className={styles["title"]}>
-								{room.name ?? room.members.find(member =>
+								{room.name ?? room.members?.find(member =>
 									member.id !== myUser?.id
 								)?.username ?? "Unknown"}
 							</span>
+							<div className={styles["right-side"]}>
+								{room.unreadCount > 0 && (
+									<span className={styles["unread-badge"]}>
+										{room.unreadCount > 99 ? "99+" : room.unreadCount}
+									</span>
+								)}
+							</div>
 							<span className={styles["time"]}>
 								{formatTime(room.lastActivityAt)}
 							</span>
 						</div>
 						<div className={styles["message-preview"]}>
-							{room.lastMessageContent || "No messages yet..."} 
+							{room.lastMessageContent || "No messages yet..."}
 						</div>
 					</div>
 				</button>

@@ -15,9 +15,15 @@ export function ChatPlaceholder() {
 			<div className={styles["header"]}>
 				<InboxHeaderButton isActive={buttoneMode === "incoming"} onClick={() => setButtonMode("incoming")}>
 					Входящие
+					{incomingRequests.length > 0 && (
+						<span className={styles["messages-badge"]}>{incomingRequests.length}</span>
+					)}
 				</InboxHeaderButton>
 				<InboxHeaderButton isActive={buttoneMode === "outgoing"} onClick={() => setButtonMode("outgoing")}>
 					Исходящие
+					{outgoingRequest.length > 0 && (
+						<span className={styles["messages-badge"]}>{outgoingRequest.length}</span>
+					)}
 				</InboxHeaderButton>
 			</div>
 

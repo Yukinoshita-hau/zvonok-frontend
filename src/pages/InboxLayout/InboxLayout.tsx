@@ -25,8 +25,10 @@ export function InboxLayout() {
 
 	const room = useSelector((s: RootState) => s.room);
 	const friend = useSelector((s: RootState) => s.friend)
+
 	const { rooms } = room;
 	const { friends } = friend
+	const unreadRoomCount = room.rooms.filter(r => r.unreadCount > 0).length;
 
 	useEffect(() => {
 		if (room.status === "idle") {
@@ -73,7 +75,6 @@ export function InboxLayout() {
 		return [...rooms].sort((a, b) => {
 			const dateA = new Date(a.lastActivityAt || 0).getTime();
 			const dateB = new Date(b.lastActivityAt || 0).getTime();
-			// console.log(`Сравниваем: ${a.name} (${dateA}) и ${b.name} (${dateB})`);
 			if (filterMode === "Newest") {
 				return dateB - dateA;
 			} else {
@@ -102,9 +103,9 @@ export function InboxLayout() {
 		)
 
 		if (existing) {
-			navigate(`${existing.id}`)
+			navigate(`/dm?roomId=${existing.id}`)
 		} else {
-			navigate(`/dm/${friendUsername}`)
+			navigate(`/dm?username=${friendUsername}`)
 		}
 	}
 
@@ -114,6 +115,9 @@ export function InboxLayout() {
 				<div className={styles["inbox-header"]}>
 					<InboxHeaderButton isActive={buttonMode === "Messages"} onClick={() => setButtonMode("Messages")}>
 						Messages
+						{unreadRoomCount > 0 && (
+							<span className={styles["messages-badge"]}>{unreadRoomCount}</span>
+						)}
 					</InboxHeaderButton>
 					<InboxHeaderButton isActive={buttonMode === "Friends"} onClick={() => setButtonMode("Friends")}>
 						Friends

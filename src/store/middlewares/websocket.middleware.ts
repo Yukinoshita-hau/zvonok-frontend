@@ -5,12 +5,15 @@ import { websocketActions } from "../slices/websocket.slice";
 import { createWebSocketClient } from "../../services/websocket.service";
 import { fetchRoomMessages, messageActions } from "../slices/message.slice";
 import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH } from "../interfaces/wsPathes";
-import { fetchMyRooms } from "../slices/room.slice";
+import { fetchMyRooms, markRoomRead } from "../slices/room.slice";
 import type { BaseCallEvent, CallInviteEvent } from "../interfaces/callEvents.interface";
 import { callActions, getToken } from "../slices/call.clice";
 import type { AppDispatch, RootState } from "../interfaces/rootState.interface";
 import type { FriendEventMessage } from "../../api/interfaces/FriendEventMessage";
 import { fetchIncomingRequests, fetchMyFriends, fetchOutgoingRequests } from "../slices/friend.slice";
+import { notificationAction } from "../slices/notification.slice";
+import { toastActions } from "../slices/toast.slice";
+import { soundPlayer } from "../../utils/soundPlayer";
 
 
 export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (storeApi) => {
@@ -33,17 +36,34 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 				client = createWebSocketClient(token);
 
+
 				client.onConnect = (frame) => {
 					console.log("CONNECTED:", frame.command);
 					storeApi.dispatch(websocketActions.connectSuccess());
 
-					const personalMessageSub = client?.subscribe(WS_MESSAGES_PATH, (message) => {
+					const personalMessageSub = client?.subscribe(WS_MESSAGES_PATH, async (message) => {
 
 						const data = JSON.parse(message.body);
 						const state = storeApi.getState();
 						const pending = state.message.pendingPrivateUsername;
+						const myUsername = storeApi.getState().user.myUser?.username;
 						const activeRoomId = state.message.activeRoomId;
 
+						const isFromMe = data.sender?.username === myUsername;
+						const isActiveRoom = data.room?.id === activeRoomId;
+						const isViewingBottom = state.message.isAtBottom;
+
+						if (!isFromMe && !isActiveRoom && data.room?.id) {
+							soundPlayer.playMessage();
+						}
+
+						storeApi.dispatch(messageActions.execEventMessage(data))
+
+						await storeApi.dispatch(fetchMyRooms());
+
+						if (isActiveRoom && isViewingBottom && data.room?.id) {
+							storeApi.dispatch(markRoomRead({ roomId: data.room.id }))
+						}
 						if (!activeRoomId && pending && data.room?.id
 							&& data.sender?.username === state.user.myUser?.username) {
 							storeApi.dispatch(messageActions.setActiveRoom(data.room.id));
@@ -51,8 +71,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 							storeApi.dispatch(fetchRoomMessages({ roomId: data.room.id }))
 						}
 
-						storeApi.dispatch(messageActions.execEventMessage(data))
-						storeApi.dispatch(fetchMyRooms());
 					});
 
 					if (personalMessageSub) subscriptions[WS_MESSAGES_PATH] = personalMessageSub;
@@ -73,7 +91,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 								storeApi.dispatch(getToken(roomName))
 								break;
 							}
-							// TODO: добавить Decline и End
 						}
 					})
 
@@ -89,6 +106,24 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 							case "FRIEND_REQUEST_ACCEPTED": {
 								if (data.payload?.senderUsername === myUsername) {
 									storeApi.dispatch(fetchOutgoingRequests());
+
+									storeApi.dispatch(notificationAction.pushNotification({
+										notification: {
+											type: "success",
+											title: "Запрос в друзья принят",
+											message: `${data.payload?.receiverUsername} теперь ваш друг`,
+											createdAt: new Date().toISOString(),
+											read: false,
+											target: { type: "FRIEND_PROFILE", username: data.payload?.receiverUsername }
+										}
+									}))
+
+									storeApi.dispatch(toastActions.showToast({
+										id: crypto.randomUUID(),
+										type: "success",
+										title: "Запрос в друзья принят",
+										message: `${data.payload?.receiverUsername} теперь ваш друг`
+									}))
 								} else if (data.payload?.receiverUsername === myUsername) {
 									storeApi.dispatch(fetchIncomingRequests());
 								}
@@ -97,7 +132,33 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 								break;
 							}
-							case "FRIEND_REQUEST_CREATED":
+							case "FRIEND_REQUEST_CREATED": {
+								if (data.payload?.senderUsername === myUsername) {
+									storeApi.dispatch(fetchOutgoingRequests());
+								} else if (data.payload?.receiverUsername === myUsername) {
+
+									storeApi.dispatch(notificationAction.pushNotification({
+										notification: {
+											type: "info",
+											title: "Новый запрос в друзья",
+											message: `${data.payload?.senderUsername} хочет добавить вас в друзья`,
+											createdAt: new Date().toISOString(),
+											read: false,
+											target: { type: "FRIEND_PROFILE", username: data.payload?.receiverUsername }
+										}
+									}))
+
+									storeApi.dispatch(toastActions.showToast({
+										id: crypto.randomUUID(),
+										type: "info",
+										title: "Новый запрос в друзья",
+										message: `${data.payload?.senderUsername} хочет добавить вас в друзья`
+									}))
+									storeApi.dispatch(fetchIncomingRequests());
+								}
+
+								break;
+							}
 							case "FRIEND_REQUEST_REJECTED":
 							case "FRIEND_REQUEST_CANCELLED": {
 								if (data.payload?.senderUsername === myUsername) {
@@ -118,7 +179,12 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 					const errorSub = client?.subscribe(WS_ERROR_PATH, (message) => {
 						const data = JSON.parse(message.body) as { message: string, status: number };
-
+						storeApi.dispatch(toastActions.showToast({
+							id: crypto.randomUUID(),
+							type: "error",
+							title: "Error",
+							message: data.message
+						}))
 						console.log(data);
 					})
 

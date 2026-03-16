@@ -8,6 +8,7 @@ import { DmChat } from './pages/DmChat/DmChat'
 import { AppLayout } from './layouts/AppLayouts/AppLayout'
 import { ChatPlaceholder } from './pages/ChatPlaceholder/ChatPlaceholder'
 import { AuthInitializator } from './helpers/AppInitializer'
+import { NotificationsPage } from './components/NotificationsPage/NotificationPage'
 
 export function App() {
 
@@ -48,14 +49,14 @@ export function App() {
 							),
 						},
 						{
-							path: ":roomId",
+							path: "dm",
 							element: (
 								<DmChat />
 							)
 						},
 						{
-							path: "dm/:username",
-							element: <DmChat />
+							path: "notifications",
+							element: <NotificationsPage />
 						}
 					]
 				},
@@ -85,7 +86,7 @@ export function App() {
 
 	return (
 		<AuthInitializator>
-				<RouterProvider router={router} />
+			<RouterProvider router={router} />
 		</AuthInitializator>
 	);
 }

@@ -39,6 +39,18 @@ export const createGroupRoom = createAsyncThunk(
 	}
 )
 
+export const markRoomRead = createAsyncThunk(
+	"room/markRoomRead",
+	async (params: { roomId: number }, thunkAPI) => {
+		try {
+			await roomApi.markRoomRead(params);
+			return params;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue(e?.message ?? "Failed to mark room");
+		}
+	}
+)
+
 export const roomSlice = createSlice({
 	name: "room",
 	initialState: initialState,
@@ -56,6 +68,17 @@ export const roomSlice = createSlice({
 			.addCase(fetchMyRooms.rejected, (currentState, action) => {
 				currentState.status = "failed";
 				currentState.error = typeof action.payload === "string" ? action.payload : "Unknown error";
+			})
+
+
+			.addCase(markRoomRead.fulfilled, (currentState, action) => {
+				const roomId = action.payload.roomId;
+
+				const room = currentState.rooms.find(r => r.id === roomId);
+				if (room) {
+					room.firstUnreadMessageId = null;
+					room.unreadCount = 0;
+				}
 			})
 	}
 });

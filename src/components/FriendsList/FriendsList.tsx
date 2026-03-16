@@ -6,7 +6,7 @@ import { friendActions } from "../../store/slices/friend.slice";
 
 export function FriendsList({ friends, onClick }: FriendsListProps) {
 	const dispatch = useDispatch<AppDispatch>();
-
+console.log(friends)
 	const removeHandle = (username: string) => {
 		dispatch(friendActions.removeFriend({ friendUsername: username }))
 	}

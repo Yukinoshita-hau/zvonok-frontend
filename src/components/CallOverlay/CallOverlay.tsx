@@ -3,10 +3,25 @@ import styles from "./CallOverlay.module.css";
 import cn from "classnames";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions, getToken } from "../../store/slices/call.clice";
+import { useEffect } from "react";
+import { soundPlayer } from "../../utils/soundPlayer";
 
 export function CallOverlay() {
 	const call = useSelector((s: RootState) => s.call);
 	const dispatch = useDispatch<AppDispatch>();
+
+	useEffect(() => {
+		if (call.status === "incoming_ringing") {
+			soundPlayer.startCallRingtone();
+		} else {
+			soundPlayer.stopCallRingtone();
+		}
+
+		return () => {
+			soundPlayer.stopCallRingtone();
+		};
+	}, [call.status])
+
 	if (call.status !== "incoming_ringing") return null;
 
 	const handleAccept = async () => {

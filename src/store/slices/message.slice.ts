@@ -11,6 +11,8 @@ export interface MessageState {
 	oldestMessageId: number | null;
 	activeRoomId: number | null;
 	pendingPrivateUsername: string | null;
+	isAtBottom: boolean;
+	newDividerMessageId: number | null;
 }
 
 const initialState: MessageState = {
@@ -20,7 +22,9 @@ const initialState: MessageState = {
 	hasMore: true,
 	oldestMessageId: null,
 	activeRoomId: null,
-	pendingPrivateUsername: null
+	pendingPrivateUsername: null,
+	isAtBottom: false,
+	newDividerMessageId: null
 };
 
 export const fetchRoomMessages = createAsyncThunk(
@@ -80,6 +84,9 @@ export const messageSlice = createSlice({
 			}
 
 		},
+		setIsAtBottom: (currentState, action: PayloadAction<boolean>) => {
+			currentState.isAtBottom = action.payload;
+		},
 		sendMessage: (currentState, action: PayloadAction<{
 			roomId: string | number;
 			content: string
@@ -106,8 +113,13 @@ export const messageSlice = createSlice({
 		},
 		setActiveRoom: (currentState, action: PayloadAction<number | null>) => {
 			currentState.activeRoomId = action.payload;
-			console.log(`Active room set to: ${action.payload}`);
-		}
+			if (action.payload === null) {
+				currentState.newDividerMessageId = null;
+			}
+		},
+		setNewDividerMessageId: (currentState, action: PayloadAction<number | null>) => {
+			currentState.newDividerMessageId = action.payload;
+		},
 	},
 	extraReducers: builder => {
 		builder

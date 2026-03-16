@@ -15,4 +15,5 @@ export const roomApi: RoomApiInterface = {
 		}
 	}),
 	createGroup: (body: CreateGroupBody) => api.post(`${ROOM_API_PREFIX}/createGroup`, body),
+	markRoomRead: ({ roomId }) => api.post(`${ROOM_API_PREFIX}/${roomId}/read`)
 }

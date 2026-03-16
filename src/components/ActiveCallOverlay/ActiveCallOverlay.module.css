@@ -6,11 +6,12 @@
   padding: 0 12px;
   justify-content: center;
   align-items: center;
+  align-items: stretch;
 }
 
 .room-wrapper {
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   display: flex;
   flex-direction: column;
 }
