@@ -25,6 +25,13 @@ export function InboxLayout() {
 
 	const room = useSelector((s: RootState) => s.room);
 	const friend = useSelector((s: RootState) => s.friend)
+	const call = useSelector((s: RootState) => s.call);
+	const isCallActive = call.status === "connecting" || call.status === "in_call";
+
+	const isFocusMode = isCallActive && call.isCallFocusMode;
+	const isChatHiddenInCall = isCallActive && call.isChatHiddenInCall;
+	console.log(isFocusMode)
+	console.log(isChatHiddenInCall)
 
 	const { rooms } = room;
 	const { friends } = friend
@@ -110,7 +117,13 @@ export function InboxLayout() {
 	}
 
 	return (
-		<div className={styles["layout"]} >
+		<div
+			className={[
+				styles["layout"],
+				isFocusMode ? styles["layout-focus"] : "",
+				isChatHiddenInCall ? styles["layout-chat-hidden"] : "",
+			].join(" ")}
+		>
 			<div className={styles["sidebar"]}>
 				<div className={styles["inbox-header"]}>
 					<InboxHeaderButton isActive={buttonMode === "Messages"} onClick={() => setButtonMode("Messages")}>
@@ -123,20 +136,23 @@ export function InboxLayout() {
 						Friends
 					</InboxHeaderButton>
 				</div>
+
 				<div className={styles["messages-header"]}>
-					<button className={styles["messages-header-filter"]}
-						onClick={() => setFilterMode(filterMode === "Newest" ? "Oldest" : "Newest")}>
-						<img src="../../../public/inbox-message-filter-icon.png" alt="inbox icon" />
+					<button
+						className={styles["messages-header-filter"]}
+						onClick={() => setFilterMode(filterMode === "Newest" ? "Oldest" : "Newest")}
+					>
+						<img src="/inbox-message-filter-icon.png" alt="inbox icon" />
 						{filterMode}
 					</button>
 
 					<button className={styles["add-button"]} onClick={handleAddClick}>
-						<img src="../../../public/add-room-icon.png" />
+						<img src="/add-room-icon.png" alt="Add" />
 					</button>
 				</div>
 
 				<div className={styles["room-list"]}>
-					{buttonMode == "Messages" ? (
+					{buttonMode === "Messages" ? (
 						<RoomsList rooms={sortedRooms} />
 					) : (
 						<FriendsList friends={sortedFriends} onClick={handleFriendClick} />
@@ -144,12 +160,21 @@ export function InboxLayout() {
 				</div>
 			</div>
 
-			{<GroupRoomModal isOpen={isRoomModalOpen} friends={sortedFriends} onClose={() => setIsRoomModalOpen(false)} onCreate={handleCreateGroup} />}
-			{<FriendRequestModal isOpen={isFriendModalOpen} onClose={() => setIsFriendModalOpen(false)} onSubmit={handleSendFriendRequest} />}
+			<GroupRoomModal
+				isOpen={isRoomModalOpen}
+				friends={sortedFriends}
+				onClose={() => setIsRoomModalOpen(false)}
+				onCreate={handleCreateGroup}
+			/>
+			<FriendRequestModal
+				isOpen={isFriendModalOpen}
+				onClose={() => setIsFriendModalOpen(false)}
+				onSubmit={handleSendFriendRequest}
+			/>
 
 			<div className={styles["chat"]}>
 				<Outlet />
 			</div>
 		</div>
-	)
+	);
 }

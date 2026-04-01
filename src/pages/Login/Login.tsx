@@ -9,8 +9,7 @@ import { AxiosError } from "axios";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store/store";
 import type { ErrorApiResponse } from "../../api/interfaces/ErrorApiResponse";
-import authAPi from "../../api/authApi";
-import { userActions } from "../../store/slices/user.slice";
+import { getMyUser, loginUser } from "../../store/slices/user.slice";
 
 export default function Login() {
 	const [error, setError] = useState<string | null>();
@@ -26,11 +25,11 @@ export default function Login() {
 
 	const sendLogin = async (usernameOrEmail: string, password: string) => {
 		try {
-			const { data } = await authAPi.login({
+			await dispatch(loginUser({
 				usernameOrEmail: usernameOrEmail,
 				password: password
-			})
-			dispatch(userActions.addJwt(data))
+			})).unwrap()
+			await dispatch(getMyUser()).unwrap();
 			navigate("/");
 
 		} catch (e) {

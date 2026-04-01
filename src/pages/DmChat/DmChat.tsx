@@ -5,10 +5,11 @@ import type { AppDispatch, RootState } from "../../store/store";
 import { useEffect, useMemo, useState } from "react";
 import { fetchRoomMessages, messageActions } from "../../store/slices/message.slice";
 import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
-import { fetchMyRooms, markRoomRead } from "../../store/slices/room.slice";
-import { callActions } from "../../store/slices/call.clice";
+import { fetchMyRooms } from "../../store/slices/room.slice";
+import { callActions } from "../../store/slices/call.slice";
 import type { Room } from "../../entities/room";
 import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCallOverlay";
+import { Phone, Send } from "lucide-react";
 
 export function DmChat() {
 	const [searchParams] = useSearchParams();
@@ -23,10 +24,10 @@ export function DmChat() {
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const activeRoomId = useSelector((s: RootState) => s.message.activeRoomId);
 	const pending = useSelector((s: RootState) => s.message.pendingPrivateUsername)
-	const { status } = useSelector((s: RootState) => s.call)
-
+	const call = useSelector((s: RootState) => s.call);
 	const navigate = useNavigate();
 
+	const hideChat = call.isChatHiddenInCall;
 	const roomId = roomIdParam ? Number(roomIdParam) : null
 	const username = nameParam || null;
 	useEffect(() => {
@@ -140,27 +141,30 @@ export function DmChat() {
 					</button>
 
 					<button className={styles["call-button"]} onClick={handleStartCall}>
-						<img src="../../../public/call_icon.svg" alt="иконка телефона" />
+						<Phone color="white" size={20} />
 					</button>
 					{/* Надо будет закинуться иконуи звонка / файла / поиска */}
 				</div>
 			</div>
 
 			{currentRoom !== undefined && <ActiveCallOverlay currentRoomId={currentRoom.id} />}
-
-			<DmItemsList />
-			<div className={styles["input-bar"]}>
-				<input
-					className={styles["input"]}
-					placeholder="Message @here"
-					value={text}
-					onChange={(e) => setText(e.target.value)}
-					onKeyDown={handleKeyPress}
-				/>
-				<button className={styles["messageButton"]} onClick={onSend}>
-					<img src="../../../public/send-message-icon.png" />
-				</button>
-			</div>
+			{!hideChat && (
+				<>
+					<DmItemsList />
+					<div className={styles["input-bar"]}>
+						<input
+							className={styles["input"]}
+							placeholder="Message @here"
+							value={text}
+							onChange={(e) => setText(e.target.value)}
+							onKeyDown={handleKeyPress}
+						/>
+						<button className={styles["message-button"]} onClick={onSend}>
+							<Send color="white" size={20} />
+						</button>
+					</div>
+				</>
+			)}
 		</div>
 
 	)

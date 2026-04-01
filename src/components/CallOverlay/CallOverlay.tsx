@@ -2,9 +2,10 @@ import { useDispatch, useSelector } from "react-redux";
 import styles from "./CallOverlay.module.css";
 import cn from "classnames";
 import type { AppDispatch, RootState } from "../../store/store";
-import { callActions, getToken } from "../../store/slices/call.clice";
+import { callActions, getToken } from "../../store/slices/call.slice";
 import { useEffect } from "react";
 import { soundPlayer } from "../../utils/soundPlayer";
+import { Phone } from "lucide-react";
 
 export function CallOverlay() {
 	const call = useSelector((s: RootState) => s.call);
@@ -53,11 +54,11 @@ export function CallOverlay() {
 
 				<div className={styles["body"]}>
 					<button className={cn(styles["btn"], styles["accept-button"])} onClick={handleAccept}>
-						<img src="../../../public/call_icon.svg" />
+					<Phone color="white" size={20}/>
 					</button>
 
 					<button className={cn(styles["btn"], styles["decline-button"])} onClick={handleDecline}>
-						<img src="../../../public/call_icon.svg" />
+					<Phone color="white" size={20}/>
 					</button>
 				</div>
 			</div>

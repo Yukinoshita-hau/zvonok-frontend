@@ -12,6 +12,10 @@ export interface CallState {
 	serverUrl: string | null;
 	participantToken: string | null;
 	error: string | null;
+
+	selectedScreenTrackSid: string | null;
+	isCallFocusMode: boolean;
+	isChatHiddenInCall: boolean;
 }
 
 export const initialState: CallState = {
@@ -22,7 +26,12 @@ export const initialState: CallState = {
 	livekitRoomName: null,
 	serverUrl: null,
 	participantToken: null,
-	error: null
+	error: null,
+
+
+	selectedScreenTrackSid: null,
+	isCallFocusMode: false,
+	isChatHiddenInCall: false,
 }
 
 export const getToken = createAsyncThunk(
@@ -76,7 +85,18 @@ export const callSlice = createSlice({
 		},
 		endCall: () => {
 			return initialState;
-		}
+		},
+		setSelectedScreenTrackSid(state, action: PayloadAction<string | null>) {
+			state.selectedScreenTrackSid = action.payload;
+		},
+
+		toggleCallFocusMode(state) {
+			state.isCallFocusMode = !state.isCallFocusMode;
+		},
+
+		toggleChatHiddenInCall(state) {
+			state.isChatHiddenInCall = !state.isChatHiddenInCall;
+		},
 	},
 	extraReducers: builder => {
 		builder

@@ -24,7 +24,7 @@
 
 .header-right {
 	display: flex;
-	gap: 8px;
+	gap: 14px;
 	justify-content: center;
 	align-items: center;
 }
@@ -69,11 +69,12 @@
 	box-shadow: 0 0 0 2px var(--accent-muted)
 }
 
-.messageButton {
+.message-button {
 	background-color: transparent;
 	border: none;
 	outline: none;
 	cursor: pointer;
+	margin: 0 12px;
 }
 
 .call-button {

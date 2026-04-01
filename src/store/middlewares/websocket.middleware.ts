@@ -7,7 +7,7 @@ import { fetchRoomMessages, messageActions } from "../slices/message.slice";
 import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH } from "../interfaces/wsPathes";
 import { fetchMyRooms, markRoomRead } from "../slices/room.slice";
 import type { BaseCallEvent, CallInviteEvent } from "../interfaces/callEvents.interface";
-import { callActions, getToken } from "../slices/call.clice";
+import { callActions, getToken } from "../slices/call.slice";
 import type { AppDispatch, RootState } from "../interfaces/rootState.interface";
 import type { FriendEventMessage } from "../../api/interfaces/FriendEventMessage";
 import { fetchIncomingRequests, fetchMyFriends, fetchOutgoingRequests } from "../slices/friend.slice";
@@ -32,6 +32,11 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				if (!token) {
 					storeApi.dispatch(websocketActions.connectError("No token available"));
 					return;
+				}
+
+				if (client !== null) {
+					client.deactivate();
+					subscriptions = {};
 				}
 
 				client = createWebSocketClient(token);

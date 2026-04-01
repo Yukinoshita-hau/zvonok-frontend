@@ -1,4 +1,4 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, type Action, type AnyAction, type UnknownAction } from "@reduxjs/toolkit";
 import userSlice from "./slices/user.slice";
 import serverSlice from "./slices/server.slice";
 import { setStore } from "../api/api";
@@ -7,27 +7,39 @@ import messageSlice from "./slices/message.slice";
 import friendSlice from "./slices/friend.slice";
 import websocketSlice from "./slices/websocket.slice";
 import { websocketMiddleware } from "./middlewares/websocket.middleware";
-import callSlice from "./slices/call.clice";
+import callSlice from "./slices/call.slice";
 import notificationSlice from "./slices/notification.slice";
 import toastSlice from "./slices/toast.slice";
+import deviceSlice from "./slices/device.slice";
 
+
+const appReducer = combineReducers({
+	user: userSlice,
+	server: serverSlice,
+	room: roomSlice,
+	message: messageSlice,
+	friend: friendSlice,
+	websocket: websocketSlice,
+	call: callSlice,
+	notification: notificationSlice,
+	toast: toastSlice,
+	device: deviceSlice
+});
+
+const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
+	if (action.type == "user/logout") {
+		state = undefined;
+	}
+
+	return appReducer(state, action);
+}
 
 export const store = configureStore({
-	reducer: {
-		user: userSlice,
-		server: serverSlice,
-		room: roomSlice,
-		message: messageSlice,
-		friend: friendSlice,
-		websocket: websocketSlice,
-		call: callSlice,
-		notification: notificationSlice,
-		toast: toastSlice
-	},
+	reducer: rootReducer,
 	middleware: (getDefaultMiddleware) => {
 		return getDefaultMiddleware().concat(websocketMiddleware)
 	}
-});
+})
 
 setStore(store);
 

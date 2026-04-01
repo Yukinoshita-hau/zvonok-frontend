@@ -1,0 +1,230 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+	color: var(--text-primary);
+	/* Цвет текста Discord */
+}
+
+/* --- Вкладки --- */
+.tabs {
+	display: flex;
+	gap: 24px;
+	border-bottom: 1px solid #3f4147;
+	margin-bottom: 24px;
+	padding-bottom: 8px;
+}
+
+.tab-btn {
+	background: none;
+	border: none;
+	color: #b5bac1;
+	font-size: 16px;
+	font-weight: 600;
+	cursor: pointer;
+	padding: 0;
+	transition: color 0.2s;
+}
+
+.tab-btn:hover {
+	color: var(--text-secondary);
+}
+
+/* --- Основной контент (форма + предпросмотр) --- */
+.content {
+	display: flex;
+	gap: 40px;
+	align-items: flex-start;
+}
+
+/* Левая колонка */
+.edit-section {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+/* --- Формы --- */
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.label {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	color: #b5bac1;
+}
+
+.input {
+	background-color: #1e1f22;
+	border: none;
+	border-radius: 4px;
+	color: #dbdee1;
+	padding: 10px;
+	font-size: 16px;
+	outline: none;
+	transition: background-color 0.2s;
+}
+
+.input:focus {
+	background-color: #2b2d31;
+}
+
+/* --- Кнопки аватара --- */
+.avatar-actions {
+	display: flex;
+	gap: 12px;
+}
+
+.logout-actions {
+	display: flex;
+	gap: 12px;
+}
+
+.btn-primary {
+	background-color: #5865f2;
+	color: white;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 4px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	transition: all 0.5s ease;
+}
+
+.btn-primary:hover {
+	background-color: #4752c4;
+}
+
+.btn-secondary {
+	background-color: transparent;
+	color: #dbdee1;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 4px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.5s ease;
+}
+
+.btn-secondary:hover {
+	text-decoration: underline;
+}
+
+.btn-danger {
+	background-color: var(--danger);
+	color: #dbdee1;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 4px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.5s ease;
+}
+
+.btn-danger:hover {
+	background-color: var(--danger-hover);
+}
+
+/* --- Правая колонка (Предпросмотр) --- */
+.preview-section {
+	width: 340px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.preview-title {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	color: #b5bac1;
+	margin-bottom: 4px;
+}
+
+.preview-card {
+	background-color: #111214;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.preview-banner {
+	height: 120px;
+	background-color: #5c4ca5;
+	/* Заглушка для баннера */
+}
+
+.preview-body {
+	padding: 16px;
+	position: relative;
+	background-color: #232428;
+}
+
+.preview-avatar-wrapper {
+	position: absolute;
+	top: -40px;
+	/* Сдвигаем аватарку на баннер */
+	left: 16px;
+	width: 80px;
+	height: 80px;
+	border-radius: 50%;
+	background-color: #232428;
+	/* Обводка в цвет фона */
+	padding: 6px;
+}
+
+.preview-avatar {
+	width: 100%;
+	height: 100%;
+	background-color: #313338;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 32px;
+	font-weight: bold;
+	color: white;
+}
+
+.status-badge {
+	position: absolute;
+	bottom: 6px;
+	right: 6px;
+	width: 20px;
+	height: 20px;
+	background-color: #23a559;
+	/* Зеленый онлайн */
+	border: 4px solid #232428;
+	border-radius: 50%;
+}
+
+.preview-info {
+	margin-top: 48px;
+	/* Отступ после аватарки */
+}
+
+.preview-name {
+	font-size: 20px;
+	font-weight: 700;
+	color: #f2f3f5;
+}
+
+.preview-subtext {
+	font-size: 14px;
+	color: #dbdee1;
+	margin-top: 4px;
+}
+
+.preview-divider {
+	height: 1px;
+	background-color: #3f4147;
+	margin-top: 16px;
+}

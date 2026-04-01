@@ -106,3 +106,48 @@
   background-color: var(--bg-hover);
   transform: translateY(-1px);
 }
+
+.layout {
+	background-color: var(--bg-secondary);
+	display: flex;
+	height: 100vh;
+	flex: 1;
+	min-width: 0;
+}
+
+.sidebar {
+	width: 300px;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	min-height: 0;
+	transition: width 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.chat {
+	flex: 1;
+	min-width: 0;
+	background: var(--bg-primary);
+	border-left: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+}
+
+/* focus mode: скрываем левую панель */
+.layout-focus .sidebar {
+	width: 0;
+	opacity: 0;
+	overflow: hidden;
+	transform: translateX(-12px);
+}
+
+/* убираем разделитель, когда sidebar скрыт */
+.layout-focus .chat {
+	border-left: none;
+}
+
+/* если хочешь режим "спрятать чат" — тогда чат тоже можно растянуть */
+.layout-chat-hidden .chat {
+	flex: 1;
+}

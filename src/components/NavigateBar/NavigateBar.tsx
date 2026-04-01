@@ -6,6 +6,9 @@ import { NavigateBarButton } from "../NavigateBarButton/NavigateBarButton";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { notificationAction } from "../../store/slices/notification.slice";
+import { useState } from "react";
+import { SettingModal } from "../SettingModal/SettingModal";
+import { callActions } from "../../store/slices/call.slice";
 
 export function NavigateBar({ servers }: NavigateBarProps) {
 	const navigate = useNavigate();
@@ -13,11 +16,14 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 	const friend = useSelector((s: RootState) => s.friend);
 	const { notifications } = useSelector((s: RootState) => s.notification);
 	const username = useSelector((s: RootState) => s.user.myUser?.username);
+	const [isSettingModalOpen, setIsSettingModalOpen] = useState<boolean>(false);
 
 	const requestsCount = friend.incomingRequests.length + friend.outgoingRequests.length;
 	const unreadNotification = notifications.filter(n => n.read === false).length;
 
 	const goToDM = () => {
+		dispatch(callActions.toggleCallFocusMode())
+		dispatch(callActions.toggleChatHiddenInCall())
 		navigate("/");
 	}
 
@@ -60,8 +66,10 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 					<span className={styles["messages-badge"]}></span>
 				)}
 			</NavigateBarButton>
-			<button className={styles["user-button"]}>{username}</button>
+			<button className={styles["user-button"]} onClick={() => setIsSettingModalOpen(true)}>
+				{username}
+			</button>
 		</div>
-
+		{<SettingModal isOpen={isSettingModalOpen} onClose={() => setIsSettingModalOpen(false)} />}
 	</div >
 }

@@ -1,88 +1,169 @@
 .call-root {
 	height: 100%;
-	position: relative;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
+	gap: 8px;
+	overflow: hidden;
 }
+
 
 .participants-grid {
 	flex: 1;
+	min-height: 0;
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 	gap: 8px;
 	align-content: center;
-	justify-content: stretch;
-	align-items: stretch;
-	min-height: 0px;
+	overflow: hidden;
 }
 
 .tile {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	position: relative;
+	width: 100%;
+	aspect-ratio: 16 / 9;
 	background-color: var(--bg-active);
-	border-radius: 10px;
-	padding: 6px;
+	border-radius: 12px;
 	overflow: hidden;
 }
 
-.media {
+
+.single-layout {
 	flex: 1;
 	min-height: 0;
-	border-radius: 6px;
-	overflow: hidden;
-	background: var(--bg-tertiary);
 	display: flex;
-	justify-content: center;
 	align-items: center;
-
-	aspect-ratio: 16 / 9;
+	justify-content: center;
+	overflow: hidden;
 }
 
-.media video {
+.single-tile {
+	position: relative;
+	height: 100%;
+	max-height: 100%;
+	aspect-ratio: 16 / 9;
+	width: auto;
+	max-width: 100%;
+	background-color: var(--bg-active);
+	border-radius: 12px;
+	overflow: hidden;
+	display: flex;
+}
+
+
+.screen-layout {
+	flex: 1;
+	min-height: 0;
+	display: grid;
+	grid-template-rows: minmax(0, 1fr) auto auto;
+	gap: 8px;
+	overflow: hidden;
+}
+
+.main-screen {
+	flex: 1;
+	min-height: 0;
+	position: relative;
+	background-color: var(--bg-active);
+	border-radius: 12px;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.participants-strip {
+	display: flex;
+	gap: 8px;
+	overflow-x: auto;
+	overflow-y: hidden;
+	padding-bottom: 4px;
+	max-height: 110px;
+}
+
+.participants-strip::-webkit-scrollbar {
+	height: 8px;
+}
+
+.participants-strip::-webkit-scrollbar-thumb {
+	background: var(--bg-hover);
+	border-radius: 999px;
+}
+
+.participant-tile {
+	position: relative;
+	width: 150px;
+	min-width: 150px;
+	aspect-ratio: 16 / 9;
+	background-color: var(--bg-active);
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+
+.media {
+	width: 100%;
+	height: 100%;
+	background: var(--bg-tertiary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+/* camera tiles */
+.tile video,
+.single-tile video,
+.participant-tile video {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+	display: block;
+	background: #000;
 }
 
-.placeholder {
+/* screen share */
+.main-screen video {
 	width: 100%;
 	height: 100%;
-	display: flex;
-	justify-content: center;
-	align-items: center;
+	object-fit: contain;
+	display: block;
+	background: #000;
 }
 
-.avatar {
-	width: 72px;
-	height: 72px;
-	border-radius: 18px;
-	background: var(--accent-muted);
-	border: 2px solid var(--accent);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	color: var(--accent);
-	font-size: 32px;
-	font-weight: 700;
-}
+/* ===== USERNAME ===== */
 
 .name {
+	position: absolute;
+	left: 10px;
+	bottom: 10px;
+	z-index: 10;
+	max-width: calc(100% - 20px);
+	padding: 6px 10px;
+	border-radius: 8px;
+	background-color: rgba(0, 0, 0, 0.45);
+	color: #fff;
+	font-size: 14px;
 	font-weight: 600;
-	font-size: 13px;
-	color: var(--text-secondary);
-	padding: 0 4px;
+	line-height: 1.2;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
 }
+
 
 .controls-bar {
 	height: 56px;
+	flex-shrink: 0;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	gap: 12px;
+	padding: 0 8px;
 }
 
-.controll-button {
+.control-button {
 	width: 40px;
 	height: 40px;
 	border-radius: 12px;
@@ -93,12 +174,19 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	transition: background-color 0.15s ease, border-radius 0.2s ease;
+	transition:
+		background-color 0.15s ease,
+		border-radius 0.2s ease,
+		transform 0.12s ease;
 }
 
-.controll-button:hover {
+.control-button:hover {
 	background: var(--bg-active);
 	border-radius: 10px;
+}
+
+.control-button:active {
+	transform: scale(0.96);
 }
 
 .leave-button {
@@ -111,21 +199,131 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	transition: background-color 0.15s ease;
+	transition: background-color 0.15s ease, transform 0.12s ease;
+	flex-shrink: 0;
 }
 
 .leave-button:hover {
 	background: var(--danger-hover);
 }
 
-@keyframes fadeInUp {
-	from {
-		opacity: 0;
-		transform: translateY(8px);
+.leave-button:active {
+	transform: scale(0.97);
+}
+
+.leave-button img {
+	width: 20px;
+	height: 20px;
+	display: block;
+	pointer-events: none;
+	user-select: none;
+}
+
+.screen-picker {
+	display: flex;
+	gap: 8px;
+	overflow-x: auto;
+	overflow-y: hidden;
+	padding-bottom: 4px;
+	max-height: 110px;
+}
+
+.screen-preview {
+	width: 140px;
+	min-width: 140px;
+	border: 1px solid transparent;
+	background: var(--bg-active);
+	border-radius: 10px;
+	padding: 4px;
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	color: var(--text-primary);
+	transition: border-color 0.15s ease, transform 0.12s ease, background-color 0.15s ease;
+}
+
+.screen-preview:hover {
+	background: var(--bg-hover);
+	transform: translateY(-1px);
+}
+
+.screen-preview-active {
+	border-color: var(--accent);
+}
+
+.screen-preview-media {
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #000;
+}
+
+.screen-preview-media video {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	display: block;
+}
+
+.screen-preview-name {
+	font-size: 12px;
+	font-weight: 600;
+	text-align: left;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+
+@media (max-width: 900px) {
+	.participants-grid {
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 	}
 
-	to {
-		opacity: 1;
-		transform: translateY(0);
+	.participant-tile {
+		width: 180px;
+		min-width: 180px;
+	}
+
+	.name {
+		font-size: 13px;
+		padding: 5px 8px;
+	}
+}
+
+@media (max-width: 640px) {
+	.call-root {
+		gap: 6px;
+	}
+
+	.participants-grid {
+		grid-template-columns: 1fr;
+		gap: 6px;
+	}
+
+	.participants-strip {
+		gap: 6px;
+	}
+
+	.participant-tile {
+		width: 150px;
+		min-width: 150px;
+	}
+
+	.controls-bar {
+		height: 52px;
+		gap: 10px;
+	}
+
+	.control-button {
+		width: 38px;
+		height: 38px;
+	}
+
+	.leave-button {
+		width: 64px;
+		height: 38px;
 	}
 }

@@ -31,9 +31,7 @@
 
 .data-label {
   border-radius: 6px;
-  background: var(--bg-active);
   color: var(--text-secondary);
-  padding: 3px 19px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.03em;

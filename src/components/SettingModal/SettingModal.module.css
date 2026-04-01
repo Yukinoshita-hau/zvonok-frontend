@@ -1,0 +1,137 @@
+.backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+
+.modal {
+	width: 900px;
+	min-height: 600px;
+	display: flex;
+	background: var(--bg-secondary);
+	border-radius: 14px;
+	overflow: hidden;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+	border: 1px solid var(--border);
+}
+
+.input {
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	outline: none;
+	padding: 8px 8px;
+	background-color: var(--bg-input);
+	color: var(--text-primary);
+	font-size: 12px;
+}
+
+.navigation-bar {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	padding: 16px 18px;
+	border-right: 1px solid var(--border);
+}
+
+.navigation-btn {
+	display: flex;
+	align-items: center;
+	background-color: transparent;
+	color: var(--text-secondary);
+	border: none;
+	outline: none;
+	cursor: pointer;
+	padding: 10px;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+}
+
+.navigation-btn:hover {
+	background-color: var(--bg-active);
+	color: var(--text-primary);
+}
+
+.active {
+	background-color: var(--bg-active);
+	color: var(--text-primary);
+}
+
+.header {
+	padding: 10px;
+	margin-bottom: 15px;
+	color: var(--text-primary);
+	border-bottom: 1px solid var(--border)
+}
+
+.content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+
+
+/* анимации */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		opacity: 0;
+		transform: scale(0.96) translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes scaleOut {
+	from {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+
+	to {
+		opacity: 0;
+		transform: scale(0.96) translateY(8px);
+	}
+}
+
+.backdrop[data-state="open"] {
+	animation: fadeIn 0.18s ease forwards;
+}
+
+.backdrop[data-state="close"] {
+	animation: fadeOut 0.18s ease forwards;
+}
+
+.modal[data-state="open"] {
+	animation: scaleIn 0.2s ease forwards;
+}
+
+.modal[data-state="close"] {
+	animation: scaleOut 0.18s ease forwards;
+}

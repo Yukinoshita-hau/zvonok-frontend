@@ -30,7 +30,7 @@ export const websocketSlice = createSlice({
 			previousState.isConnected = false;
 			previousState.status = "error";
 			previousState.error = action.payload;
-		}
+		},
 	}
 })
 

@@ -41,7 +41,6 @@ export function App() {
 						<InboxLayout />
 					),
 					children: [
-						// для показа пустышки окна чата
 						{
 							index: true,
 							element: (
