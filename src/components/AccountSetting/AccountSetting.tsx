@@ -95,7 +95,6 @@ export function AccountSetting() {
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Email</label>
 						<input
-
 							className={styles["input"]}
 							type="text"
 							value={email}
@@ -112,15 +111,6 @@ export function AccountSetting() {
 							</button>
 						}
 					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Аватар</label>
-						<div className={styles["avatar-actions"]}>
-							<button className={styles["btn-primary"]}>Смена аватара</button>
-							<button className={styles["btn-secondary"]}>Удалить аватар</button>
-						</div>
-					</div>
-
 
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Выйти из аккаунта</label>

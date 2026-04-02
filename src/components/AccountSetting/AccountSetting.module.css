@@ -62,7 +62,7 @@
 }
 
 .input {
-	background-color: #1e1f22;
+	background-color: var(--bg-input);
 	border: none;
 	border-radius: 4px;
 	color: #dbdee1;
@@ -73,7 +73,7 @@
 }
 
 .input:focus {
-	background-color: #2b2d31;
+	background-color: var(--bg-hover);
 }
 
 /* --- Кнопки аватара --- */
