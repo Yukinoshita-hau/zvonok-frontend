@@ -9,6 +9,7 @@ import { AppLayout } from './layouts/AppLayouts/AppLayout'
 import { ChatPlaceholder } from './pages/ChatPlaceholder/ChatPlaceholder'
 import { AuthInitializator } from './helpers/AppInitializer'
 import { NotificationsPage } from './components/NotificationsPage/NotificationPage'
+import { ServerLayout } from './pages/ServerLayout/ServerLayout'
 
 export function App() {
 
@@ -62,7 +63,7 @@ export function App() {
 				{
 					path: "servers/:serverId",
 					element: (
-						<></>
+						<ServerLayout/>
 					),
 					children: [
 						{

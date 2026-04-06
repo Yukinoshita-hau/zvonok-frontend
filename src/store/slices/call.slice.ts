@@ -86,17 +86,25 @@ export const callSlice = createSlice({
 		endCall: () => {
 			return initialState;
 		},
-		setSelectedScreenTrackSid(state, action: PayloadAction<string | null>) {
-			state.selectedScreenTrackSid = action.payload;
+		setSelectedScreenTrackSid: (previousState, action: PayloadAction<string | null>) => {
+			previousState.selectedScreenTrackSid = action.payload;
 		},
 
-		toggleCallFocusMode(state) {
-			state.isCallFocusMode = !state.isCallFocusMode;
+		toggleCallFocusMode: (previousState) => {
+			previousState.isCallFocusMode = !previousState.isCallFocusMode;
 		},
 
-		toggleChatHiddenInCall(state) {
-			state.isChatHiddenInCall = !state.isChatHiddenInCall;
+		toggleChatHiddenInCall: (previousState) => {
+			previousState.isChatHiddenInCall = !previousState.isChatHiddenInCall;
 		},
+
+		setCallFocusMode: (previousState, action: PayloadAction<boolean>) => {
+			previousState.isCallFocusMode = action.payload;
+		},
+
+		setChatHiddenInCall: (previousState, action: PayloadAction<boolean>) => {
+			previousState.isChatHiddenInCall = action.payload;
+		}
 	},
 	extraReducers: builder => {
 		builder

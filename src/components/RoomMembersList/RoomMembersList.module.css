@@ -1,0 +1,58 @@
+﻿.members-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	overflow-y: auto;
+}
+
+.member-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 8px;
+	border-radius: 10px;
+	background: transparent
+}
+
+.member-avatar {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: color-mix(in srgb, var(--bg-primary) 35%, #6c8dff 65%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	color: #fff;
+	flex-shrink: 0;
+}
+
+.member-main {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.member-name {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.member-you {
+	padding: 2px 6px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #fff;
+	background: #3f71ff;
+}
+
+.member-status {
+	font-size: 12px;
+	color: var(--text-secondary);
+}

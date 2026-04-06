@@ -9,14 +9,13 @@ import { fetchMyRooms } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.slice";
 import type { Room } from "../../entities/room";
 import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCallOverlay";
-import { Phone, Send } from "lucide-react";
+import { Phone, Send, SettingsIcon } from "lucide-react";
+import { RoomSettingModal } from "../../components/RoomSettingModal/RoomSettingModal";
 
 export function DmChat() {
-	const [searchParams] = useSearchParams();
-	const roomIdParam = searchParams.get("roomId")
-	const nameParam = searchParams.get("username")
+	const navigate = useNavigate();
 
-	const [text, setText] = useState("");
+	const [searchParams] = useSearchParams();
 
 	const dispatch = useDispatch<AppDispatch>();
 
@@ -25,11 +24,16 @@ export function DmChat() {
 	const activeRoomId = useSelector((s: RootState) => s.message.activeRoomId);
 	const pending = useSelector((s: RootState) => s.message.pendingPrivateUsername)
 	const call = useSelector((s: RootState) => s.call);
-	const navigate = useNavigate();
 
-	const hideChat = call.isChatHiddenInCall;
+	const [text, setText] = useState("");
+	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
+
+	const roomIdParam = searchParams.get("roomId")
+	const nameParam = searchParams.get("username")
+
 	const roomId = roomIdParam ? Number(roomIdParam) : null
 	const username = nameParam || null;
+
 	useEffect(() => {
 		if (roomId) {
 			const numericId = Number(roomId);
@@ -43,6 +47,8 @@ export function DmChat() {
 			dispatch(messageActions.setActiveRoom(null))
 			dispatch(fetchMyRooms())
 			dispatch(messageActions.clearMessages());
+		} else {
+			navigate("/")
 		}
 
 		return () => {
@@ -60,6 +66,8 @@ export function DmChat() {
 	const currentRoom = useMemo(() => {
 		return rooms?.find((room: Room) => room.id === Number(roomId)) as Room;
 	}, [rooms, roomId])
+
+	const hideChat = (currentRoom?.id === call.chatRoomId) && call.isChatHiddenInCall;
 
 	const roomName = useMemo(() => {
 		if (!currentRoom) return "Unknown";
@@ -119,11 +127,8 @@ export function DmChat() {
 		})
 	}
 
-	const handleShowMembers = () => {
-		currentRoom.members.map(m => {
-			console.log(m.username)
-			return m;
-		})
+	const handleOpenChatSetting = () => {
+		setIsRoomSettingOpen(true)
 	}
 
 	return (
@@ -136,17 +141,22 @@ export function DmChat() {
 					</span>
 				</div>
 				<div className={styles["header-right"]}>
-					<button className={styles["members-button"]} onClick={handleShowMembers}>
-						<img src="../../../public/members-icon.svg" />
-					</button>
-
-					<button className={styles["call-button"]} onClick={handleStartCall}>
+					<button className={styles["btn"]} onClick={handleStartCall}>
 						<Phone color="white" size={20} />
+					</button>
+					<button className={styles["btn"]} onClick={handleOpenChatSetting}>
+						<SettingsIcon color="white" size={20} />
 					</button>
 					{/* Надо будет закинуться иконуи звонка / файла / поиска */}
 				</div>
 			</div>
 
+			{<RoomSettingModal
+				isOpen={isRoomSettingOpen}
+				onClose={() => setIsRoomSettingOpen(false)}
+				onStartCall={handleStartCall}
+				room={currentRoom}
+			/>}
 			{currentRoom !== undefined && <ActiveCallOverlay currentRoomId={currentRoom.id} />}
 			{!hideChat && (
 				<>

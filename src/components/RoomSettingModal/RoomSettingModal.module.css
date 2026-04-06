@@ -1,0 +1,142 @@
+﻿.backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background: rgba(14, 18, 24, 0.64);
+	backdrop-filter: blur(4px);
+}
+
+.modal {
+	width: 40vw;
+	max-width: 400px;
+	min-width: 250px;
+	height: 80vh;
+	display: flex;
+	flex-direction: column;
+	background: var(--bg-secondary);
+	border-radius: 16px;
+	border: 1px solid var(--border);
+	box-shadow: 0 24px 56px rgba(0, 0, 0, 0.36);
+	overflow: hidden;
+}
+
+.header {
+	height: 210px;
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-evenly;
+	align-items: center;
+	padding: 16px;
+}
+
+.avatar {
+	width: 70px;
+	height: 70px;
+	background: linear-gradient(135deg, #3563ff, #2d9d9d);
+	border-radius: 70px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-weight: 700;
+	color: #fff;
+}
+
+.room-name {
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--text-primary);
+	text-align: center;
+	word-break: break-word;
+}
+
+.room-meta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--text-secondary);
+	font-size: 13px;
+}
+
+.btn-action-section {
+	width: 100%;
+	display: flex;
+	justify-content: space-evenly;
+	display: 20px;
+}
+
+.room-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	padding: 16px;
+	gap: 12px;
+	overflow: hidden;
+}
+
+.section-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-secondary);
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		opacity: 0;
+		transform: scale(0.98) translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes scaleOut {
+	from {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.98) translateY(6px);
+	}
+}
+
+.backdrop[data-state="open"] {
+	animation: fadeIn 0.18s ease forwards;
+}
+
+.backdrop[data-state="close"] {
+	animation: fadeOut 0.18s ease forwards;
+}
+
+.modal[data-state="open"] {
+	animation: scaleIn 0.2s ease forwards;
+}
+
+.modal[data-state="close"] {
+	animation: scaleOut 0.18s ease forwards;
+}

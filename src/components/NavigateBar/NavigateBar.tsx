@@ -22,8 +22,8 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 	const unreadNotification = notifications.filter(n => n.read === false).length;
 
 	const goToDM = () => {
-		dispatch(callActions.toggleCallFocusMode())
-		dispatch(callActions.toggleChatHiddenInCall())
+		dispatch(callActions.setCallFocusMode(false))
+		dispatch(callActions.setChatHiddenInCall(false))
 		navigate("/");
 	}
 

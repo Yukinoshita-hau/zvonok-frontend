@@ -101,6 +101,16 @@
 	align-items: center;
 }
 
+.btn {
+	background-color: transparent;
+	border: none;
+	outline: none;
+	cursor: pointer;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
 .members-button img {
 	filter: invert(1);
 }

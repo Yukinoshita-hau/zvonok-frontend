@@ -1,0 +1,52 @@
+﻿import { useSelector } from "react-redux";
+import type { RootState } from "../../store/store";
+import { useModalAnimation } from "../../hooks/useModalAnimation";
+import { RoomSettingButton } from "../RoomSettingButton/RoomSettingButton";
+import styles from "./RoomSettingModal.module.css";
+import type { RoomSettingModalProps } from "./RoomSettingModal.props";
+import { RoomMembersList } from "../RoomMembersList/RoomMembersList";
+
+export function RoomSettingModal({ isOpen, onClose, onStartCall ,room }: RoomSettingModalProps) {
+	const myUser = useSelector((s: RootState) => s.user.myUser);
+	const isVisible = useModalAnimation(isOpen);
+	const normalizedName = room?.name?.trim();
+	const opponent = room?.members.find((member) => member.id !== myUser?.id);
+	const roomTitle = normalizedName || opponent?.username || "Unknown room";
+
+	if (!isVisible || !room) return null;
+
+	const membersCount = room.members.length;
+	const avatarLabel = room.type === "GROUP" ? "GR" : "DM";
+
+	return (
+		<div className={styles["backdrop"]} data-state={isOpen ? "open" : "close"} onClick={onClose}>
+			<div
+				className={styles["modal"]}
+				data-state={isOpen ? "open" : "close"}
+				onClick={(e) => e.stopPropagation()}
+			>
+				<div className={styles["header"]}>
+					<div className={styles["avatar"]}>{avatarLabel}</div>
+					<div className={styles["room-name"]}>{roomTitle}</div>
+					{room.type === "GROUP" && (
+						<div className={styles["room-meta"]}>
+							<span>Группа</span>
+							<span>•</span>
+							<span>{membersCount} {membersCount <= 4 ? "Участника" : "Участников"}</span>
+						</div>
+					)}
+					<div className={styles["btn-action-section"]}>
+						<RoomSettingButton onClick={onClose}>Чат</RoomSettingButton>
+						<RoomSettingButton onClick={onStartCall}>Звонок</RoomSettingButton>
+					</div>
+				</div>
+
+				<div className={styles["room-info"]}>
+					<div className={styles["section-title"]}>Участники</div>
+					<RoomMembersList members={room.members} myUserId={myUser?.id} />
+				</div>
+			</div>
+		</div>
+	);
+}
+

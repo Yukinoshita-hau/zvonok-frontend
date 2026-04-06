@@ -229,8 +229,8 @@
 }
 
 .screen-preview {
-	width: 140px;
-	min-width: 140px;
+	width: 100px;
+	min-width: 100px;
 	border: 1px solid transparent;
 	background: var(--bg-active);
 	border-radius: 10px;

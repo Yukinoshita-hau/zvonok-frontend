@@ -27,7 +27,7 @@ export function ActiveCallOverlay({ currentRoomId }: ActiveCallOverlayProps) {
 			return;
 		}
 
-		setCallHeight((prev) => Math.min(prev, 65));
+		setCallHeight((prev) => Math.min(prev, 50));
 	}, [hideChat, isFocusMode]);
 
 	const roomOptions: RoomOptions = useMemo(() => {

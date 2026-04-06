@@ -1,0 +1,19 @@
+.btn {
+	width: 20vh;
+	height: 40px;
+	border: none;
+	cursor: pointer;
+	background-color: var(--bg-secondary);
+	color: var(--text-secondary);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: 6px;
+	transition: all 0.3s ease;
+}
+
+.btn:hover {
+	background-color: var(--bg-hover);
+	color: var(--text-primary);
+}
+
