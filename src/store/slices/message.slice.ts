@@ -1,7 +1,9 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createAction, createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ShortMessage } from "../../entities/shortMessage";
 import type { GetRoomMessageParams } from "../../api/interfaces/GetRoomMessagesParams";
 import { roomApi } from "../../api/roomApi";
+import { messageApi } from "../../api/messageApi";
+import type { MessageReaderDto } from "../../api/interfaces/MessageReadersDto";
 
 export interface MessageState {
 	messages: ShortMessage[];
@@ -35,6 +37,18 @@ export const fetchRoomMessages = createAsyncThunk(
 			return { data, beforeMessageId: params.beforeMessageId };
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load message");
+		}
+	}
+)
+
+export const getMessagesReaders = createAsyncThunk(
+	"message/getMessagesReaders",
+	async (body: MessageReaderDto, thunkAPI) => {
+		try {
+			const { data } = await messageApi.getMessageReaders(body);
+			return data;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load message readers");
 		}
 	}
 )
@@ -102,6 +116,22 @@ export const messageSlice = createSlice({
 		deleteMessage: (currentState, action: PayloadAction<{
 			messageId: number;
 		}>) => { },
+		markMessageRead: (currentState, action: PayloadAction<{
+			messageId: number;
+		}>) => { },
+		messageReadUpdate: (currentState, action: PayloadAction<{
+			messageId: number;
+			readBy: string;
+		}>) => {
+			const { messageId, readBy } = action.payload;
+			const message = currentState.messages.find(m => m.id === messageId);
+			if (message !== undefined) {
+				if (!message.readBy) message.readBy = [];
+				if (!message.readBy.includes(readBy)) {
+					message.readBy.push(readBy);
+				}
+			}
+		},
 		clearMessages: (currentState) => {
 			currentState.messages = [];
 			currentState.oldestMessageId = null;
@@ -147,6 +177,16 @@ export const messageSlice = createSlice({
 			.addCase(fetchRoomMessages.rejected, (currentState, action) => {
 				currentState.status = "failed";
 				currentState.error = typeof action.payload === "string" ? action.payload : "Unknown error";
+			})
+
+
+			.addCase(getMessagesReaders.fulfilled, (currentState, action) => {
+				action.payload.forEach(({ messageId, readers }) => {
+					const message = currentState.messages.find(m => m.id === messageId);
+					if (message) {
+						message.readBy = readers;
+					}
+				});
 			})
 	}
 });

@@ -1,4 +1,4 @@
-import { AudioTrack, TrackToggle, useTracks, VideoTrack } from "@livekit/components-react";
+import { TrackToggle, useTracks, VideoTrack } from "@livekit/components-react";
 import styles from "./CallUi.module.css";
 import { Track } from "livekit-client";
 import { useDispatch, useSelector } from "react-redux";
@@ -6,7 +6,12 @@ import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
 import { useEffect, useMemo, useState } from "react";
 
-export function CallUi() {
+interface CallUiProps {
+	onHide: () => void;
+	onMinimize: () => void;
+}
+
+export function CallUi({ onHide, onMinimize }: CallUiProps) {
 	const [hoveredId, setHoveredId] = useState<string | null>(null);
 
 	const dispatch = useDispatch<AppDispatch>();
@@ -14,11 +19,6 @@ export function CallUi() {
 
 	const videoTracks = useTracks([
 		{ source: Track.Source.Camera, withPlaceholder: false },
-	]);
-
-	const audioTracks = useTracks([
-		{ source: Track.Source.Microphone, withPlaceholder: false },
-		{ source: Track.Source.ScreenShareAudio, withPlaceholder: false }
 	]);
 
 	const screenTracks = useTracks([
@@ -48,8 +48,8 @@ export function CallUi() {
 		[videoTracks]
 	);
 
-
 	const hasScreenShare = subscribedScreenTracks.length > 0;
+	const hasVisibleCamera = subscribedVideoTracks.length > 0;
 	const isSingleCameraView =
 		!hasScreenShare && subscribedVideoTracks.length === 1;
 
@@ -86,6 +86,7 @@ export function CallUi() {
 
 	return (
 		<div className={styles["call-root"]}>
+
 			{hasScreenShare && mainScreenTrack ? (
 				<div className={styles["screen-layout"]}>
 					<div className={styles["main-screen"]}>
@@ -178,7 +179,7 @@ export function CallUi() {
 						);
 					})}
 				</div>
-			) : (
+			) : hasVisibleCamera ? (
 				<div className={styles["participants-grid"]}>
 					{subscribedVideoTracks.map((trackRef, index) => {
 						const { participant, publication } = trackRef;
@@ -202,22 +203,14 @@ export function CallUi() {
 						);
 					})}
 				</div>
+			) : (
+				<div className={styles["empty-state"]}>
+					<div className={styles["empty-title"]}>Audio call</div>
+					<div className={styles["empty-subtitle"]}>
+						No active camera or screen share right now.
+					</div>
+				</div>
 			)}
-
-			<div aria-hidden="true" style={{ display: "none" }}>
-				{audioTracks.map((trackRef, index) => {
-					const { publication, participant } = trackRef;
-					if (!publication?.trackSid) return null;
-					if (participant.isLocal) return null;
-
-					return (
-						<AudioTrack
-							key={publication.trackSid ?? index}
-							trackRef={trackRef}
-						/>
-					);
-				})}
-			</div>
 
 			<div className={styles["controls-bar"]}>
 				<TrackToggle
@@ -236,19 +229,19 @@ export function CallUi() {
 				<button
 					type="button"
 					className={styles["control-button"]}
-					onClick={() => dispatch(callActions.toggleCallFocusMode())}
-					title="Toggle focus mode"
+					onClick={onMinimize}
+					title="Minimize call"
 				>
-					⛶
+					Mini
 				</button>
 
 				<button
 					type="button"
 					className={styles["control-button"]}
-					onClick={() => dispatch(callActions.toggleChatHiddenInCall())}
-					title="Toggle chat"
+					onClick={onHide}
+					title="Hide call"
 				>
-					☰
+					Hide
 				</button>
 
 				<button className={styles["leave-button"]} onClick={onLeave}>

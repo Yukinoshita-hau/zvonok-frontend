@@ -1,7 +1,8 @@
 import type { AxiosResponse } from "axios";
-import type { Room } from "../../entities/room";
+import type { GetMessagesReaders } from "./GetMessagesReaders";
+import type { MessageReaderDto } from "./MessageReadersDto";
 
 
-export interface MessageApiResponse {
-	getRoomMessages: () => Promise<AxiosResponse<Room[]>>
+export interface MessageApiInterface {
+	getMessageReaders: (body: MessageReaderDto) => Promise<AxiosResponse<GetMessagesReaders[]>>	
 }

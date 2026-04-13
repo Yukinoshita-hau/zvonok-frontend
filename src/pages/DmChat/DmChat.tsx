@@ -8,7 +8,6 @@ import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
 import { fetchMyRooms } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.slice";
 import type { Room } from "../../entities/room";
-import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCallOverlay";
 import { Phone, Send, SettingsIcon } from "lucide-react";
 import { RoomSettingModal } from "../../components/RoomSettingModal/RoomSettingModal";
 
@@ -23,7 +22,6 @@ export function DmChat() {
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const activeRoomId = useSelector((s: RootState) => s.message.activeRoomId);
 	const pending = useSelector((s: RootState) => s.message.pendingPrivateUsername)
-	const call = useSelector((s: RootState) => s.call);
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
@@ -66,8 +64,6 @@ export function DmChat() {
 	const currentRoom = useMemo(() => {
 		return rooms?.find((room: Room) => room.id === Number(roomId)) as Room;
 	}, [rooms, roomId])
-
-	const hideChat = (currentRoom?.id === call.chatRoomId) && call.isChatHiddenInCall;
 
 	const roomName = useMemo(() => {
 		if (!currentRoom) return "Unknown";
@@ -131,6 +127,7 @@ export function DmChat() {
 		setIsRoomSettingOpen(true)
 	}
 
+
 	return (
 		<div className={styles["chat"]}>
 			<div className={styles["header"]}>
@@ -150,31 +147,25 @@ export function DmChat() {
 					{/* Надо будет закинуться иконуи звонка / файла / поиска */}
 				</div>
 			</div>
-
 			{<RoomSettingModal
 				isOpen={isRoomSettingOpen}
 				onClose={() => setIsRoomSettingOpen(false)}
 				onStartCall={handleStartCall}
 				room={currentRoom}
 			/>}
-			{currentRoom !== undefined && <ActiveCallOverlay currentRoomId={currentRoom.id} />}
-			{!hideChat && (
-				<>
-					<DmItemsList />
-					<div className={styles["input-bar"]}>
-						<input
-							className={styles["input"]}
-							placeholder="Message @here"
-							value={text}
-							onChange={(e) => setText(e.target.value)}
-							onKeyDown={handleKeyPress}
-						/>
-						<button className={styles["message-button"]} onClick={onSend}>
-							<Send color="white" size={20} />
-						</button>
-					</div>
-				</>
-			)}
+			<DmItemsList />
+			<div className={styles["input-bar"]}>
+				<input
+					className={styles["input"]}
+					placeholder="Message @here"
+					value={text}
+					onChange={(e) => setText(e.target.value)}
+					onKeyDown={handleKeyPress}
+				/>
+				<button className={styles["message-button"]} onClick={onSend}>
+					<Send color="white" size={20} />
+				</button>
+			</div>
 		</div>
 
 	)

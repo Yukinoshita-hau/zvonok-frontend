@@ -9,4 +9,5 @@ export interface RoomApiInterface {
 	myRooms: () => Promise<AxiosResponse<Room[]>>
 	getRoomMessage: (params: GetRoomMessageParams) => Promise<AxiosResponse<ShortMessage[]>>;
 	createGroup: (body: CreateGroupBody) => Promise<AxiosResponse<Room[]>>;
-	markRoomRead: (params: { roomId: number }) => Promise<AxiosResponse<void>> }
+	markRoomRead: (params: { roomId: number }) => Promise<AxiosResponse<void>>
+}

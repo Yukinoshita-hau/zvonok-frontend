@@ -23,7 +23,6 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 
 	const goToDM = () => {
 		dispatch(callActions.setCallFocusMode(false))
-		dispatch(callActions.setChatHiddenInCall(false))
 		navigate("/");
 	}
 

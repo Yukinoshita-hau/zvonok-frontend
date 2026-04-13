@@ -24,4 +24,6 @@ export interface ShortMessage {
 	sentAt: string;
 	sender: ShortMessageSender;
 	room: ShortMessageRoom;
+	editedAt: string;
+	readBy?: string[];
 }

@@ -5,8 +5,10 @@ import { RoomSettingButton } from "../RoomSettingButton/RoomSettingButton";
 import styles from "./RoomSettingModal.module.css";
 import type { RoomSettingModalProps } from "./RoomSettingModal.props";
 import { RoomMembersList } from "../RoomMembersList/RoomMembersList";
+import { useNavigate } from "react-router-dom";
 
-export function RoomSettingModal({ isOpen, onClose, onStartCall ,room }: RoomSettingModalProps) {
+export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSettingModalProps) {
+	const navigate = useNavigate();
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 	const isVisible = useModalAnimation(isOpen);
 	const normalizedName = room?.name?.trim();
@@ -36,7 +38,10 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall ,room }: RoomSet
 						</div>
 					)}
 					<div className={styles["btn-action-section"]}>
-						<RoomSettingButton onClick={onClose}>Чат</RoomSettingButton>
+						<RoomSettingButton onClick={() => {
+							onClose()
+							navigate(`/dm?roomId=${room.id}`)
+						}}>Чат</RoomSettingButton>
 						<RoomSettingButton onClick={onStartCall}>Звонок</RoomSettingButton>
 					</div>
 				</div>

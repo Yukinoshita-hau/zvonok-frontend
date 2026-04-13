@@ -4,8 +4,8 @@ import type { Actions } from "../interfaces/actions.interface";
 import { websocketActions } from "../slices/websocket.slice";
 import { createWebSocketClient } from "../../services/websocket.service";
 import { fetchRoomMessages, messageActions } from "../slices/message.slice";
-import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH } from "../interfaces/wsPathes";
-import { fetchMyRooms, markRoomRead } from "../slices/room.slice";
+import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGE_READ_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_CHANNEL_MESSAGE_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH, WS_UPDATE_READ_MESSAGE_PATH } from "../interfaces/wsPathes";
+import { fetchMyRooms } from "../slices/room.slice";
 import type { BaseCallEvent, CallInviteEvent } from "../interfaces/callEvents.interface";
 import { callActions, getToken } from "../slices/call.slice";
 import type { AppDispatch, RootState } from "../interfaces/rootState.interface";
@@ -14,6 +14,8 @@ import { fetchIncomingRequests, fetchMyFriends, fetchOutgoingRequests } from "..
 import { notificationAction } from "../slices/notification.slice";
 import { toastActions } from "../slices/toast.slice";
 import { soundPlayer } from "../../utils/soundPlayer";
+import { channelMessageActions } from "../slices/channelMessage.slice";
+import type { MessageReadStatusContent } from "../../api/interfaces/MessageReadStatusContent";
 
 
 export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (storeApi) => {
@@ -66,9 +68,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 						await storeApi.dispatch(fetchMyRooms());
 
-						if (isActiveRoom && isViewingBottom && data.room?.id) {
-							storeApi.dispatch(markRoomRead({ roomId: data.room.id }))
-						}
 						if (!activeRoomId && pending && data.room?.id
 							&& data.sender?.username === state.user.myUser?.username) {
 							storeApi.dispatch(messageActions.setActiveRoom(data.room.id));
@@ -94,6 +93,13 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 								if (!roomName) break;
 
 								storeApi.dispatch(getToken(roomName))
+								break;
+							}
+
+							case "CALL_BUSY":
+							case "CALL_DECLINE":
+							case "CALL_END": {
+								storeApi.dispatch(callActions.endCall());
 								break;
 							}
 						}
@@ -194,6 +200,19 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					})
 
 					if (errorSub) subscriptions[WS_ERROR_PATH] = errorSub;
+
+					const messageReadSub = client?.subscribe(WS_MESSAGE_READ_PATH, (message) => {
+						const data = JSON.parse(message.body) as MessageReadStatusContent;
+						storeApi.dispatch(
+							messageActions.messageReadUpdate({
+								messageId: data.messageId,
+								readBy: data.readBy
+							})
+						)
+						console.log(data);
+					})
+
+					if (messageReadSub) subscriptions[WS_MESSAGE_READ_PATH] = messageReadSub;
 				};
 
 				client.activate();
@@ -222,6 +241,41 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				})
 				break;
 			}
+			case "channelMessage/sendChannelMessage": {
+				const channelId = myAction.payload;
+
+				// удалить старую подписку
+				Object.keys(subscriptions).forEach(key => {
+					if (key.startsWith("/topic/channel.")) {
+						subscriptions[key].unsubscribe();
+						delete subscriptions[key];
+					}
+				});
+
+				if (channelId && client?.connected) {
+					const path = `/topic/channel.${channelId.channelId}`;
+
+					const sub = client.subscribe(path, (message) => {
+						const data = JSON.parse(message.body);
+						storeApi.dispatch(
+							channelMessageActions.execEventChannelMessage(data)
+						);
+					});
+
+					subscriptions[path] = sub;
+
+					if (!client?.active) {
+						console.log("WS: Already active or connecting");
+						return;
+					}
+					client?.publish({
+						destination: `${WS_SEND_CHANNEL_MESSAGE_PATH}/${myAction.payload.channelId}`,
+						body: myAction.payload.content,
+					})
+				}
+
+				break;
+			}
 			case "message/editMessage": {
 				if (!client?.active) {
 					console.log("WS: Already active or connecting");
@@ -242,6 +296,19 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				client?.publish({
 					destination: `${WS_DELETE_MESSAGE_PATH}/${myAction.payload.messageId}`,
 				});
+
+				break;
+			}
+
+			case "message/markMessageRead": {
+				if (!client?.active) {
+					console.log("WS: Already active or connecting");
+					return;
+				}
+
+				client.publish({
+					destination: `${WS_UPDATE_READ_MESSAGE_PATH}/${myAction.payload.messageId}`	
+				})
 
 				break;
 			}

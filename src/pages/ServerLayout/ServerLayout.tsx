@@ -2,6 +2,7 @@ import { useSelector } from "react-redux";
 import { Outlet, useParams } from "react-router-dom"
 import type { RootState } from "../../store/store";
 import styles from "./ServerLayout.module.css";
+import { ChannelFolder } from "../../components/ChannelFolder/ChannelFolder";
 
 export function ServerLayout() {
 	const { serverId } = useParams();
@@ -12,7 +13,6 @@ export function ServerLayout() {
 	if (!currentServer) {
 		return (
 			<div className={styles["empty-state"]}>
-				<p>Сервер не найден</p>
 			</div>
 		)
 	}
@@ -24,17 +24,20 @@ export function ServerLayout() {
 
 	return (
 		<div className={styles["layout"]}>
-			<aside className={styles["sidebar"]}>
+			<div className={styles["sidebar"]}>
 				<div className={styles["cover"]} />
-
-				<div className={styles["server-head"]}></div>
-
-				<div className={styles["channels"]}></div>
-
-				<div className={styles["channels"]}></div>
-			</aside>
+				<div className={styles["server-head"]}>
+					{currentServer.name}
+				</div>
+				<div className={styles["channel-folders"]}>
+					{sortedFolders.map(folder => (
+						<ChannelFolder key={folder.id} folder={folder} serverId={Number(serverId)} />
+					))}
+				</div>
+			</div>
 
 			<section className={styles["chat"]}>
+				<Outlet />
 			</section>
 		</div>
 	)

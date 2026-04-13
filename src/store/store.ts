@@ -12,6 +12,7 @@ import notificationSlice from "./slices/notification.slice";
 import toastSlice from "./slices/toast.slice";
 import deviceSlice from "./slices/device.slice";
 import uiSlice from "./slices/ui.slice";
+import channelMessageSlice from "./slices/channelMessage.slice";
 
 
 const appReducer = combineReducers({
@@ -19,6 +20,7 @@ const appReducer = combineReducers({
 	server: serverSlice,
 	room: roomSlice,
 	message: messageSlice,
+	channelMessage: channelMessageSlice,
 	friend: friendSlice,
 	websocket: websocketSlice,
 	call: callSlice,

@@ -3,6 +3,8 @@ import { type callStatus } from "../interfaces/call.types"
 import type { CallInviteEvent } from "../interfaces/callEvents.interface";
 import { livekitApi } from "../../api/livekitApi";
 
+export type CallPresentationMode = "expanded" | "minimized" | "hidden";
+
 export interface CallState {
 	status: callStatus
 	direction: "incoming" | "outgoing" | null;
@@ -14,8 +16,8 @@ export interface CallState {
 	error: string | null;
 
 	selectedScreenTrackSid: string | null;
+	presentationMode: CallPresentationMode;
 	isCallFocusMode: boolean;
-	isChatHiddenInCall: boolean;
 }
 
 export const initialState: CallState = {
@@ -30,8 +32,8 @@ export const initialState: CallState = {
 
 
 	selectedScreenTrackSid: null,
+	presentationMode: "expanded",
 	isCallFocusMode: false,
-	isChatHiddenInCall: false,
 }
 
 export const getToken = createAsyncThunk(
@@ -59,6 +61,12 @@ export const callSlice = createSlice({
 			previousState.direction = "outgoing";
 			previousState.chatRoomId = action.payload.chatRoomId;
 			previousState.livekitRoomName = action.payload.livekitRoomName;
+			previousState.serverUrl = null;
+			previousState.participantToken = null;
+			previousState.error = null;
+			previousState.selectedScreenTrackSid = null;
+			previousState.presentationMode = "expanded";
+			previousState.isCallFocusMode = false;
 		},
 		incomingInvite: (previousState, action: PayloadAction<CallInviteEvent>) => {
 			previousState.status = "incoming_ringing";
@@ -66,9 +74,16 @@ export const callSlice = createSlice({
 			previousState.chatRoomId = action.payload.chatRoomId;
 			previousState.livekitRoomName = action.payload.liveKitRoomName;
 			previousState.callerUsername = action.payload.fromUser;
+			previousState.serverUrl = null;
+			previousState.participantToken = null;
+			previousState.error = null;
+			previousState.selectedScreenTrackSid = null;
+			previousState.presentationMode = "expanded";
+			previousState.isCallFocusMode = false;
 		},
 		setConnecting: (previousState) => {
 			previousState.status = "connecting";
+			previousState.presentationMode = "expanded";
 		},
 		setLivekitCredentials: (previousState, action: PayloadAction<{
 			serverUrl: string,
@@ -89,32 +104,36 @@ export const callSlice = createSlice({
 		setSelectedScreenTrackSid: (previousState, action: PayloadAction<string | null>) => {
 			previousState.selectedScreenTrackSid = action.payload;
 		},
+		setPresentationMode: (previousState, action: PayloadAction<CallPresentationMode>) => {
+			previousState.presentationMode = action.payload;
+			if (action.payload !== "expanded") {
+				previousState.isCallFocusMode = false;
+			}
+		},
 
 		toggleCallFocusMode: (previousState) => {
+			previousState.presentationMode = "expanded";
 			previousState.isCallFocusMode = !previousState.isCallFocusMode;
 		},
 
-		toggleChatHiddenInCall: (previousState) => {
-			previousState.isChatHiddenInCall = !previousState.isChatHiddenInCall;
-		},
-
 		setCallFocusMode: (previousState, action: PayloadAction<boolean>) => {
+			if (action.payload) {
+				previousState.presentationMode = "expanded";
+			}
 			previousState.isCallFocusMode = action.payload;
-		},
-
-		setChatHiddenInCall: (previousState, action: PayloadAction<boolean>) => {
-			previousState.isChatHiddenInCall = action.payload;
 		}
 	},
 	extraReducers: builder => {
 		builder
 			.addCase(getToken.pending, currentState => {
 				currentState.status = "connecting";
+				currentState.presentationMode = "expanded";
 			})
 			.addCase(getToken.fulfilled, (currentState, action) => {
 				currentState.serverUrl = action.payload.serverUrl;
 				currentState.participantToken = action.payload.participantToken;
 				currentState.status = "in_call";
+				currentState.presentationMode = "expanded";
 			})
 
 			.addCase(getToken.rejected, (currentState, action) => {

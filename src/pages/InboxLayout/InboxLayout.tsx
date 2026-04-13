@@ -28,10 +28,10 @@ export function InboxLayout() {
 	const call = useSelector((s: RootState) => s.call);
 	const isCallActive = call.status === "connecting" || call.status === "in_call";
 
-	const isFocusMode = isCallActive && call.isCallFocusMode;
-	const isChatHiddenInCall = isCallActive && call.isChatHiddenInCall;
-	console.log(isFocusMode)
-	console.log(isChatHiddenInCall)
+	const isFocusMode =
+		isCallActive &&
+		call.presentationMode === "expanded" &&
+		call.isCallFocusMode;
 
 	const { rooms } = room;
 	const { friends } = friend
@@ -94,7 +94,6 @@ export function InboxLayout() {
 		return [...friends].sort((a, b) => {
 			const dateA = new Date(a.friendshipSince || 0).getTime();
 			const dateB = new Date(b.friendshipSince || 0).getTime();
-			console.log(`Сравниваем: ${a.friendUsername} (${dateA}) и ${b.friendUsername} (${dateB})`);
 			if (filterMode === "Newest") {
 				return dateB - dateA;
 			} else {
@@ -121,7 +120,6 @@ export function InboxLayout() {
 			className={[
 				styles["layout"],
 				isFocusMode ? styles["layout-focus"] : "",
-				isChatHiddenInCall ? styles["layout-chat-hidden"] : "",
 			].join(" ")}
 		>
 			<div className={styles["sidebar"]}>

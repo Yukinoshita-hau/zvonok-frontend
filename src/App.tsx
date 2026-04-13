@@ -10,6 +10,7 @@ import { ChatPlaceholder } from './pages/ChatPlaceholder/ChatPlaceholder'
 import { AuthInitializator } from './helpers/AppInitializer'
 import { NotificationsPage } from './components/NotificationsPage/NotificationPage'
 import { ServerLayout } from './pages/ServerLayout/ServerLayout'
+import { ChannelChat } from './components/ChannelChat/ChannelChat'
 
 export function App() {
 
@@ -68,15 +69,11 @@ export function App() {
 					children: [
 						{
 							index: true,
-							element: (
-								<></>
-							)
+							element: <ChatPlaceholder/>
 						},
 						{
-							path: "channels/:channelId",
-							element: (
-								<></>
-							)
+							path: "channel-folders/:channelFolderId/channels/:channelId",
+							element: <ChannelChat/>
 						}
 					]
 				}

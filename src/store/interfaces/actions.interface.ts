@@ -13,6 +13,11 @@ interface SendPrivateMessageAction {
 	payload: { receiver: string, content: string }
 }
 
+interface SendChannelMessageAction {
+	type: "channelMessage/sendChannelMessage";
+	payload: { channelId: string, content: string }
+}
+
 interface EditMessageAction {
 	type: "message/editMessage";
 	payload: { messageId: number, newContent: string };
@@ -21,6 +26,13 @@ interface EditMessageAction {
 interface DeleteMessageAction {
 	type: "message/deleteMessage";
 	payload: { messageId: number };
+}
+
+interface MarkMessageReadAction {
+	type: "message/markMessageRead";
+	payload: {
+		messageId: number;
+	}
 }
 
 interface CallInviteAction {
@@ -61,8 +73,10 @@ export type Actions =
 	| WsConnectAction
 	| SendMessageAction
 	| SendPrivateMessageAction
+	| SendChannelMessageAction
 	| EditMessageAction
 	| DeleteMessageAction
+	| MarkMessageReadAction
 	| CallInviteAction
 	| CallAcceptAction
 	| SendFriendRequestAction

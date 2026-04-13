@@ -1,14 +1,14 @@
 import cn from "classnames";
 import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import styles from "./DmItemsList.module.css";
-import { fetchRoomMessages, messageActions } from "../../store/slices/message.slice";
+import { fetchRoomMessages, getMessagesReaders, messageActions } from "../../store/slices/message.slice";
 import { useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import type { ShortMessage } from "../../entities/shortMessage";
 import { formatTime, isSameDay } from "../../utils/timeHelpers";
 import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
-import { markRoomRead } from "../../store/slices/room.slice";
+import { markRoomAsRead } from "../../store/slices/room.slice";
 
 type ContextMenuState = {
 	x: number;
@@ -18,7 +18,6 @@ type ContextMenuState = {
 
 export function DmItemsList() {
 	const [searchParams] = useSearchParams();
-	const scrollRef = useRef<HTMLDivElement>(null);
 	const dispatch = useDispatch<AppDispatch>()
 	const { messages, status, hasMore, oldestMessageId, isAtBottom, newDividerMessageId } = useSelector((s: RootState) => s.message);
 	const { rooms } = useSelector((s: RootState) => s.room);
@@ -27,19 +26,23 @@ export function DmItemsList() {
 	const [editContent, setEditContent] = useState("");
 	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
 
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 	const roomId = searchParams.get("roomId")
 	const numericRoomId = Number(roomId);
 	const currentRoom = rooms?.find(r => r.id === Number(roomId));
 
+
+	const readMessageIds = useMemo(() =>
+		new Set(messages.filter(msg =>
+			msg.readBy?.includes(myUser?.username || ""))
+			.map(msg => msg.id)),
+		[messages, myUser?.username]
+	)
+
 	useEffect(() => {
 		dispatch(messageActions.setIsAtBottom(true))
 	}, [roomId])
-
-	useEffect(() => {
-		if (isAtBottom && currentRoom && currentRoom?.unreadCount > 0) {
-			dispatch(markRoomRead({ roomId: numericRoomId }));
-		}
-	}, [isAtBottom, currentRoom?.id, currentRoom?.unreadCount, numericRoomId, dispatch])
 
 	useEffect(() => {
 		if (status === "succeeded" && scrollRef.current &&
@@ -70,15 +73,82 @@ export function DmItemsList() {
 		}
 	}, [])
 
+	const lastVisibleMessageId = useMemo(() => {
+		if (messages.length === 0) return null;
+		return messages[messages.length - 1].id;
+	}, [messages])
+
+	useEffect(() => {
+		if (!isAtBottom || lastVisibleMessageId === null) return;
+
+		dispatch(messageActions.markMessageRead({
+			messageId: lastVisibleMessageId,
+		}))
+	}, [dispatch, isAtBottom, lastVisibleMessageId, myUser?.username])
+
+	useEffect(() => {
+		if (isAtBottom && currentRoom?.unreadCount > 0) {
+			dispatch(markRoomAsRead({ roomId: numericRoomId }));
+		}
+	}, [dispatch, isAtBottom, currentRoom?.unreadCount, numericRoomId])
+
+	useEffect(() => {
+		if (status !== "succeeded" || !messages.length || !myUser?.username) return;
+
+		const newMessageIds = messages
+			.slice(-15)
+			.filter(msg => msg.sender.username === myUser.username)
+			.map(msg => msg.id);
+
+
+		if (newMessageIds.length > 0) {
+			dispatch(getMessagesReaders({ messageIds: newMessageIds }));
+		}
+	}, [status]);
+
+	useEffect(() => {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						const messageId = Number(entry.target.getAttribute('data-id'));
+						const stateMessage = messages.find(m => m.id === messageId);
+						if (stateMessage?.readBy?.includes(myUser?.username ?? "") === undefined) {
+							setTimeout(() => {
+								dispatch(messageActions.markMessageRead({ messageId }));
+							}, 1000);
+						}
+					}
+				});
+			},
+			{ threshold: 0.5, rootMargin: '10px' }
+		);
+
+		const unsubscribe = () => {
+			messageRefs.current.forEach(el => observer.unobserve(el));
+		};
+
+		const interval = setInterval(() => {
+			messageRefs.current.forEach(el => {
+				if (!observer.observedElements?.has(el)) {
+					observer.observe(el);
+				}
+			});
+		}, 500);
+
+		return () => {
+			clearInterval(interval);
+			unsubscribe();
+			observer.disconnect();
+		};
+	}, []);  // ✅ ПУСТЫЕ зависимости!
+
 	const handleScroll = async (e: UIEvent<HTMLDivElement>) => {
 		const container = e.currentTarget;
 		const atBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 60;
 
 		//isAtBottom.current = atBottom;
 		if (isAtBottom !== atBottom) {
-			if (!isAtBottom && atBottom) {
-				dispatch(markRoomRead({ roomId: numericRoomId }))
-			}
 			dispatch(messageActions.setIsAtBottom(atBottom));
 		}
 
@@ -165,7 +235,7 @@ export function DmItemsList() {
 			}
 
 			if (newDividerMessageId && messages[i].id === newDividerMessageId) {
-				itemArr.push({ type: "divider", label: "New", rawDate: "New", key: `divider-${currentMsg.id}` });
+				itemArr.push({ type: "divider", label: "New", rawDate: "New", key: `date-divider-${i}-${currentMsg.id}` });
 			}
 
 			itemArr.push({ type: "msg", payload: currentMsg, key: `${currentMsg.id}` });
@@ -188,15 +258,23 @@ export function DmItemsList() {
 
 				const isMyMessage = item.payload.sender.username === myUser?.username;
 				const isEditing = editingMsgId === item.payload.id;
-				const isEdited = item.payload.eventType === "MESSAGE_EDIT";
+				const isEdited = item.payload.eventType === "MESSAGE_EDIT" || item.payload.editedAt !== null;
 
 				return (
 					<div key={item.key}
+						ref={(el) => {
+							if (el) messageRefs.current.set(item.payload.id, el);
+							else messageRefs.current.delete(item.payload.id);
+						}}
+						data-id={item.payload.id}
+						data-sender={item.payload.sender.username}
 						className={styles["message-row"]}
 						onContextMenu={(e) => {
 							isMyMessage && openContextMenu(e, item.payload)
 						}}>
-						<div className={styles["msg-avatar"]} />
+						<div className={styles["msg-avatar"]} >
+							<img src="http://localhost:8080/api/s3/download/aga1.png" crossOrigin="anonymous" />
+						</div>
 						<div className={styles["msg-body"]}>
 							<div className={styles["msg-meta"]}>
 								<span className={styles["msg-author"]}>{item.payload.sender.username}</span>
@@ -226,6 +304,14 @@ export function DmItemsList() {
 
 								<div className={styles["msg-text"]}>
 									{item.payload.content}
+									{isMyMessage && (
+										<div>
+											{item.payload.readBy?.length ?
+												`✓✓ ` :
+												"✓"
+											}
+										</div>
+									)}
 								</div>
 							)}
 

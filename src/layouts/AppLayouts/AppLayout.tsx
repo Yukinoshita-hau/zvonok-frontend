@@ -6,6 +6,7 @@ import type { AppDispatch, RootState } from "../../store/store";
 import { fetchMyServers } from "../../store/slices/server.slice";
 import { Outlet } from "react-router-dom";
 import { CallOverlay } from "../../components/CallOverlay/CallOverlay";
+import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCallOverlay";
 import { websocketActions } from "../../store/slices/websocket.slice";
 import { ToastContainer } from "../../components/ToastContainer/ToastContainer";
 
@@ -31,6 +32,7 @@ export function AppLayout() {
 		<div className={styles["content"]}>
 			<Outlet />
 			<CallOverlay />
+			<ActiveCallOverlay />
 			<ToastContainer />
 		</div>
 	</div>
