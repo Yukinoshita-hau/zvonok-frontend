@@ -2,7 +2,11 @@ import { LiveKitRoom } from "@livekit/components-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { VideoPresets, type RoomOptions } from "livekit-client";
+import {
+	VideoPresets,
+	type AudioCaptureOptions,
+	type RoomOptions,
+} from "livekit-client";
 import styles from "./ActiveCallOverlay.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
 import { CallUi } from "../CallUi/CallUi";
@@ -33,6 +37,23 @@ export function ActiveCallOverlay() {
 		setCallHeight(52);
 	}, [call.isCallFocusMode, isExpanded]);
 
+	const audioCaptureDefaults: AudioCaptureOptions = useMemo(
+		() => ({
+			deviceId:
+				device.selectedMicrophoneId !== "default"
+					? device.selectedMicrophoneId
+					: undefined,
+			autoGainControl: true,
+			echoCancellation: true,
+			noiseSuppression: device.isNoiseSuppressionEnabled,
+			voiceIsolation: device.isNoiseSuppressionEnabled,
+			channelCount: 1,
+			sampleRate: 48000,
+			sampleSize: 16,
+		}),
+		[device.selectedMicrophoneId, device.isNoiseSuppressionEnabled]
+	);
+
 	const roomOptions: RoomOptions = useMemo(() => {
 		let resolution = VideoPresets.h1080.resolution;
 		let maxBitrate = 3_000_000;
@@ -57,17 +78,12 @@ export function ActiveCallOverlay() {
 				facingMode: "user",
 				resolution,
 			},
-			audioCaptureDefaults: {
-				deviceId:
-					device.selectedMicrophoneId !== "default"
-						? device.selectedMicrophoneId
-						: undefined,
-				echoCancellation: true,
-				noiseSuppression: device.isNoiseSuppressionEnabled,
-			},
+			audioCaptureDefaults,
 			adaptiveStream: true,
 			dynacast: true,
 			publishDefaults: {
+				dtx: true,
+				red: true,
 				videoEncoding: {
 					maxBitrate,
 					maxFramerate,
@@ -81,10 +97,9 @@ export function ActiveCallOverlay() {
 			},
 		};
 	}, [
+		audioCaptureDefaults,
 		device.selectedCameraId,
-		device.selectedMicrophoneId,
 		device.videoQuality,
-		device.isNoiseSuppressionEnabled,
 	]);
 
 	if (!isCallActive || !call.serverUrl || !call.participantToken) {

@@ -100,3 +100,9 @@
 - Do not introduce non-co-located styling conventions when editing existing components (follow `*.module.css` pattern).
 - `likely pattern`: avoid editing `src/store/interfaces/*` contracts aggressively without checking real usage, as part looks legacy/partially unused.
 
+## Call audio rules
+- Audio device settings must be applied to the actual active microphone track, not only stored in Redux.
+- When microphone settings change, verify whether the track must be recreated or restarted.
+- Mute/unmute must affect the real published audio track, not only UI state.
+- For call issues, always inspect LiveKit track creation, publication, and subscription flow before changing UI.
+- Prefer minimal reliable fixes over large call architecture rewrites.

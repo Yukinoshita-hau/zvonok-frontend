@@ -6,7 +6,12 @@ import type { AppDispatch, RootState } from "../../store/store";
 
 export function VoiceVideoSetting() {
 	const dispatch = useDispatch<AppDispatch>();
-	const { selectedCameraId, selectedMicrophoneId, videoQuality } = useSelector((s: RootState) => s.device);
+	const {
+		selectedCameraId,
+		selectedMicrophoneId,
+		videoQuality,
+		isNoiseSuppressionEnabled,
+	} = useSelector((s: RootState) => s.device);
 
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
 	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
@@ -23,12 +28,13 @@ export function VoiceVideoSetting() {
 			try {
 				await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
 				const devices = await navigator.mediaDevices.enumerateDevices();
-				setCameras(devices.filter(d => d.kind === "videoinput"));
-				setMicrophones(devices.filter(d => d.kind === "audioinput"));
+				setCameras(devices.filter((device) => device.kind === "videoinput"));
+				setMicrophones(devices.filter((device) => device.kind === "audioinput"));
 			} catch (error) {
-				console.log("Нет доступа к устройствам", error);
+				console.log("No access to media devices", error);
 			}
 		};
+
 		getDevices();
 	}, []);
 
@@ -36,28 +42,56 @@ export function VoiceVideoSetting() {
 		const startAudio = async () => {
 			try {
 				if (streamRef.current) {
-					streamRef.current.getTracks().forEach(t => t.stop());
+					streamRef.current.getTracks().forEach((track) => track.stop());
+				}
+
+				const audioConstraints: MediaTrackConstraints = {
+					deviceId:
+						selectedMicrophoneId === "default"
+							? undefined
+							: { exact: selectedMicrophoneId },
+					autoGainControl: true,
+					echoCancellation: true,
+					noiseSuppression: isNoiseSuppressionEnabled,
+					channelCount: 1,
+					sampleRate: 48000,
+					sampleSize: 16,
+				};
+
+				const supportedConstraints = navigator.mediaDevices.getSupportedConstraints() as {
+					voiceIsolation?: boolean;
+				};
+				if (supportedConstraints.voiceIsolation) {
+					(
+						audioConstraints as MediaTrackConstraints & {
+							voiceIsolation?: boolean;
+						}
+					).voiceIsolation = isNoiseSuppressionEnabled;
 				}
 
 				const stream = await navigator.mediaDevices.getUserMedia({
-					audio: {
-						deviceId: selectedMicrophoneId === "default" ? undefined : { exact: selectedMicrophoneId },
-					}
+					audio: audioConstraints,
 				});
-				
+
 				streamRef.current = stream;
 
 				if (audioPreviewRef.current) {
 					audioPreviewRef.current.srcObject = isListening ? stream : null;
-					
+
 					if (isListening) {
 						audioPreviewRef.current.muted = false;
-						audioPreviewRef.current.play().catch(e => console.error("Ошибка автоплея", e));
+						audioPreviewRef.current.play().catch((error) => {
+							console.error("Audio preview autoplay failed", error);
+						});
 					}
 				}
 
-				const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+				const audioContext = new (
+					window.AudioContext ||
+					(window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+				)();
 				audioContextRef.current = audioContext;
+
 				const analyser = audioContext.createAnalyser();
 				analyser.fftSize = 256;
 				const source = audioContext.createMediaStreamSource(stream);
@@ -67,15 +101,19 @@ export function VoiceVideoSetting() {
 				const checkVolume = () => {
 					analyser.getByteFrequencyData(dataArray);
 					let sum = 0;
-					for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+
+					for (let i = 0; i < dataArray.length; i++) {
+						sum += dataArray[i];
+					}
+
 					const average = sum / dataArray.length;
 					setVolumeLevel(Math.min(100, (average / 128) * 100));
 					animationRef.current = requestAnimationFrame(checkVolume);
 				};
-				checkVolume();
 
-			} catch (err) {
-				console.log("Ошибка микрофона:", err);
+				checkVolume();
+			} catch (error) {
+				console.log("Microphone preview error:", error);
 			}
 		};
 
@@ -83,69 +121,93 @@ export function VoiceVideoSetting() {
 
 		return () => {
 			if (animationRef.current) cancelAnimationFrame(animationRef.current);
-			if (audioContextRef.current) audioContextRef.current.close();
+			if (audioContextRef.current) void audioContextRef.current.close();
 			if (streamRef.current) {
-				streamRef.current.getTracks().forEach(track => track.stop());
+				streamRef.current.getTracks().forEach((track) => track.stop());
 			}
 		};
-	}, [selectedMicrophoneId, isListening]);
+	}, [selectedMicrophoneId, isListening, isNoiseSuppressionEnabled]);
 
 	return (
 		<div className={styles["container"]}>
 			<div className={styles["content"]}>
 				<div className={styles["edit-section"]}>
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Камера</label>
+						<label className={styles["label"]}>Camera</label>
 						<select
 							className={styles["input"]}
 							value={selectedCameraId}
 							onChange={(e) => dispatch(deviceActions.setCamera(e.target.value))}
 						>
-							<option value="default">По умолчанию</option>
-							{cameras.map(cam => (
-								<option key={cam.deviceId} value={cam.deviceId}>{cam.label || "Камера"}</option>
+							<option value="default">Default</option>
+							{cameras.map((camera) => (
+								<option key={camera.deviceId} value={camera.deviceId}>
+									{camera.label || "Camera"}
+								</option>
 							))}
 						</select>
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Микрофон</label>
+						<label className={styles["label"]}>Microphone</label>
 						<select
 							className={styles["input"]}
 							value={selectedMicrophoneId}
 							onChange={(e) => dispatch(deviceActions.setMicrophone(e.target.value))}
 						>
-							<option value="default">По умолчанию</option>
-							{microphones.map(mic => (
-								<option key={mic.deviceId} value={mic.deviceId}>{mic.label || "Микрофон"}</option>
+							<option value="default">Default</option>
+							{microphones.map((microphone) => (
+								<option key={microphone.deviceId} value={microphone.deviceId}>
+									{microphone.label || "Microphone"}
+								</option>
 							))}
 						</select>
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Проверка микрофона</label>
+						<label className={styles["label"]}>Noise Suppression</label>
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={isNoiseSuppressionEnabled}
+								onChange={(e) => dispatch(deviceActions.setNoiseSuppression(e.target.checked))}
+							/>
+							<span>{isNoiseSuppressionEnabled ? "Enabled" : "Disabled"}</span>
+						</label>
+						<span className={styles["help-text"]}>
+							Uses browser noise suppression and voice isolation when supported.
+						</span>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Microphone Test</label>
 						<div className={styles["volume-bar-bg"]}>
-							<div className={styles["volume-bar-fill"]} style={{ width: `${volumeLevel}%` }} />
+							<div
+								className={styles["volume-bar-fill"]}
+								style={{ width: `${volumeLevel}%` }}
+							/>
 						</div>
 						<button
 							className={isListening ? styles["btn-secondary"] : styles["btn-primary"]}
 							onClick={() => setIsListening(!isListening)}
 						>
-							{isListening ? "Остановить прослушивание" : "Проверить себя (прослушать)"}
+							{isListening ? "Stop monitoring" : "Monitor myself"}
 						</button>
-						<audio ref={audioPreviewRef} autoPlay style={{ display: 'none' }} />
+						<audio ref={audioPreviewRef} autoPlay style={{ display: "none" }} />
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Качество видео</label>
+						<label className={styles["label"]}>Video Quality</label>
 						<select
 							className={styles["input"]}
 							value={videoQuality}
-							onChange={(e) => dispatch(deviceActions.setVideoQuality(e.target.value as any))}
+							onChange={(e) =>
+								dispatch(deviceActions.setVideoQuality(e.target.value as "low" | "medium" | "high"))
+							}
 						>
-							<option value="high">Высокое (1080p, 60fps)</option>
-							<option value="medium">Среднее (720p, 30fps)</option>
-							<option value="low">Низкое (360p, 15fps)</option>
+							<option value="high">High (1080p)</option>
+							<option value="medium">Medium (720p)</option>
+							<option value="low">Low (360p)</option>
 						</select>
 					</div>
 				</div>

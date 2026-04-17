@@ -14,6 +14,7 @@ export function CallAudioLayer() {
 				if (!publication?.trackSid) return null;
 				if (participant.isLocal) return null;
 				if (!publication.isSubscribed || publication.isMuted) return null;
+				if (publication.track?.isMuted) return null;
 
 				return (
 					<AudioTrack

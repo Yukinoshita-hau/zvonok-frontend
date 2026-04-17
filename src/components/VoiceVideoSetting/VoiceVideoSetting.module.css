@@ -90,3 +90,17 @@
     color: var(--text-secondary);
     margin-top: 4px;
 }
+
+.toggle-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--text-primary);
+	font-size: 14px;
+}
+
+.toggle-row input {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}

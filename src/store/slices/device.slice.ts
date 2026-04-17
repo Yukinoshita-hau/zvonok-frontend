@@ -11,7 +11,7 @@ const initialState: DeviceState = {
 	selectedCameraId: "default",
 	selectedMicrophoneId: "default",
 	videoQuality: "high",
-	isNoiseSuppressionEnabled: false
+	isNoiseSuppressionEnabled: true
 }
 
 export const deviceSlice = createSlice({
