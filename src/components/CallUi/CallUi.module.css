@@ -94,7 +94,7 @@
 	flex: 1;
 	min-height: 0;
 	display: grid;
-	grid-template-rows: minmax(0, 1fr) auto auto;
+	grid-template-rows: minmax(0, 1fr) auto;
 	gap: 8px;
 	overflow: hidden;
 }
@@ -142,11 +142,33 @@
 .participant-card {
 	border: 1px solid rgba(255, 255, 255, 0.08);
 	transition: box-shadow 0.16s ease, border-color 0.16s ease;
+	padding: 0;
+	color: inherit;
+	font: inherit;
+	cursor: default;
+	text-align: inherit;
+}
+
+.participant-card:disabled {
+	opacity: 1;
 }
 
 .participant-speaking {
 	border-color: rgba(46, 204, 113, 0.95);
 	box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.9), 0 0 18px rgba(46, 204, 113, 0.42);
+}
+
+.participant-clickable {
+	cursor: pointer;
+}
+
+.participant-clickable:hover {
+	border-color: var(--accent);
+}
+
+.participant-screen-selected {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 2px var(--accent-muted), 0 0 20px var(--accent-muted);
 }
 
 
@@ -185,6 +207,73 @@
 	font-size: 32px;
 	font-weight: 700;
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.screen-share-placeholder {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	background: radial-gradient(circle at top, var(--bg-hover), var(--bg-tertiary));
+}
+
+.screen-share-avatar-image {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	filter: blur(14px) brightness(0.48);
+	transform: scale(1.08);
+}
+
+.screen-share-overlay {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 14px;
+	color: #fff;
+	text-align: center;
+	font-weight: 700;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+}
+
+.screen-share-overlay span {
+	font-size: 14px;
+	line-height: 1.2;
+}
+
+.screen-share-overlay small {
+	font-size: 12px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.72);
+}
+
+.screen-share-badge {
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	z-index: 11;
+	height: 28px;
+	padding: 0 8px;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	border: 1px solid rgba(77, 163, 255, 0.42);
+	background: rgba(77, 163, 255, 0.24);
+	color: #d7ebff;
+	backdrop-filter: blur(6px);
+	font-size: 12px;
+	font-weight: 700;
 }
 
 .mic-indicator {
@@ -233,6 +322,18 @@
 	object-fit: contain;
 	display: block;
 	background: #000;
+}
+
+.screen-loading {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #000;
+	color: rgba(255, 255, 255, 0.72);
+	font-size: 14px;
+	font-weight: 700;
 }
 
 /* ===== USERNAME ===== */
@@ -297,6 +398,20 @@
 	font-size: 14px;
 	color: var(--text-secondary);
 	max-width: 340px;
+}
+
+.screen-audio-note {
+	flex-shrink: 0;
+	align-self: center;
+	max-width: min(640px, 100%);
+	padding: 8px 12px;
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: var(--bg-hover);
+	color: var(--text-secondary);
+	font-size: 13px;
+	line-height: 1.35;
+	text-align: center;
 }
 
 
@@ -367,64 +482,6 @@
 	pointer-events: none;
 	user-select: none;
 }
-
-.screen-picker {
-	display: flex;
-	gap: 8px;
-	overflow-x: auto;
-	overflow-y: hidden;
-	padding-bottom: 4px;
-	max-height: 110px;
-}
-
-.screen-preview {
-	width: 100px;
-	min-width: 100px;
-	border: 1px solid transparent;
-	background: var(--bg-active);
-	border-radius: 10px;
-	padding: 4px;
-	cursor: pointer;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	color: var(--text-primary);
-	transition: border-color 0.15s ease, transform 0.12s ease, background-color 0.15s ease;
-}
-
-.screen-preview:hover {
-	background: var(--bg-hover);
-	transform: translateY(-1px);
-}
-
-.screen-preview-active {
-	border-color: var(--accent);
-}
-
-.screen-preview-media {
-	width: 100%;
-	aspect-ratio: 16 / 9;
-	border-radius: 8px;
-	overflow: hidden;
-	background: #000;
-}
-
-.screen-preview-media video {
-	width: 100%;
-	height: 100%;
-	object-fit: contain;
-	display: block;
-}
-
-.screen-preview-name {
-	font-size: 12px;
-	font-weight: 600;
-	text-align: left;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
 
 @media (max-width: 900px) {
 	.participants-grid {

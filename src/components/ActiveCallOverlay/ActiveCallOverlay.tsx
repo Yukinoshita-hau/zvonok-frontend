@@ -10,6 +10,8 @@ import { callActions } from "../../store/slices/call.slice";
 import { CallAudioLayer } from "./CallAudioLayer";
 import { getQualityPreset, getVideoEncoding } from "../../utils/callQuality";
 import { CallQualityController } from "../CallUi/CallQualityController";
+import { CallHotkeys } from "./CallHotkeys";
+import { MiniCallDock } from "./MiniCallDock";
 
 export function ActiveCallOverlay() {
 	const [callHeight, setCallHeight] = useState(52);
@@ -109,6 +111,7 @@ export function ActiveCallOverlay() {
 			>
 				<CallAudioLayer />
 				<CallQualityController />
+				<CallHotkeys />
 
 				{isExpanded && (
 					<div
@@ -123,95 +126,33 @@ export function ActiveCallOverlay() {
 								onMouseDown={handleMouseDown}
 							/>
 						)}
-						<div className={styles["call-header"]}>
-
-							<div className={styles["call-header-actions"]}>
-								{call.chatRoomId && (
-									<button
-										type="button"
-										className={styles["header-button"]}
-										onClick={handleOpenChat}
-									>
-										Open chat
-									</button>
-								)}
-								<button
-									type="button"
-									className={styles["header-button"]}
-									onClick={() => dispatch(callActions.setPresentationMode("minimized"))}
-								>
-									Minimize
-								</button>
-
-								<div className={styles["status-row"]}>
-									<button
-										type="button"
-										className={styles["header-button"]}
-										onClick={() => dispatch(callActions.setCallFocusMode(!call.isCallFocusMode))}
-									>
-										{call.isCallFocusMode ? "Unfocus" : "Focus"}
-									</button>
-								</div>
-							</div>
-						</div>
-
 						<div
 							className={styles["room-container"]}
 							style={{ height: `${callHeight}vh` }}
 						>
 							<CallUi
+								hasChat={Boolean(call.chatRoomId)}
+								isFocusMode={call.isCallFocusMode}
 								onHide={() => dispatch(callActions.setPresentationMode("hidden"))}
+								onOpenChat={handleOpenChat}
 								onMinimize={() => dispatch(callActions.setPresentationMode("minimized"))}
+								onToggleFocus={() => dispatch(callActions.setCallFocusMode(!call.isCallFocusMode))}
 							/>
 						</div>
 
 					</div>
 				)}
+
+				{isMinimized && (
+					<MiniCallDock
+						hasChat={Boolean(call.chatRoomId)}
+						onOpenChat={handleOpenChat}
+						onExpand={() => dispatch(callActions.setPresentationMode("expanded"))}
+						onHide={() => dispatch(callActions.setPresentationMode("hidden"))}
+						onEnd={() => dispatch(callActions.endCall())}
+					/>
+				)}
 			</LiveKitRoom>
-
-			{isMinimized && (
-				<div className={styles["mini-dock"]}>
-					<div className={styles["mini-copy"]}>
-						<div className={styles["mini-title"]}>Call in progress</div>
-						<div className={styles["mini-subtitle"]}>
-							Voice stays connected while you browse.
-						</div>
-					</div>
-
-					<div className={styles["mini-actions"]}>
-						{call.chatRoomId && (
-							<button
-								type="button"
-								className={styles["mini-button"]}
-								onClick={handleOpenChat}
-							>
-								Chat
-							</button>
-						)}
-						<button
-							type="button"
-							className={styles["mini-button"]}
-							onClick={() => dispatch(callActions.setPresentationMode("expanded"))}
-						>
-							Expand
-						</button>
-						<button
-							type="button"
-							className={styles["mini-button"]}
-							onClick={() => dispatch(callActions.setPresentationMode("hidden"))}
-						>
-							Hide
-						</button>
-						<button
-							type="button"
-							className={styles["mini-leave"]}
-							onClick={() => dispatch(callActions.endCall())}
-						>
-							End
-						</button>
-					</div>
-				</div>
-			)}
 
 			{isHidden && (
 				<button

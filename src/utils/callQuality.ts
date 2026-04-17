@@ -134,11 +134,13 @@ export function getScreenShareCaptureOptions(
 	preset: CallQualityPreset
 ): ScreenShareCaptureOptions {
 	return {
+		audio: true,
 		resolution: {
 			width: preset.width,
 			height: preset.height,
 			frameRate: preset.frameRate,
 		},
+		systemAudio: "include",
 		contentHint: "detail",
 	};
 }

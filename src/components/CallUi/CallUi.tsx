@@ -7,12 +7,13 @@ import {
 	type TrackReference,
 } from "@livekit/components-react";
 import styles from "./CallUi.module.css";
-import { Track, type AudioCaptureOptions } from "livekit-client";
+import { RemoteTrackPublication, Track } from "livekit-client";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
 import { useEffect, useMemo, useState } from "react";
 import { CallParticipantTile } from "./CallParticipantTile";
+import { MicrophoneToggleButton } from "./MicrophoneToggleButton";
 import {
 	getCameraCaptureOptions,
 	getCameraPublishOptions,
@@ -23,11 +24,22 @@ import {
 } from "../../utils/callQuality";
 
 interface CallUiProps {
+	hasChat: boolean;
+	isFocusMode: boolean;
 	onHide: () => void;
+	onOpenChat: () => void;
 	onMinimize: () => void;
+	onToggleFocus: () => void;
 }
 
-export function CallUi({ onHide, onMinimize }: CallUiProps) {
+export function CallUi({
+	hasChat,
+	isFocusMode,
+	onHide,
+	onOpenChat,
+	onMinimize,
+	onToggleFocus,
+}: CallUiProps) {
 	const [hadRemoteParticipant, setHadRemoteParticipant] = useState(false);
 
 	const dispatch = useDispatch<AppDispatch>();
@@ -42,8 +54,12 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 		{ source: Track.Source.Camera, withPlaceholder: false },
 	]);
 
-	const screenTracks = useTracks([
-		{ source: Track.Source.ScreenShare, withPlaceholder: false },
+	const screenTracks = useTracks([Track.Source.ScreenShare], {
+		onlySubscribed: false,
+	});
+
+	const screenAudioTracks = useTracks([
+		{ source: Track.Source.ScreenShareAudio, withPlaceholder: false },
 	]);
 
 	const onLeave = () => {
@@ -55,25 +71,50 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 		[rooms, call.chatRoomId]
 	);
 
-	const participantAvatarByIdentity = useMemo(() => {
-		const avatars = new Map<string, string | null>();
+	const participantAvatarResolver = useMemo(() => {
+		const avatarsByKey = new Map<string, string | null>();
+		const remoteMembers = currentRoom?.members.filter(
+			(member) => member.username !== myUser?.username
+		) ?? [];
 
 		if (myUser?.username) {
-			avatars.set(myUser.username, myUser.avatarUrl ?? null);
+			avatarsByKey.set(normalizeIdentityKey(myUser.username), myUser.avatarUrl ?? null);
 		}
 
 		currentRoom?.members.forEach((member) => {
-			avatars.set(member.username, member.avatarUrl ?? null);
+			avatarsByKey.set(normalizeIdentityKey(member.username), member.avatarUrl ?? null);
+			avatarsByKey.set(String(member.id), member.avatarUrl ?? null);
 		});
 
-		return avatars;
+		return (identity: string, isLocal: boolean) => {
+			if (isLocal) return myUser?.avatarUrl ?? null;
+
+			const normalizedIdentity = normalizeIdentityKey(identity);
+			const exactAvatar = avatarsByKey.get(normalizedIdentity);
+			if (exactAvatar !== undefined) return exactAvatar;
+
+			const matchedMember = remoteMembers.find((member) => {
+				const normalizedUsername = normalizeIdentityKey(member.username);
+				return (
+					normalizedIdentity.includes(normalizedUsername) ||
+					normalizedUsername.includes(normalizedIdentity)
+				);
+			});
+			if (matchedMember) return matchedMember.avatarUrl ?? null;
+
+			if (remoteMembers.length === 1) {
+				return remoteMembers[0].avatarUrl ?? null;
+			}
+
+			return null;
+		};
 	}, [currentRoom, myUser?.avatarUrl, myUser?.username]);
 
-	const subscribedScreenTracks = useMemo(
+	const availableScreenTracks = useMemo(
 		() =>
 			screenTracks.filter(
-				(trackRef) => trackRef.publication && trackRef.publication.isSubscribed
-			).filter(isTrackReference),
+				(trackRef) => trackRef.publication && !trackRef.publication.isMuted
+			),
 		[screenTracks]
 	);
 
@@ -88,6 +129,27 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 		[videoTracks]
 	);
 
+	const isLocalScreenShareActive = useMemo(
+		() =>
+			availableScreenTracks.some(
+				(trackRef) =>
+					trackRef.participant.isLocal &&
+					trackRef.publication
+			),
+		[availableScreenTracks]
+	);
+
+	const hasLocalScreenShareAudio = useMemo(
+		() =>
+			screenAudioTracks.some(
+				(trackRef) =>
+					trackRef.participant.isLocal &&
+					trackRef.publication &&
+					!trackRef.publication.isMuted
+			),
+		[screenAudioTracks]
+	);
+
 	const videoTrackByParticipant = useMemo(() => {
 		const trackMap = new Map<string, TrackReference>();
 
@@ -97,6 +159,16 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 
 		return trackMap;
 	}, [subscribedVideoTracks]);
+
+	const screenTrackByParticipant = useMemo(() => {
+		const trackMap = new Map<string, TrackReference>();
+
+		availableScreenTracks.forEach((trackRef) => {
+			trackMap.set(trackRef.participant.identity, trackRef);
+		});
+
+		return trackMap;
+	}, [availableScreenTracks]);
 
 	const sortedParticipants = useMemo(
 		() =>
@@ -112,33 +184,18 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 			sortedParticipants.map((participant) => ({
 				participant,
 				videoTrack: videoTrackByParticipant.get(participant.identity),
-				avatarUrl:
-					participantAvatarByIdentity.get(participant.identity) ??
-					(participant.isLocal ? myUser?.avatarUrl ?? null : null),
+				screenTrack: screenTrackByParticipant.get(participant.identity),
+				avatarUrl: participantAvatarResolver(
+					participant.identity,
+					participant.isLocal
+				),
 			})),
-		[sortedParticipants, videoTrackByParticipant, participantAvatarByIdentity, myUser?.avatarUrl]
+		[sortedParticipants, videoTrackByParticipant, screenTrackByParticipant, participantAvatarResolver]
 	);
 
 	const remoteParticipantsCount = useMemo(
 		() => sortedParticipants.filter((participant) => !participant.isLocal).length,
 		[sortedParticipants]
-	);
-
-	const audioCaptureOptions: AudioCaptureOptions = useMemo(
-		() => ({
-			deviceId:
-				device.selectedMicrophoneId !== "default"
-					? device.selectedMicrophoneId
-					: undefined,
-			autoGainControl: true,
-			echoCancellation: true,
-			noiseSuppression: device.isNoiseSuppressionEnabled,
-			voiceIsolation: device.isNoiseSuppressionEnabled,
-			channelCount: 1,
-			sampleRate: 48000,
-			sampleSize: 16,
-		}),
-		[device.selectedMicrophoneId, device.isNoiseSuppressionEnabled]
 	);
 
 	const qualityRecommendation = device.connectionTestResult.recommendation;
@@ -197,39 +254,58 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 		};
 	}, [call.status, hadRemoteParticipant, remoteParticipantsCount, dispatch]);
 
-	const hasScreenShare = subscribedScreenTracks.length > 0;
+	const hasScreenShare = availableScreenTracks.length > 0;
 	const isSingleParticipantView = !hasScreenShare && participantCards.length === 1;
 
 	useEffect(() => {
-		if (!subscribedScreenTracks.length) {
+		if (!availableScreenTracks.length) {
 			if (call.selectedScreenTrackSid !== null) {
 				dispatch(callActions.setSelectedScreenTrackSid(null));
 			}
 			return;
 		}
 
-		const selectedStillExists = subscribedScreenTracks.some(
+		const selectedStillExists = availableScreenTracks.some(
 			(trackRef) => trackRef.publication?.trackSid === call.selectedScreenTrackSid
 		);
 
 		if (!selectedStillExists) {
 			dispatch(
 				callActions.setSelectedScreenTrackSid(
-					subscribedScreenTracks[0].publication?.trackSid ?? null
+					availableScreenTracks[0].publication?.trackSid ?? null
 				)
 			);
 		}
-	}, [subscribedScreenTracks, call.selectedScreenTrackSid, dispatch]);
+	}, [availableScreenTracks, call.selectedScreenTrackSid, dispatch]);
+
+	useEffect(() => {
+		availableScreenTracks.forEach((trackRef) => {
+			const publication = trackRef.publication;
+			if (!(publication instanceof RemoteTrackPublication)) return;
+
+			const shouldSubscribe = publication.trackSid === call.selectedScreenTrackSid;
+			if (publication.isDesired !== shouldSubscribe) {
+				publication.setSubscribed(shouldSubscribe);
+			}
+		});
+	}, [availableScreenTracks, call.selectedScreenTrackSid]);
 
 	const mainScreenTrack = useMemo(() => {
-		if (!subscribedScreenTracks.length) return null;
+		if (!availableScreenTracks.length) return null;
 
 		return (
-			subscribedScreenTracks.find(
+			availableScreenTracks.find(
 				(trackRef) => trackRef.publication?.trackSid === call.selectedScreenTrackSid
-			) ?? subscribedScreenTracks[0]
+			) ?? availableScreenTracks[0]
 		);
-	}, [subscribedScreenTracks, call.selectedScreenTrackSid]);
+	}, [availableScreenTracks, call.selectedScreenTrackSid]);
+
+	const getOpenScreenShareHandler = (screenTrack?: TrackReference) => {
+		const trackSid = screenTrack?.publication.trackSid;
+		if (!trackSid) return undefined;
+
+		return () => dispatch(callActions.setSelectedScreenTrackSid(trackSid));
+	};
 
 	return (
 		<div className={styles["call-root"]}>
@@ -237,80 +313,66 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 			{hasScreenShare && mainScreenTrack ? (
 				<div className={styles["screen-layout"]}>
 					<div className={styles["main-screen"]}>
-						<VideoTrack trackRef={mainScreenTrack} />
+						{mainScreenTrack.participant.isLocal || mainScreenTrack.publication.isSubscribed ? (
+							<VideoTrack trackRef={mainScreenTrack} />
+						) : (
+							<div className={styles["screen-loading"]}>
+								Opening screen share...
+							</div>
+						)}
 						<div className={styles["name"]}>
 							{mainScreenTrack.participant.identity}
 						</div>
 					</div>
 
-					{subscribedScreenTracks.length > 1 && (
-						<div className={styles["screen-picker"]}>
-							{subscribedScreenTracks.map((trackRef, index) => {
-								const { participant, publication } = trackRef;
-								const key = publication?.trackSid ?? participant.identity ?? index;
-								const isActive =
-									publication?.trackSid === call.selectedScreenTrackSid;
-
-								return (
-									<button
-										key={key}
-										type="button"
-										className={`${styles["screen-preview"]} ${
-											isActive ? styles["screen-preview-active"] : ""
-										}`}
-										onClick={() =>
-											dispatch(
-												callActions.setSelectedScreenTrackSid(
-													publication?.trackSid ?? null
-												)
-											)
-										}
-									>
-										<div className={styles["screen-preview-media"]}>
-											<VideoTrack trackRef={trackRef} />
-										</div>
-										<div className={styles["screen-preview-name"]}>
-											{participant.identity}
-										</div>
-									</button>
-								);
-							})}
-						</div>
-					)}
-
 					<div className={styles["participants-strip"]}>
-						{participantCards.map(({ participant, videoTrack, avatarUrl }, index) => (
+						{participantCards.map(({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
 							<CallParticipantTile
 								key={participant.sid ?? participant.identity ?? index}
 								className={styles["participant-tile"]}
 								participant={participant}
 								videoTrack={videoTrack}
 								avatarUrl={avatarUrl}
+								isScreenSharing={Boolean(screenTrack)}
+								isScreenShareSelected={
+									screenTrack?.publication.trackSid === call.selectedScreenTrackSid
+								}
+								onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
 							/>
 						))}
 					</div>
 				</div>
 			) : isSingleParticipantView ? (
 				<div className={styles["single-layout"]}>
-					{participantCards.map(({ participant, videoTrack, avatarUrl }, index) => (
+					{participantCards.map(({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
 						<CallParticipantTile
 							key={participant.sid ?? participant.identity ?? index}
 							className={styles["single-tile"]}
 							participant={participant}
 							videoTrack={videoTrack}
 							avatarUrl={avatarUrl}
+							isScreenSharing={Boolean(screenTrack)}
+							isScreenShareSelected={
+								screenTrack?.publication.trackSid === call.selectedScreenTrackSid
+							}
+							onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
 						/>
 					))}
 				</div>
 			) : participantCards.length > 0 ? (
 				<div className={styles["participants-grid"]}>
-					{participantCards.map(({ participant, videoTrack, avatarUrl }, index) => (
+					{participantCards.map(({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
 						<CallParticipantTile
 							key={participant.sid ?? participant.identity ?? index}
 							className={styles["tile"]}
 							participant={participant}
 							videoTrack={videoTrack}
 							avatarUrl={avatarUrl}
+							isScreenSharing={Boolean(screenTrack)}
+							isScreenShareSelected={
+								screenTrack?.publication.trackSid === call.selectedScreenTrackSid
+							}
+							onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
 						/>
 					))}
 				</div>
@@ -323,11 +385,19 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 				</div>
 			)}
 
+			{isLocalScreenShareActive && !hasLocalScreenShareAudio && (
+				<div className={styles["screen-audio-note"]}>
+					Screen audio is not shared for this source. Use a supported browser tab
+					and enable audio in the picker when available.
+				</div>
+			)}
+
 			<div className={styles["controls-bar"]}>
-				<TrackToggle
-					source={Track.Source.Microphone}
+				<MicrophoneToggleButton
 					className={styles["control-button"]}
-					captureOptions={audioCaptureOptions}
+					enabledLabel="Mic"
+					disabledLabel="Muted"
+					showIcon
 				/>
 				<TrackToggle
 					source={Track.Source.Camera}
@@ -340,7 +410,26 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 					className={styles["control-button"]}
 					captureOptions={screenShareCaptureOptions}
 					publishOptions={screenSharePublishOptions}
+					title="Share screen. Audio is included only when your browser and selected source support it."
 				/>
+				{hasChat && (
+					<button
+						type="button"
+						className={styles["control-button"]}
+						onClick={onOpenChat}
+						title="Open call chat"
+					>
+						Chat
+					</button>
+				)}
+				<button
+					type="button"
+					className={styles["control-button"]}
+					onClick={onToggleFocus}
+					title={isFocusMode ? "Exit call focus mode" : "Focus call"}
+				>
+					{isFocusMode ? "Unfocus" : "Focus"}
+				</button>
 
 				<button
 					type="button"
@@ -366,4 +455,8 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 			</div>
 		</div>
 	);
+}
+
+function normalizeIdentityKey(value: string) {
+	return value.trim().toLowerCase();
 }
