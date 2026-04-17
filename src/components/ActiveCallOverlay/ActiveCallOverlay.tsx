@@ -77,7 +77,7 @@ export function ActiveCallOverlay() {
 				screenShareEncoding: {
 					priority: "high",
 					maxBitrate: 5_000_000,
-					maxFramerate: 15,
+					maxFramerate: 60,
 				},
 			},
 		};

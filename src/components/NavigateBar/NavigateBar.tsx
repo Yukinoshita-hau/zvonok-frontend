@@ -9,6 +9,7 @@ import { notificationAction } from "../../store/slices/notification.slice";
 import { useState } from "react";
 import { SettingModal } from "../SettingModal/SettingModal";
 import { callActions } from "../../store/slices/call.slice";
+import { StringToColor } from "../../utils/stringHelpers";
 
 export function NavigateBar({ servers }: NavigateBarProps) {
 	const navigate = useNavigate();
@@ -16,10 +17,12 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 	const friend = useSelector((s: RootState) => s.friend);
 	const { notifications } = useSelector((s: RootState) => s.notification);
 	const username = useSelector((s: RootState) => s.user.myUser?.username);
+	const avatarUrl = useSelector((s: RootState) => s.user.myUser?.avatarUrl);
 	const [isSettingModalOpen, setIsSettingModalOpen] = useState<boolean>(false);
 
 	const requestsCount = friend.incomingRequests.length + friend.outgoingRequests.length;
 	const unreadNotification = notifications.filter(n => n.read === false).length;
+	const avatarBg = StringToColor(username);
 
 	const goToDM = () => {
 		dispatch(callActions.setCallFocusMode(false))
@@ -44,7 +47,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 		<div className={styles["divider"]} />
 
 		<div className={styles["middle"]}>
-			<NavigateBarButton>
+			<NavigateBarButton onClick={() => navigate("/my-servers")}>
 				<img src="../../../public/server-all-list-icon.png" />
 			</NavigateBarButton>
 			{servers.map((server, index) => (
@@ -52,7 +55,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 					key={server.id}
 					index={index}
 					server={server}
-					onClick={() => navigate(`/servers/${server.id}`)}
+					onClick={() => navigate(`/server/${server.id}`)}
 				/>
 			))}
 		</div>
@@ -62,12 +65,16 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 				<img src="../../../public/notify-icon.png" />
 
 				{unreadNotification > 0 && (
-					<span className={styles["messages-badge"]}></span>
+					<span className={styles["messages-badge"]}/>
 				)}
 			</NavigateBarButton>
-			<button className={styles["user-button"]} onClick={() => setIsSettingModalOpen(true)}>
-				{username}
-			</button>
+			<div className={styles["user"]} onClick={() => setIsSettingModalOpen(true)} style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}>
+				{!!avatarUrl ? (
+					<img src={avatarUrl} crossOrigin="anonymous" alt="avatar" />
+				) : (
+					<div>{(username?.[0] || "U").toUpperCase()}</div>
+				)}
+			</div>
 		</div>
 		{<SettingModal isOpen={isSettingModalOpen} onClose={() => setIsSettingModalOpen(false)} />}
 	</div >

@@ -22,15 +22,37 @@
   flex-direction: column;
 }
 
-.room-list {
+.item-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
 }
 
-.room-list::-webkit-scrollbar {
+.item-list::-webkit-scrollbar {
   display: none;
+}
+
+.room-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px;
+  gap: 2px;
+}
+
+.friend-list {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 4px;
+	gap: 2px;
+
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 4px;
+	gap: 2px;
 }
 
 .inbox-header {

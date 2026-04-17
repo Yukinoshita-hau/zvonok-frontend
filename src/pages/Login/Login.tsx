@@ -31,7 +31,6 @@ export default function Login() {
 			})).unwrap()
 			await dispatch(getMyUser()).unwrap();
 			navigate("/");
-
 		} catch (e) {
 			if (e instanceof AxiosError) {
 				const errorData = e.response?.data as ErrorApiResponse;

@@ -8,6 +8,7 @@ import { fetchMyRooms } from "../../store/slices/room.slice";
 import { fetchMyServers } from "../../store/slices/server.slice";
 import { websocketActions } from "../../store/slices/websocket.slice";
 import { useNavigate } from "react-router-dom";
+import { StringToColor } from "../../utils/stringHelpers";
 
 export function AccountSetting() {
 	const navigate = useNavigate();
@@ -16,7 +17,9 @@ export function AccountSetting() {
 
 	const [username, setUsername] = useState(myUser?.username || "");
 	const [email, setEmail] = useState(myUser?.email || "");
+	const [avatarUrl, setAvatarUrl] = useState(myUser?.avatarUrl || "");
 	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const avatarBg = StringToColor(username);
 
 	const updateUserHandle = async (fields: Partial<UpdateUserDto>) => {
 		setIsLoading(true)
@@ -60,6 +63,7 @@ export function AccountSetting() {
 			alert("Введите корректный email");
 		}
 	}
+
 
 	return (
 		<div className={styles["container"]}>
@@ -128,21 +132,28 @@ export function AccountSetting() {
 						<div className={styles["preview-banner"]}></div>
 						<div className={styles["preview-body"]}>
 							<div className={styles["preview-avatar-wrapper"]}>
-								{/* Здесь будет реальная или дефолтная аватарка */}
-								<div className={styles["preview-avatar"]}>
-									{username?.[0]?.toUpperCase() || "?"}
+								<div
+									className={styles["preview-avatar"]}
+									style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}
+								>
+									{!!avatarUrl ? (
+										<img src={avatarUrl} crossOrigin="anonymous" alt="avatar" />
+									) : (
+										<div>{(username?.[0] || "U").toUpperCase()}</div>
+									)}
 								</div>
-								<div className={styles["status-badge"]}></div>
 							</div>
-
-							<div className={styles["preview-info"]}>
-								<div className={styles["preview-name"]}>
-									{username || "User"}
-								</div>
+							<div>
 							</div>
-
-							<div className={styles["preview-divider"]}></div>
 						</div>
+
+						<div className={styles["preview-info"]}>
+							<div className={styles["preview-name"]}>
+								{username || "User"}
+							</div>
+						</div>
+
+						<div className={styles["preview-divider"]}></div>
 					</div>
 				</div>
 			</div>

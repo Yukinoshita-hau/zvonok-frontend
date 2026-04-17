@@ -3,9 +3,10 @@ import type { JwtPayload } from "../JwtPayload";
 import type { User } from "../../entities/user";
 import type { UpdateUserDto } from "../../api/interfaces/UpdateUserDto";
 import { userApi } from "../../api/userApi";
-import authApi from "../../api/authApi";
 import type { LogoutDto } from "../../api/interfaces/LogoutDto";
 import type { LoginDto } from "../../api/interfaces/LoginDto";
+import type { RegisterDto } from "../../api/interfaces/RegisterDto";
+import authApi from "../../api/authApi";
 
 export interface UserState {
 	accessToken: string | null;
@@ -61,6 +62,18 @@ export const loginUser = createAsyncThunk(
 			return data;
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load user");
+		}
+	}
+)
+
+export const registerUser = createAsyncThunk(
+	"user/registerUser",
+	async (body: RegisterDto, thunkAPI) => {
+		try {
+			const { data } = await authApi.register(body);
+			return data;
+		} catch (e: any) {
+			thunkAPI.rejectWithValue(e?.message ?? "Failed to load user")
 		}
 	}
 )
@@ -133,6 +146,13 @@ export const userSlice = createSlice({
 
 
 			.addCase(loginUser.fulfilled, (previousState, action: PayloadAction<JwtPayload>) => {
+				previousState.accessToken = action.payload.accessToken;
+				previousState.tokenType = action.payload.tokenType;
+				previousState.expiresIn = action.payload.expiresIn;
+				previousState.expiresAt = Date.now() + action.payload.expiresIn;
+			})
+
+			.addCase(registerUser.fulfilled, (previousState, action: PayloadAction<JwtPayload>) => {
 				previousState.accessToken = action.payload.accessToken;
 				previousState.tokenType = action.payload.tokenType;
 				previousState.expiresIn = action.payload.expiresIn;

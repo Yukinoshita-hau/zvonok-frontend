@@ -93,9 +93,16 @@
 .msg-text {
   color: var(--text-primary);
   font-size: 17px;
+  display: flex;
+  gap: 12px;
   overflow-wrap: break-word;
   word-break: break-word;
   line-height: 20px;
+}
+
+.read-status {
+  color: var(--text-primary);
+  font-size: 12px;
 }
 
 .msg-actions {
@@ -227,20 +234,6 @@
   position: relative;
 }
 
-.read-status {
-  position: absolute !important;
-  bottom: 4px;
-  right: 8px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #34b7f1; /* синие галочки WhatsApp */
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 4px;
-  border-radius: 4px;
-}
 
 @media (max-width: 768px) {
   .read-status {

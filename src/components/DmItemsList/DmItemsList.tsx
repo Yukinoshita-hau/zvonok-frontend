@@ -28,28 +28,32 @@ export function DmItemsList() {
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+	const processedIdsRef = useRef<Set<number>>(new Set());
 	const roomId = searchParams.get("roomId")
 	const numericRoomId = Number(roomId);
 	const currentRoom = rooms?.find(r => r.id === Number(roomId));
 
+	const lastMessageId = useMemo(() => {
+		if (messages.length === 0) return null;
+		return messages[messages.length - 1].id;
+	}, [messages]);
 
-	const readMessageIds = useMemo(() =>
-		new Set(messages.filter(msg =>
-			msg.readBy?.includes(myUser?.username || ""))
-			.map(msg => msg.id)),
-		[messages, myUser?.username]
-	)
+	useEffect(() => {
+		processedIdsRef.current.clear();
+	}, [roomId]);
 
 	useEffect(() => {
 		dispatch(messageActions.setIsAtBottom(true))
 	}, [roomId])
 
-	useEffect(() => {
-		if (status === "succeeded" && scrollRef.current &&
-			isAtBottom) {
-			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-		}
-	}, [status, messages, isAtBottom, roomId])
+useEffect(() => {
+	if (!scrollRef.current) return;
+	if (status !== "succeeded") return;
+	if (!isAtBottom) return;
+	if (lastMessageId === null) return;
+
+	scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+}, [status, lastMessageId, isAtBottom, roomId]);
 
 	useEffect(() => {
 		if (currentRoom && currentRoom.unreadCount > 0 && newDividerMessageId === null && currentRoom.firstUnreadMessageId != null) {
@@ -104,44 +108,53 @@ export function DmItemsList() {
 		if (newMessageIds.length > 0) {
 			dispatch(getMessagesReaders({ messageIds: newMessageIds }));
 		}
-	}, [status]);
+	}, [status, myUser?.username, dispatch]);
 
 	useEffect(() => {
+		if (!myUser?.username) return;
+
 		const observer = new IntersectionObserver(
 			(entries) => {
 				entries.forEach((entry) => {
-					if (entry.isIntersecting) {
-						const messageId = Number(entry.target.getAttribute('data-id'));
-						const stateMessage = messages.find(m => m.id === messageId);
-						if (stateMessage?.readBy?.includes(myUser?.username ?? "") === undefined) {
-							setTimeout(() => {
-								dispatch(messageActions.markMessageRead({ messageId }));
-							}, 1000);
-						}
-					}
+					if (!entry.isIntersecting) return;
+
+					const messageId = Number(entry.target.getAttribute("data-id"));
+					const currentMessage = messages.find(m => m.id === messageId);
+
+					if (!currentMessage) return;
+
+					// свои сообщения не помечаем
+					if (currentMessage.sender.username === myUser.username) return;
+
+					// уже обработали локально
+					if (processedIdsRef.current.has(messageId)) return;
+
+					// уже прочитано
+					if (currentMessage.readBy?.includes(myUser.username)) return;
+
+					processedIdsRef.current.add(messageId);
+					dispatch(messageActions.markMessageRead({ messageId }));
 				});
 			},
-			{ threshold: 0.5, rootMargin: '10px' }
+			{
+				threshold: 0.5,
+				root: scrollRef.current,
+			}
 		);
 
-		const unsubscribe = () => {
-			messageRefs.current.forEach(el => observer.unobserve(el));
-		};
+		messageRefs.current.forEach((el, id) => {
+			const msg = messages.find(m => m.id === id);
+			if (!el || !msg) return;
 
-		const interval = setInterval(() => {
-			messageRefs.current.forEach(el => {
-				if (!observer.observedElements?.has(el)) {
-					observer.observe(el);
-				}
-			});
-		}, 500);
+			if (msg.sender.username === myUser.username) return;
+			if (msg.readBy?.includes(myUser.username)) return;
+			if (processedIdsRef.current.has(id)) return;
 
-		return () => {
-			clearInterval(interval);
-			unsubscribe();
-			observer.disconnect();
-		};
-	}, []);  // ✅ ПУСТЫЕ зависимости!
+			observer.observe(el);
+		});
+
+		return () => observer.disconnect();
+	}, [messages, myUser?.username, dispatch]);
 
 	const handleScroll = async (e: UIEvent<HTMLDivElement>) => {
 		const container = e.currentTarget;
@@ -242,7 +255,7 @@ export function DmItemsList() {
 		}
 
 		return itemArr;
-	}, [messages, currentRoom])
+	}, [messages, newDividerMessageId])
 
 	return (
 		<div className={styles["messages"]} onScroll={handleScroll} ref={scrollRef}>
@@ -273,11 +286,19 @@ export function DmItemsList() {
 							isMyMessage && openContextMenu(e, item.payload)
 						}}>
 						<div className={styles["msg-avatar"]} >
-							<img src="http://localhost:8080/api/s3/download/aga1.png" crossOrigin="anonymous" />
+							<img src={item.payload.sender.avatarUrl} crossOrigin="anonymous" />
 						</div>
 						<div className={styles["msg-body"]}>
 							<div className={styles["msg-meta"]}>
 								<span className={styles["msg-author"]}>{item.payload.sender.username}</span>
+								{isMyMessage && (
+									<div className={styles["read-status"]}>
+										{item.payload.readBy?.length ?
+											`✓✓` :
+											"✓"
+										}
+									</div>
+								)}
 								<span className={styles["msg-time"]}>{formatTime(item.payload.sentAt)}</span>
 								{isEdited && (
 									<span className={styles["edited-badge"]}>edited</span>
@@ -304,14 +325,6 @@ export function DmItemsList() {
 
 								<div className={styles["msg-text"]}>
 									{item.payload.content}
-									{isMyMessage && (
-										<div>
-											{item.payload.readBy?.length ?
-												`✓✓ ` :
-												"✓"
-											}
-										</div>
-									)}
 								</div>
 							)}
 

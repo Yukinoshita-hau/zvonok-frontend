@@ -11,6 +11,8 @@ import type { CreateGroupBody } from "../../api/interfaces/CreateGroupBody";
 import { GroupRoomModal } from "../../components/GroupRoomModal/GroupRoomModal";
 import { FriendRequestModal } from "../../components/FriendRequestModal/FriendRequestModal";
 import { FriendsList } from "../../components/FriendsList/FriendsList";
+import { RoomListItem } from "../../components/RoomListItem/RoomListItem";
+import { FriendListItem } from "../../components/FriendListItem/FriendListItem";
 
 export type buttonModeType = "Messages" | "Friends";
 
@@ -107,7 +109,6 @@ export function InboxLayout() {
 			r.type === "PRIVATE" &&
 			r.members?.some(m => m.username === friendUsername)
 		)
-
 		if (existing) {
 			navigate(`/dm?roomId=${existing.id}`)
 		} else {
@@ -149,11 +150,25 @@ export function InboxLayout() {
 					</button>
 				</div>
 
-				<div className={styles["room-list"]}>
+				<div className={styles["item-list"]}>
 					{buttonMode === "Messages" ? (
-						<RoomsList rooms={sortedRooms} />
+						<div className={styles["room-list"]}>
+							{sortedRooms.map(r => (
+								<RoomListItem
+									key={r.id}
+									room={r}
+								/>
+							))}
+						</div>
 					) : (
-						<FriendsList friends={sortedFriends} onClick={handleFriendClick} />
+						<div className={styles["friend-list"]}>
+							{sortedFriends.map(f => (
+								<FriendListItem 
+								key={f.friendId}
+								friend={f}
+								onClick={handleFriendClick} />
+							))}
+						</div>
 					)}
 				</div>
 			</div>

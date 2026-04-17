@@ -10,7 +10,7 @@ import type { ErrorApiResponse } from "../../api/interfaces/ErrorApiResponse";
 import authApi from "../../api/authApi";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store/store";
-import { userActions } from "../../store/slices/user.slice";
+import { getMyUser, registerUser, userActions } from "../../store/slices/user.slice";
 
 export default function Register() {
 	const [error, setError] = useState<string | null>();
@@ -27,12 +27,12 @@ export default function Register() {
 
 	const sendRegister = async (username: string, email: string, password: string) => {
 		try {
-			const { data } = await authApi.register({
+			await dispatch(registerUser({
 				username: username,
 				email: email,
 				password: password
-			});
-			dispatch(userActions.addJwt(data));
+			})).unwrap();
+			await dispatch(getMyUser()).unwrap();
 			navigate("/");
 		} catch (e) {
 			if (e instanceof AxiosError) {

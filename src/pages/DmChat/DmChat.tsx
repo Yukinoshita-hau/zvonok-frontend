@@ -31,7 +31,6 @@ export function DmChat() {
 
 	const roomId = roomIdParam ? Number(roomIdParam) : null
 	const username = nameParam || null;
-
 	useEffect(() => {
 		if (roomId) {
 			const numericId = Number(roomId);
@@ -48,18 +47,29 @@ export function DmChat() {
 		} else {
 			navigate("/")
 		}
+	}, [dispatch, roomId, username, navigate])
 
+	useEffect(() => {
 		return () => {
 			dispatch(messageActions.setActiveRoom(null))
 			dispatch(messageActions.setPendingPrivate(null))
 		}
-	}, [dispatch, roomId, username])
+	}, [dispatch])
 
 	useEffect(() => {
-		if (activeRoomId && pending === null && !roomId) {
-			navigate(`/dm?roomId=${activeRoomId}`)
+		if (!activeRoomId || roomId || pending !== null || !username) return;
+
+		const matchedRoom = rooms.find(
+			(r) =>
+				r.id === activeRoomId &&
+				r.type === "PRIVATE" &&
+				r.members?.some((m) => m.username === username)
+		);
+
+		if (matchedRoom) {
+			navigate(`?roomId=${activeRoomId}`, { replace: true })
 		}
-	}, [activeRoomId, pending, roomId, navigate])
+	}, [activeRoomId, pending, roomId, username, rooms, navigate])
 
 	const currentRoom = useMemo(() => {
 		return rooms?.find((room: Room) => room.id === Number(roomId)) as Room;

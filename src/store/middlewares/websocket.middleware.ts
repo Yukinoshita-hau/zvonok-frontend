@@ -301,7 +301,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			case "message/markMessageRead": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}

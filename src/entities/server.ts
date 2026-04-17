@@ -9,5 +9,7 @@ export interface Server {
 	ownerId: number;
 	ownerName: string;
 	createdAt: string;
+	bannerUrl: string;
+	isPrivate: boolean;
 	channelFolders: ChannelFolder[]; // нужен отдельный интерфейс	
 }

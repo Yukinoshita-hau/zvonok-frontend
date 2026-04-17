@@ -11,6 +11,7 @@ import { AuthInitializator } from './helpers/AppInitializer'
 import { NotificationsPage } from './components/NotificationsPage/NotificationPage'
 import { ServerLayout } from './pages/ServerLayout/ServerLayout'
 import { ChannelChat } from './components/ChannelChat/ChannelChat'
+import { MyServers } from './pages/MyServers/MyServers'
 
 export function App() {
 
@@ -62,7 +63,7 @@ export function App() {
 					]
 				},
 				{
-					path: "servers/:serverId",
+					path: "server/:serverId",
 					element: (
 						<ServerLayout/>
 					),
@@ -76,6 +77,13 @@ export function App() {
 							element: <ChannelChat/>
 						}
 					]
+				},
+				{
+					path: "my-servers",
+					element: (
+						<MyServers/>	
+					),
+					children: []
 				}
 			]
 		}

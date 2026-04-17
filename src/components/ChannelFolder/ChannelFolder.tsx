@@ -25,7 +25,7 @@ export function ChannelFolder({ folder, serverId }: ChannelFolderProps) {
 				<div className={styles["channels"]}>
 					{folder.channels.map(channel => (
 						<div key={channel.id} className={styles["channel"]} onClick={() => {
-							navigate(`/servers/${serverId}/channel-folders/${folder.id}/channels/${channel.id}`)
+							navigate(`/server/${serverId}/channel-folders/${folder.id}/channels/${channel.id}`)
 						}}>
 							{channel.type === "TEXT" && <Hash size={16} />}
 							{channel.type === "VOICE" && <Volume2 size={16} />}

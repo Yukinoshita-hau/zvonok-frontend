@@ -13,8 +13,6 @@ export function AuthInitializator({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		const run = async () => {
 			if (!isAuthChecked) {
-
-				console.log("а вот и я" + isAuthChecked)
 				try {
 					const refreshData = await authApi.refresh();
 					dispatch(userActions.addJwt(refreshData.data));
