@@ -3,6 +3,13 @@
     height: 100%;
 	display: flex;
 	justify-content: center;
+	overflow-y: auto;
+	scrollbar-width: none;
+}
+
+
+.container::-webkit-scrollbar {
+	display: none;
 }
 
 .content {
@@ -70,6 +77,28 @@
     background-color: #d83c3e;
 }
 
+.btn-secondary-neutral {
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-secondary-neutral:hover {
+    border-color: #5865F2;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-secondary-neutral:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .volume-bar-bg {
     width: 100%;
     height: 10px;
@@ -103,4 +132,55 @@
 	width: 16px;
 	height: 16px;
 	cursor: pointer;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) minmax(120px, 1fr);
+    gap: 8px 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background-color: var(--bg-input);
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.metrics-grid strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+}
+
+.recommendation-box {
+    padding: 10px 12px;
+    border: 1px solid #43b581;
+    border-radius: 4px;
+    color: var(--text-primary);
+    background-color: rgba(67, 181, 129, 0.12);
+    font-size: 13px;
+}
+
+.error-text {
+    padding: 10px 12px;
+    border: 1px solid #f04747;
+    border-radius: 4px;
+    color: #f04747;
+    background-color: rgba(240, 71, 71, 0.1);
+    font-size: 13px;
+}
+
+.summary-text {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    background-color: var(--bg-input);
+    font-size: 13px;
+}
+
+.test-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
 }

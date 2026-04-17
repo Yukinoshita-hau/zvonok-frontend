@@ -2,23 +2,20 @@ import { LiveKitRoom } from "@livekit/components-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-	VideoPresets,
-	type AudioCaptureOptions,
-	type RoomOptions,
-} from "livekit-client";
+import type { RoomOptions } from "livekit-client";
 import styles from "./ActiveCallOverlay.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
 import { CallUi } from "../CallUi/CallUi";
 import { callActions } from "../../store/slices/call.slice";
 import { CallAudioLayer } from "./CallAudioLayer";
+import { getQualityPreset, getVideoEncoding } from "../../utils/callQuality";
+import { CallQualityController } from "../CallUi/CallQualityController";
 
 export function ActiveCallOverlay() {
 	const [callHeight, setCallHeight] = useState(52);
 
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
-	const device = useSelector((s: RootState) => s.device);
 	const call = useSelector((s: RootState) => s.call);
 
 	const isCallActive = call.status === "connecting" || call.status === "in_call";
@@ -37,70 +34,38 @@ export function ActiveCallOverlay() {
 		setCallHeight(52);
 	}, [call.isCallFocusMode, isExpanded]);
 
-	const audioCaptureDefaults: AudioCaptureOptions = useMemo(
-		() => ({
-			deviceId:
-				device.selectedMicrophoneId !== "default"
-					? device.selectedMicrophoneId
-					: undefined,
-			autoGainControl: true,
-			echoCancellation: true,
-			noiseSuppression: device.isNoiseSuppressionEnabled,
-			voiceIsolation: device.isNoiseSuppressionEnabled,
-			channelCount: 1,
-			sampleRate: 48000,
-			sampleSize: 16,
-		}),
-		[device.selectedMicrophoneId, device.isNoiseSuppressionEnabled]
-	);
-
 	const roomOptions: RoomOptions = useMemo(() => {
-		let resolution = VideoPresets.h1080.resolution;
-		let maxBitrate = 3_000_000;
-		let maxFramerate = 30;
-
-		if (device.videoQuality === "medium") {
-			resolution = VideoPresets.h720.resolution;
-			maxBitrate = 1_500_000;
-			maxFramerate = 24;
-		} else if (device.videoQuality === "low") {
-			resolution = VideoPresets.h360.resolution;
-			maxBitrate = 500_000;
-			maxFramerate = 15;
-		}
+		const cameraPreset = getQualityPreset("camera", "medium");
+		const screenSharePreset = getQualityPreset("screenShare", "medium");
 
 		return {
 			videoCaptureDefaults: {
-				deviceId:
-					device.selectedCameraId !== "default"
-						? device.selectedCameraId
-						: undefined,
 				facingMode: "user",
-				resolution,
+				resolution: {
+					width: cameraPreset.width,
+					height: cameraPreset.height,
+					frameRate: cameraPreset.frameRate,
+				},
 			},
-			audioCaptureDefaults,
+			audioCaptureDefaults: {
+				autoGainControl: true,
+				echoCancellation: true,
+				noiseSuppression: true,
+				voiceIsolation: true,
+				channelCount: 1,
+				sampleRate: 48000,
+				sampleSize: 16,
+			},
 			adaptiveStream: true,
 			dynacast: true,
 			publishDefaults: {
 				dtx: true,
 				red: true,
-				videoEncoding: {
-					maxBitrate,
-					maxFramerate,
-					priority: "high",
-				},
-				screenShareEncoding: {
-					priority: "high",
-					maxBitrate: 5_000_000,
-					maxFramerate: 60,
-				},
+				videoEncoding: getVideoEncoding(cameraPreset),
+				screenShareEncoding: getVideoEncoding(screenSharePreset),
 			},
 		};
-	}, [
-		audioCaptureDefaults,
-		device.selectedCameraId,
-		device.videoQuality,
-	]);
+	}, []);
 
 	if (!isCallActive || !call.serverUrl || !call.participantToken) {
 		return null;
@@ -143,6 +108,7 @@ export function ActiveCallOverlay() {
 				onDisconnected={() => dispatch(callActions.endCall())}
 			>
 				<CallAudioLayer />
+				<CallQualityController />
 
 				{isExpanded && (
 					<div

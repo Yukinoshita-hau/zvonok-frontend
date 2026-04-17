@@ -1,17 +1,26 @@
 import {
 	TrackToggle,
+	isTrackReference,
 	useParticipants,
 	useTracks,
 	VideoTrack,
 	type TrackReference,
 } from "@livekit/components-react";
 import styles from "./CallUi.module.css";
-import { Track } from "livekit-client";
+import { Track, type AudioCaptureOptions } from "livekit-client";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
 import { useEffect, useMemo, useState } from "react";
 import { CallParticipantTile } from "./CallParticipantTile";
+import {
+	getCameraCaptureOptions,
+	getCameraPublishOptions,
+	getQualityPreset,
+	getScreenShareCaptureOptions,
+	getScreenSharePublishOptions,
+	resolveQualitySetting,
+} from "../../utils/callQuality";
 
 interface CallUiProps {
 	onHide: () => void;
@@ -25,6 +34,7 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 	const call = useSelector((s: RootState) => s.call);
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 	const rooms = useSelector((s: RootState) => s.room.rooms);
+	const device = useSelector((s: RootState) => s.device);
 
 	const participants = useParticipants();
 
@@ -63,7 +73,7 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 		() =>
 			screenTracks.filter(
 				(trackRef) => trackRef.publication && trackRef.publication.isSubscribed
-			),
+			).filter(isTrackReference),
 		[screenTracks]
 	);
 
@@ -74,7 +84,7 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 					trackRef.publication &&
 					(trackRef.participant.isLocal || trackRef.publication.isSubscribed) &&
 					!trackRef.publication.isMuted
-			),
+			).filter(isTrackReference),
 		[videoTracks]
 	);
 
@@ -112,6 +122,59 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 	const remoteParticipantsCount = useMemo(
 		() => sortedParticipants.filter((participant) => !participant.isLocal).length,
 		[sortedParticipants]
+	);
+
+	const audioCaptureOptions: AudioCaptureOptions = useMemo(
+		() => ({
+			deviceId:
+				device.selectedMicrophoneId !== "default"
+					? device.selectedMicrophoneId
+					: undefined,
+			autoGainControl: true,
+			echoCancellation: true,
+			noiseSuppression: device.isNoiseSuppressionEnabled,
+			voiceIsolation: device.isNoiseSuppressionEnabled,
+			channelCount: 1,
+			sampleRate: 48000,
+			sampleSize: 16,
+		}),
+		[device.selectedMicrophoneId, device.isNoiseSuppressionEnabled]
+	);
+
+	const qualityRecommendation = device.connectionTestResult.recommendation;
+	const cameraPreset = useMemo(() => {
+		const quality = resolveQualitySetting(
+			"camera",
+			device.cameraQuality,
+			qualityRecommendation
+		);
+		return getQualityPreset("camera", quality);
+	}, [device.cameraQuality, qualityRecommendation]);
+
+	const screenSharePreset = useMemo(() => {
+		const quality = resolveQualitySetting(
+			"screenShare",
+			device.screenShareQuality,
+			qualityRecommendation
+		);
+		return getQualityPreset("screenShare", quality);
+	}, [device.screenShareQuality, qualityRecommendation]);
+
+	const cameraCaptureOptions = useMemo(
+		() => getCameraCaptureOptions(device.selectedCameraId, cameraPreset),
+		[device.selectedCameraId, cameraPreset]
+	);
+	const cameraPublishOptions = useMemo(
+		() => getCameraPublishOptions(cameraPreset),
+		[cameraPreset]
+	);
+	const screenShareCaptureOptions = useMemo(
+		() => getScreenShareCaptureOptions(screenSharePreset),
+		[screenSharePreset]
+	);
+	const screenSharePublishOptions = useMemo(
+		() => getScreenSharePublishOptions(screenSharePreset),
+		[screenSharePreset]
 	);
 
 	useEffect(() => {
@@ -264,14 +327,19 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 				<TrackToggle
 					source={Track.Source.Microphone}
 					className={styles["control-button"]}
+					captureOptions={audioCaptureOptions}
 				/>
 				<TrackToggle
 					source={Track.Source.Camera}
 					className={styles["control-button"]}
+					captureOptions={cameraCaptureOptions}
+					publishOptions={cameraPublishOptions}
 				/>
 				<TrackToggle
 					source={Track.Source.ScreenShare}
 					className={styles["control-button"]}
+					captureOptions={screenShareCaptureOptions}
+					publishOptions={screenSharePublishOptions}
 				/>
 
 				<button

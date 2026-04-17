@@ -4,13 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { createGroupRoom, fetchMyRooms } from "../../store/slices/room.slice";
-import { RoomsList } from "../../components/RoomsList/RoomsList";
 import { InboxHeaderButton } from "../../components/InboxHeaderButton/InboxHeaderButton";
 import { fetchIncomingRequests, fetchMyFriends, fetchOutgoingRequests, friendActions } from "../../store/slices/friend.slice";
 import type { CreateGroupBody } from "../../api/interfaces/CreateGroupBody";
 import { GroupRoomModal } from "../../components/GroupRoomModal/GroupRoomModal";
 import { FriendRequestModal } from "../../components/FriendRequestModal/FriendRequestModal";
-import { FriendsList } from "../../components/FriendsList/FriendsList";
 import { RoomListItem } from "../../components/RoomListItem/RoomListItem";
 import { FriendListItem } from "../../components/FriendListItem/FriendListItem";
 
