@@ -11,7 +11,6 @@ import { CallAudioLayer } from "./CallAudioLayer";
 
 export function ActiveCallOverlay() {
 	const [callHeight, setCallHeight] = useState(52);
-	const [callWidth, setCallWidth] = useState(52);
 
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
@@ -113,30 +112,6 @@ export function ActiveCallOverlay() {
 		window.addEventListener("mousemove", onMove);
 		window.addEventListener("mouseup", onUp);
 	};
-
-
-	const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-		if (call.isCallFocusMode) return;
-
-		const startX = e.clientX;
-		const startWidth = callWidth;
-
-		const onMove = (moveEvent: MouseEvent) => {
-			const delta = startX - moveEvent.clientX;
-			const vwDelta = (delta / window.innerWidth) * 100;
-			const next = Math.min(82, Math.max(38, startWidth + vwDelta));
-			setCallHeight(next);
-		};
-
-		const onUp = () => {
-			window.removeEventListener("mousemove", onMove);
-			window.removeEventListener("mouseup", onUp);
-		};
-
-		window.addEventListener("mousemove", onMove);
-		window.addEventListener("mouseup", onUp);
-	};
-
 	const handleOpenChat = () => {
 		if (!call.chatRoomId) return;
 		navigate(`/dm?roomId=${call.chatRoomId}`);
@@ -150,6 +125,7 @@ export function ActiveCallOverlay() {
 				connect={true}
 				options={roomOptions}
 				className={styles["host-room"]}
+				onDisconnected={() => dispatch(callActions.endCall())}
 			>
 				<CallAudioLayer />
 

@@ -139,15 +139,80 @@
 	overflow: hidden;
 }
 
+.participant-card {
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	transition: box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.participant-speaking {
+	border-color: rgba(46, 204, 113, 0.95);
+	box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.9), 0 0 18px rgba(46, 204, 113, 0.42);
+}
+
 
 .media {
 	width: 100%;
 	height: 100%;
-	background: var(--bg-tertiary);
+	background: radial-gradient(circle at top, var(--bg-hover), var(--bg-tertiary));
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
+}
+
+.avatar-fallback {
+	width: 88px;
+	height: 88px;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.2);
+	background: var(--bg-hover);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	box-shadow: 0 10px 26px rgba(0, 0, 0, 0.26);
+}
+
+.avatar-image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.avatar-initial {
+	color: #fff;
+	font-size: 32px;
+	font-weight: 700;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.mic-indicator {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	z-index: 11;
+	height: 28px;
+	min-width: 28px;
+	padding: 0 7px;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid transparent;
+	backdrop-filter: blur(6px);
+}
+
+.mic-indicator-on {
+	background: rgba(18, 193, 107, 0.22);
+	border-color: rgba(43, 219, 130, 0.4);
+	color: #b9ffd8;
+}
+
+.mic-indicator-off {
+	background: rgba(255, 80, 80, 0.24);
+	border-color: rgba(255, 98, 98, 0.45);
+	color: #ffd1d1;
 }
 
 /* camera tiles */
@@ -189,6 +254,20 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	pointer-events: none;
+}
+
+.participant-tile .avatar-fallback {
+	width: 52px;
+	height: 52px;
+}
+
+.participant-tile .avatar-initial {
+	font-size: 20px;
+}
+
+.single-tile .avatar-fallback {
+	width: 120px;
+	height: 120px;
 }
 
 .empty-state {
@@ -355,6 +434,13 @@
 	.participant-tile {
 		width: 180px;
 		min-width: 180px;
+	}
+
+	.participant-tile .mic-indicator {
+		top: 8px;
+		right: 8px;
+		height: 24px;
+		min-width: 24px;
 	}
 
 	.name {

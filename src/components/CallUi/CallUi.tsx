@@ -1,10 +1,17 @@
-import { TrackToggle, useTracks, VideoTrack } from "@livekit/components-react";
+import {
+	TrackToggle,
+	useParticipants,
+	useTracks,
+	VideoTrack,
+	type TrackReference,
+} from "@livekit/components-react";
 import styles from "./CallUi.module.css";
 import { Track } from "livekit-client";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
 import { useEffect, useMemo, useState } from "react";
+import { CallParticipantTile } from "./CallParticipantTile";
 
 interface CallUiProps {
 	onHide: () => void;
@@ -12,10 +19,14 @@ interface CallUiProps {
 }
 
 export function CallUi({ onHide, onMinimize }: CallUiProps) {
-	const [hoveredId, setHoveredId] = useState<string | null>(null);
+	const [hadRemoteParticipant, setHadRemoteParticipant] = useState(false);
 
 	const dispatch = useDispatch<AppDispatch>();
 	const call = useSelector((s: RootState) => s.call);
+	const myUser = useSelector((s: RootState) => s.user.myUser);
+	const rooms = useSelector((s: RootState) => s.room.rooms);
+
+	const participants = useParticipants();
 
 	const videoTracks = useTracks([
 		{ source: Track.Source.Camera, withPlaceholder: false },
@@ -28,6 +39,25 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 	const onLeave = () => {
 		dispatch(callActions.endCall());
 	};
+
+	const currentRoom = useMemo(
+		() => rooms.find((room) => room.id === call.chatRoomId) ?? null,
+		[rooms, call.chatRoomId]
+	);
+
+	const participantAvatarByIdentity = useMemo(() => {
+		const avatars = new Map<string, string | null>();
+
+		if (myUser?.username) {
+			avatars.set(myUser.username, myUser.avatarUrl ?? null);
+		}
+
+		currentRoom?.members.forEach((member) => {
+			avatars.set(member.username, member.avatarUrl ?? null);
+		});
+
+		return avatars;
+	}, [currentRoom, myUser?.avatarUrl, myUser?.username]);
 
 	const subscribedScreenTracks = useMemo(
 		() =>
@@ -42,16 +72,70 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 			videoTracks.filter(
 				(trackRef) =>
 					trackRef.publication &&
-					trackRef.publication.isSubscribed &&
+					(trackRef.participant.isLocal || trackRef.publication.isSubscribed) &&
 					!trackRef.publication.isMuted
 			),
 		[videoTracks]
 	);
 
+	const videoTrackByParticipant = useMemo(() => {
+		const trackMap = new Map<string, TrackReference>();
+
+		subscribedVideoTracks.forEach((trackRef) => {
+			trackMap.set(trackRef.participant.identity, trackRef);
+		});
+
+		return trackMap;
+	}, [subscribedVideoTracks]);
+
+	const sortedParticipants = useMemo(
+		() =>
+			[...participants].sort((left, right) => {
+				if (left.isLocal !== right.isLocal) return left.isLocal ? -1 : 1;
+				return left.identity.localeCompare(right.identity);
+			}),
+		[participants]
+	);
+
+	const participantCards = useMemo(
+		() =>
+			sortedParticipants.map((participant) => ({
+				participant,
+				videoTrack: videoTrackByParticipant.get(participant.identity),
+				avatarUrl:
+					participantAvatarByIdentity.get(participant.identity) ??
+					(participant.isLocal ? myUser?.avatarUrl ?? null : null),
+			})),
+		[sortedParticipants, videoTrackByParticipant, participantAvatarByIdentity, myUser?.avatarUrl]
+	);
+
+	const remoteParticipantsCount = useMemo(
+		() => sortedParticipants.filter((participant) => !participant.isLocal).length,
+		[sortedParticipants]
+	);
+
+	useEffect(() => {
+		if (remoteParticipantsCount > 0) {
+			setHadRemoteParticipant(true);
+		}
+	}, [remoteParticipantsCount]);
+
+	useEffect(() => {
+		if (call.status !== "in_call") return;
+		if (!hadRemoteParticipant) return;
+		if (remoteParticipantsCount > 0) return;
+
+		const timeout = window.setTimeout(() => {
+			dispatch(callActions.endCall());
+		}, 3500);
+
+		return () => {
+			window.clearTimeout(timeout);
+		};
+	}, [call.status, hadRemoteParticipant, remoteParticipantsCount, dispatch]);
+
 	const hasScreenShare = subscribedScreenTracks.length > 0;
-	const hasVisibleCamera = subscribedVideoTracks.length > 0;
-	const isSingleCameraView =
-		!hasScreenShare && subscribedVideoTracks.length === 1;
+	const isSingleParticipantView = !hasScreenShare && participantCards.length === 1;
 
 	useEffect(() => {
 		if (!subscribedScreenTracks.length) {
@@ -132,82 +216,46 @@ export function CallUi({ onHide, onMinimize }: CallUiProps) {
 					)}
 
 					<div className={styles["participants-strip"]}>
-						{subscribedVideoTracks.map((trackRef, index) => {
-							const { participant, publication } = trackRef;
-							const key = publication?.trackSid ?? participant.identity ?? index;
-							const isHovered = hoveredId === participant.identity;
-
-							return (
-								<div
-									key={key}
-									className={styles["participant-tile"]}
-									onMouseEnter={() => setHoveredId(participant.identity)}
-									onMouseLeave={() => setHoveredId(null)}
-								>
-									<div className={styles["media"]}>
-										<VideoTrack trackRef={trackRef} />
-									</div>
-									{isHovered && (
-										<div className={styles["name"]}>{participant.identity}</div>
-									)}
-								</div>
-							);
-						})}
+						{participantCards.map(({ participant, videoTrack, avatarUrl }, index) => (
+							<CallParticipantTile
+								key={participant.sid ?? participant.identity ?? index}
+								className={styles["participant-tile"]}
+								participant={participant}
+								videoTrack={videoTrack}
+								avatarUrl={avatarUrl}
+							/>
+						))}
 					</div>
 				</div>
-			) : isSingleCameraView ? (
+			) : isSingleParticipantView ? (
 				<div className={styles["single-layout"]}>
-					{subscribedVideoTracks.map((trackRef, index) => {
-						const { participant, publication } = trackRef;
-						const key = publication?.trackSid ?? participant.identity ?? index;
-						const isHovered = hoveredId === participant.identity;
-
-						return (
-							<div
-								key={key}
-								className={styles["single-tile"]}
-								onMouseEnter={() => setHoveredId(participant.identity)}
-								onMouseLeave={() => setHoveredId(null)}
-							>
-								<div className={styles["media"]}>
-									<VideoTrack trackRef={trackRef} />
-								</div>
-								{isHovered && (
-									<div className={styles["name"]}>{participant.identity}</div>
-								)}
-							</div>
-						);
-					})}
+					{participantCards.map(({ participant, videoTrack, avatarUrl }, index) => (
+						<CallParticipantTile
+							key={participant.sid ?? participant.identity ?? index}
+							className={styles["single-tile"]}
+							participant={participant}
+							videoTrack={videoTrack}
+							avatarUrl={avatarUrl}
+						/>
+					))}
 				</div>
-			) : hasVisibleCamera ? (
+			) : participantCards.length > 0 ? (
 				<div className={styles["participants-grid"]}>
-					{subscribedVideoTracks.map((trackRef, index) => {
-						const { participant, publication } = trackRef;
-						const key = publication?.trackSid ?? participant.identity ?? index;
-						const isHovered = hoveredId === participant.identity;
-
-						return (
-							<div
-								key={key}
-								className={styles["tile"]}
-								onMouseEnter={() => setHoveredId(participant.identity)}
-								onMouseLeave={() => setHoveredId(null)}
-							>
-								<div className={styles["media"]}>
-									<VideoTrack trackRef={trackRef} />
-								</div>
-								{isHovered && (
-									<div className={styles["name"]}>{participant.identity}</div>
-								)}
-							</div>
-						);
-					})}
+					{participantCards.map(({ participant, videoTrack, avatarUrl }, index) => (
+						<CallParticipantTile
+							key={participant.sid ?? participant.identity ?? index}
+							className={styles["tile"]}
+							participant={participant}
+							videoTrack={videoTrack}
+							avatarUrl={avatarUrl}
+						/>
+					))}
 				</div>
 			) : (
 				<div className={styles["empty-state"]}>
-					<div className={styles["empty-title"]}>Audio call</div>
+					<div className={styles["empty-title"]}>Connecting call...</div>
 					<div className={styles["empty-subtitle"]}>
-						No active camera or screen share right now.
+						Waiting for participants to join the room.
 					</div>
 				</div>
 			)}

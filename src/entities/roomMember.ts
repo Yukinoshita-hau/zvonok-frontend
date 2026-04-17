@@ -11,7 +11,7 @@ export interface RoomMembers {
 	username: string,
 	status: memberStatus,
 	lastSeenAt: string,
-	avatarUrl: null,
+	avatarUrl: string | null,
 	updatedAt: string,
 	createdAt: string
 }
