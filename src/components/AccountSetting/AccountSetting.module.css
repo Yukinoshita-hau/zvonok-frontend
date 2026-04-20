@@ -5,10 +5,8 @@
 	width: 100%;
 	height: 100%;
 	color: var(--text-primary);
-	/* Цвет текста Discord */
 }
 
-/* --- Вкладки --- */
 .tabs {
 	display: flex;
 	gap: 24px;
@@ -32,14 +30,13 @@
 	color: var(--text-secondary);
 }
 
-/* --- Основной контент (форма + предпросмотр) --- */
 .content {
 	display: flex;
-	gap: 40px;
-	align-items: flex-start;
+	gap: 32px;
+	align-items: center;
+	width: 100%;
 }
 
-/* Левая колонка */
 .edit-section {
 	flex: 1;
 	display: flex;
@@ -47,7 +44,6 @@
 	gap: 24px;
 }
 
-/* --- Формы --- */
 .form-group {
 	display: flex;
 	flex-direction: column;
@@ -149,7 +145,7 @@
 	margin-bottom: 4px;
 }
 
-.preview-card {
+.preview-card{
 	background-color: #111214;
 	border-radius: 8px;
 	overflow: hidden;
@@ -233,4 +229,87 @@
 	height: 1px;
 	background-color: #3f4147;
 	margin-top: 16px;
+}
+
+.avatar-upload {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+}
+
+.avatar-upload-preview {
+	width: 88px;
+	height: 88px;
+	border-radius: 50%;
+	overflow: hidden;
+	flex-shrink: 0;
+	background-color: var(--bg-tertiary);
+	border: 1px solid var(--border);
+}
+
+.avatar-upload-image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.avatar-upload-fallback {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 28px;
+	font-weight: 700;
+	color: white;
+}
+
+.avatar-upload-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	align-items: flex-start;
+}
+
+.hidden-input {
+	display: none;
+}
+
+.btn-secondary {
+	border: none;
+	outline: none;
+	padding: 10px 14px;
+	border-radius: 10px;
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
+	cursor: pointer;
+	transition: 0.2s;
+}
+
+.btn-secondary:hover {
+	background-color: var(--bg-hover);
+}
+
+.btn-ghost {
+	border: 1px solid var(--border);
+	outline: none;
+	padding: 10px 14px;
+	border-radius: 10px;
+	background-color: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: 0.2s;
+}
+
+.btn-ghost:hover {
+	background-color: var(--bg-hover);
+	color: var(--text-primary);
+}
+
+.file-meta {
+	font-size: 12px;
+	color: var(--text-muted);
+	max-width: 220px;
+	word-break: break-word;
 }

@@ -8,7 +8,8 @@ export type memberStatus =
 
 export interface RoomMembers {
 	id: number,
-	username: string,
+	username: string;
+	displayName: string;
 	status: memberStatus,
 	lastSeenAt: string,
 	avatarUrl: string | null,

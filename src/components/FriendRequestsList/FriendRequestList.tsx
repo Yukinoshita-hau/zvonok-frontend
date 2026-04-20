@@ -5,6 +5,7 @@ import cn from "classnames";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store/store";
 import { friendActions } from "../../store/slices/friend.slice";
+import { StringToColor } from "../../utils/stringHelpers";
 
 
 export function FriendRequestsList({ requestsList, mode }: FriendRequestsListProps) {
@@ -28,7 +29,13 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 				requestsList.map((r: FriendRequest) => (
 					<div className={styles["request"]} key={r.requestId}>
 						<div className={styles["info"]}>
-							<div className={styles["avatar"]} />
+							<div className={styles["avatar"]} style={!r.senderAvatarUrl ? { backgroundColor: StringToColor(r.senderUsername) } : undefined}>
+								{r.senderAvatarUrl ? (
+									<img src={r.senderAvatarUrl} crossOrigin="anonymous" />
+								) : (
+									<div>{(r.senderDisplayName?.[0] || "?").toUpperCase()}</div>
+								)}
+							</div>
 							<div className={styles["meta"]}>
 								<div className={styles["username"]}>{mode === "incoming" ? r.senderUsername : r.receiverUsername}</div>
 								<div className={styles["date"]}>{new Date(r.createdAt).toLocaleDateString()}</div>

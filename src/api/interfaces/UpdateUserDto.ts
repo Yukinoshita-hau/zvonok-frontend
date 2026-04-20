@@ -1,7 +1,7 @@
 
 
 export interface UpdateUserDto {
-	username: string | null;
-	email: string | null;
+	displayName: string | null;
 	avatarUrl: string | null;
+	aboutMe: string | null;
 }

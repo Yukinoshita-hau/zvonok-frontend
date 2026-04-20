@@ -15,6 +15,8 @@ export interface UserState {
 	expiresAt: number | null;
 	isAuthChecked: boolean;
 	myUser: User | null;
+	status: "idle" | "loading" | "succeeded" | "failed";
+	error: string | null;
 }
 
 const initialState: UserState = {
@@ -23,7 +25,9 @@ const initialState: UserState = {
 	expiresIn: null,
 	expiresAt: null,
 	isAuthChecked: false,
-	myUser: null
+	myUser: null,
+	status: "idle",
+	error: null,
 };
 
 export const updateUser = createAsyncThunk(
@@ -32,15 +36,33 @@ export const updateUser = createAsyncThunk(
 		try {
 			const updateUserData = (await userApi.updateMyUser(body)).data;
 			const refreshTokenData = (await authApi.refresh()).data;
+
 			return {
 				user: updateUserData,
-				token: refreshTokenData
+				token: refreshTokenData,
 			};
 		} catch (e: any) {
-			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load user");
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Failed to update user"
+			);
 		}
 	}
-)
+);
+
+export const uploadAvatar = createAsyncThunk(
+	"user/uploadAvatar",
+	async (file: File, thunkAPI) => {
+		try {
+			await userApi.uploadAvatar(file);
+			const { data } = await userApi.getMyUser();
+			return data;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Failed to upload user avatar"
+			);
+		}
+	}
+);
 
 export const logoutUser = createAsyncThunk(
 	"user/logoutUser",
@@ -49,10 +71,12 @@ export const logoutUser = createAsyncThunk(
 			const { data } = await authApi.logout(body);
 			return data;
 		} catch (e: any) {
-			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load user");
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Failed to logout user"
+			);
 		}
 	}
-)
+);
 
 export const loginUser = createAsyncThunk(
 	"user/loginUser",
@@ -61,10 +85,12 @@ export const loginUser = createAsyncThunk(
 			const { data } = await authApi.login(body);
 			return data;
 		} catch (e: any) {
-			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load user");
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Failed to login user"
+			);
 		}
 	}
-)
+);
 
 export const registerUser = createAsyncThunk(
 	"user/registerUser",
@@ -73,10 +99,12 @@ export const registerUser = createAsyncThunk(
 			const { data } = await authApi.register(body);
 			return data;
 		} catch (e: any) {
-			thunkAPI.rejectWithValue(e?.message ?? "Failed to load user")
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Failed to register user"
+			);
 		}
 	}
-)
+);
 
 export const getMyUser = createAsyncThunk(
 	"user/getMyUser",
@@ -85,10 +113,12 @@ export const getMyUser = createAsyncThunk(
 			const { data } = await userApi.getMyUser();
 			return data;
 		} catch (e: any) {
-			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load user");
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Failed to load user"
+			);
 		}
 	}
-)
+);
 
 export const userSlice = createSlice({
 	name: "user",
@@ -121,19 +151,57 @@ export const userSlice = createSlice({
 			previousState.myUser = action.payload;
 		}
 	},
-	extraReducers: builder => {
+	extraReducers: (builder) => {
 		builder
+			.addCase(updateUser.pending, (previousState) => {
+				previousState.status = "loading";
+				previousState.error = null;
+			})
 			.addCase(updateUser.fulfilled, (previousState, action: PayloadAction<{
-				user: User,
-				token: JwtPayload
+				user: User;
+				token: JwtPayload;
 			}>) => {
+				previousState.status = "succeeded";
+				previousState.error = null;
+
 				previousState.myUser = action.payload.user;
 				previousState.accessToken = action.payload.token.accessToken;
 				previousState.tokenType = action.payload.token.tokenType;
 				previousState.expiresIn = action.payload.token.expiresIn;
 				previousState.expiresAt = Date.now() + action.payload.token.expiresIn;
 			})
+			.addCase(updateUser.rejected, (previousState, action) => {
+				previousState.status = "failed";
+				previousState.error = action.payload as string;
+			})
 
+			.addCase(uploadAvatar.pending, (previousState) => {
+				previousState.status = "loading";
+				previousState.error = null;
+			})
+			.addCase(uploadAvatar.fulfilled, (previousState, action: PayloadAction<User>) => {
+				previousState.status = "succeeded";
+				previousState.error = null;
+				previousState.myUser = action.payload;
+			})
+			.addCase(uploadAvatar.rejected, (previousState, action) => {
+				previousState.status = "failed";
+				previousState.error = action.payload as string;
+			})
+
+			.addCase(getMyUser.pending, (previousState) => {
+				previousState.status = "loading";
+				previousState.error = null;
+			})
+			.addCase(getMyUser.fulfilled, (previousState, action: PayloadAction<User>) => {
+				previousState.status = "succeeded";
+				previousState.error = null;
+				previousState.myUser = action.payload;
+			})
+			.addCase(getMyUser.rejected, (previousState, action) => {
+				previousState.status = "failed";
+				previousState.error = action.payload as string;
+			})
 
 			.addCase(logoutUser.fulfilled, (previousState) => {
 				previousState.accessToken = null;
@@ -142,8 +210,9 @@ export const userSlice = createSlice({
 				previousState.expiresAt = null;
 				previousState.myUser = null;
 				previousState.isAuthChecked = false;
+				previousState.status = "idle";
+				previousState.error = null;
 			})
-
 
 			.addCase(loginUser.fulfilled, (previousState, action: PayloadAction<JwtPayload>) => {
 				previousState.accessToken = action.payload.accessToken;
@@ -157,12 +226,7 @@ export const userSlice = createSlice({
 				previousState.tokenType = action.payload.tokenType;
 				previousState.expiresIn = action.payload.expiresIn;
 				previousState.expiresAt = Date.now() + action.payload.expiresIn;
-			})
-
-
-			.addCase(getMyUser.fulfilled, (previousState, action: PayloadAction<User>) => {
-				previousState.myUser = action.payload;
-			})
+			});
 	}
 });
 

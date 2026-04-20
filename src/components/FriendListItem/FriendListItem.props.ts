@@ -2,5 +2,5 @@ import type { Friend } from "../../entities/friend";
 
 export interface FriendListItemProps {
 	friend: Friend
-	onClick: (username: string) => void;
+	onClick: (displayName: string) => void;
 }

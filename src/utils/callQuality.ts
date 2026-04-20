@@ -90,7 +90,7 @@ export const SCREEN_SHARE_QUALITY_PRESETS: Record<ManualCallQuality, CallQuality
 		frameRate: 30,
 		maxBitrate: 5_000_000,
 		description: "1080p, smoother screen motion",
-	},
+	}
 };
 
 export const DEFAULT_AUTO_QUALITY: ManualCallQuality = "medium";

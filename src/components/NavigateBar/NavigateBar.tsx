@@ -17,6 +17,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 	const friend = useSelector((s: RootState) => s.friend);
 	const { notifications } = useSelector((s: RootState) => s.notification);
 	const username = useSelector((s: RootState) => s.user.myUser?.username);
+	const displayName = useSelector((s: RootState) => s.user.myUser?.displayName);
 	const avatarUrl = useSelector((s: RootState) => s.user.myUser?.avatarUrl);
 	const [isSettingModalOpen, setIsSettingModalOpen] = useState<boolean>(false);
 
@@ -72,7 +73,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 				{!!avatarUrl ? (
 					<img src={avatarUrl} crossOrigin="anonymous" alt="avatar" />
 				) : (
-					<div>{(username?.[0] || "U").toUpperCase()}</div>
+					<div>{(displayName?.[0] || "U").toUpperCase()}</div>
 				)}
 			</div>
 		</div>

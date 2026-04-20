@@ -9,6 +9,7 @@ import type { ShortMessage } from "../../entities/shortMessage";
 import { formatTime, isSameDay } from "../../utils/timeHelpers";
 import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
 import { markRoomAsRead } from "../../store/slices/room.slice";
+import { StringToColor } from "../../utils/stringHelpers";
 
 type ContextMenuState = {
 	x: number;
@@ -46,14 +47,14 @@ export function DmItemsList() {
 		dispatch(messageActions.setIsAtBottom(true))
 	}, [roomId])
 
-useEffect(() => {
-	if (!scrollRef.current) return;
-	if (status !== "succeeded") return;
-	if (!isAtBottom) return;
-	if (lastMessageId === null) return;
+	useEffect(() => {
+		if (!scrollRef.current) return;
+		if (status !== "succeeded") return;
+		if (!isAtBottom) return;
+		if (lastMessageId === null) return;
 
-	scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-}, [status, lastMessageId, isAtBottom, roomId]);
+		scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+	}, [status, lastMessageId, isAtBottom, roomId]);
 
 	useEffect(() => {
 		if (currentRoom && currentRoom.unreadCount > 0 && newDividerMessageId === null && currentRoom.firstUnreadMessageId != null) {
@@ -285,12 +286,16 @@ useEffect(() => {
 						onContextMenu={(e) => {
 							isMyMessage && openContextMenu(e, item.payload)
 						}}>
-						<div className={styles["msg-avatar"]} >
-							<img src={item.payload.sender.avatarUrl} crossOrigin="anonymous" />
+						<div className={styles["msg-avatar"]} style={{background: StringToColor(item.payload.sender.username)}}>
+							{item.payload.sender.avatarUrl ? (
+								<img src={item.payload.sender.avatarUrl} crossOrigin="anonymous" />
+							) : (
+								<div>{(item.payload.sender.displayName[0] || "?").toUpperCase()}</div>
+							)}
 						</div>
 						<div className={styles["msg-body"]}>
 							<div className={styles["msg-meta"]}>
-								<span className={styles["msg-author"]}>{item.payload.sender.username}</span>
+								<span className={styles["msg-author"]}>{item.payload.sender.displayName}</span>
 								{isMyMessage && (
 									<div className={styles["read-status"]}>
 										{item.payload.readBy?.length ?

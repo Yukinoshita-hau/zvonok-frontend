@@ -5,6 +5,7 @@ import type { RoomType } from "./room";
 export interface ShortMessageSender {
 	id: number;
 	username: string;
+	displayName: string;
 	avatarUrl: string | null;
 	status: UserStatus
 }

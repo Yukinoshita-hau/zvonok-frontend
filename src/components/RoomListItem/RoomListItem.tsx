@@ -4,45 +4,83 @@ import type { RoomListItemProps } from "./RoomListItem.props";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store/store";
 import { formatTime } from "../../utils/timeHelpers";
+import { StringToColor } from "../../utils/stringHelpers";
 
 export function RoomListItem({ room }: RoomListItemProps) {
 	const navigate = useNavigate();
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 
-	return (
-				<button
-					className={styles["item"]}
-					onClick={() => navigate(`/dm?roomId=${room.id}`)}
-				>
-					<div className={styles["avatar-wrapper"]}>
-						<div className={styles["avatar"]}>
-							{room.type === "PRIVATE" ? "👤" : "👥"}
-						</div>
-						<span className={styles["status-dot"]} />
-					</div>
+	const isPrivateRoom = room.type === "PRIVATE";
 
-					<div className={styles["content"]}>
-						<div className={styles["title-row"]}>
-							<span className={styles["title"]}>
-								{room.name ?? room.members?.find(member =>
-									member.id !== myUser?.id
-								)?.username ?? "Unknown"}
-							</span>
-							<div className={styles["right-side"]}>
-								{room.unreadCount > 0 && (
-									<span className={styles["unread-badge"]}>
-										{room.unreadCount > 99 ? "99+" : room.unreadCount}
-									</span>
-								)}
-							</div>
-							<span className={styles["time"]}>
-								{formatTime(room.lastActivityAt)}
-							</span>
+	const interlocutor = isPrivateRoom
+		? room.members?.find((member) => member.id !== myUser?.id) ?? null
+		: null;
+
+	const title = isPrivateRoom
+		? interlocutor?.displayName || "Unknown"
+		: room.name || "Unknown";
+
+	const avatarSrc = isPrivateRoom
+		? interlocutor?.avatarUrl || interlocutor?.avatartUrl || null
+		: room.avatarUrl || null;
+
+	const avatarFallback = isPrivateRoom
+		? (interlocutor?.displayName?.[0] || "?").toUpperCase()
+		: (room.name?.[0] || "?").toUpperCase();
+
+	const avatarColorKey = isPrivateRoom
+		? interlocutor?.username || "unknown-user"
+		: room.name || "unknown-room";
+
+	const avatarBg = StringToColor(avatarColorKey);
+
+	return (
+		<button
+			className={styles["item"]}
+			onClick={() => navigate(`/dm?roomId=${room.id}`)}
+		>
+			<div className={styles["avatar-wrapper"]}>
+				<div
+					className={styles["avatar"]}
+					style={!avatarSrc ? { backgroundColor: avatarBg } : undefined}
+				>
+					{avatarSrc ? (
+						<img
+							src={avatarSrc}
+							alt={title}
+							crossOrigin="anonymous"
+							className={styles["avatar-image"]}
+						/>
+					) : (
+						<div className={styles["avatar-fallback"]}>
+							{avatarFallback}
 						</div>
-						<div className={styles["message-preview"]}>
-							{room.lastMessageContent || "No messages yet..."}
-						</div>
+					)}
+				</div>
+
+				{isPrivateRoom && <span className={styles["status-dot"]} />}
+			</div>
+
+			<div className={styles["content"]}>
+				<div className={styles["title-row"]}>
+					<span className={styles["title"]}>{title}</span>
+
+					<div className={styles["right-side"]}>
+						{room.unreadCount > 0 && (
+							<span className={styles["unread-badge"]}>
+								{room.unreadCount > 99 ? "99+" : room.unreadCount}
+							</span>
+						)}
+						<span className={styles["time"]}>
+							{formatTime(room.lastActivityAt)}
+						</span>
 					</div>
-				</button>
-	)	
+				</div>
+
+				<div className={styles["message-preview"]}>
+					{room.lastMessageContent || "No messages yet..."}
+				</div>
+			</div>
+		</button>
+	);
 }

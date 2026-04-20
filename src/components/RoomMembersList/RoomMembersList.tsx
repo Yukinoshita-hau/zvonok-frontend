@@ -1,4 +1,4 @@
-﻿import styles from "./RoomMembersList.module.css";
+import styles from "./RoomMembersList.module.css";
 import type { RoomMembersListProps } from "./RoomMembersList.props";
 
 const STATUS_LABEL: Record<string, string> = {

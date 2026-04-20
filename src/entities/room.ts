@@ -6,6 +6,7 @@ export interface Room {
 	id: number;
 	name: string;
 	type: RoomType;
+	avatarUrl: string;
 	isActive: boolean;
 	createdAt: string;
 	lastMessageId: number | null;
