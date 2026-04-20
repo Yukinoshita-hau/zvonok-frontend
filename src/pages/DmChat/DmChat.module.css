@@ -54,10 +54,66 @@
 
 .input-bar {
 	display: flex;
-	align-items: center;
+	flex-direction: column;
+	align-items: stretch;
 	padding: 12px 16px 16px;
-	gap: 8px;
+	gap: 10px;
 	flex-shrink: 0;
+}
+
+.reply-preview {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 10px;
+	border-left: 3px solid var(--accent);
+	border-radius: 8px;
+	background: var(--bg-secondary);
+}
+
+.reply-preview-content {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.reply-label {
+	color: var(--accent);
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.reply-snippet {
+	color: var(--text-secondary);
+	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+.reply-cancel {
+	background: transparent;
+	border: none;
+	outline: none;
+	cursor: pointer;
+	color: var(--text-secondary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 1px;
+}
+
+.reply-cancel:hover {
+	color: var(--text-primary);
+}
+
+.composer-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .input {

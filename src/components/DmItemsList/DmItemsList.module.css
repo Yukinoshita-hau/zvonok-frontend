@@ -49,6 +49,10 @@
 	background: var(--bg-hover);
 }
 
+.message-row-highlighted {
+	background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
 .msg-avatar {
 	width: 40px;
 	height: 40px;
@@ -106,6 +110,46 @@
 	overflow-wrap: break-word;
 	word-break: break-word;
 	line-height: 20px;
+}
+
+.reply-block {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	padding: 6px 8px;
+	border-left: 3px solid var(--accent);
+	border-radius: 8px;
+	background: var(--bg-secondary);
+	cursor: pointer;
+	border-top: none;
+	border-right: none;
+	border-bottom: none;
+	text-align: left;
+	max-width: 100%;
+}
+
+.reply-block:hover {
+	background: var(--bg-hover);
+}
+
+.reply-author {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--accent);
+	max-width: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.reply-content {
+	font-size: 12px;
+	color: var(--text-secondary);
+	max-width: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .read-status {
@@ -237,6 +281,18 @@
 
 .menu-animate {
 	animation: menuIn 0.12s ease;
+}
+
+.reply-jump-notice {
+	position: sticky;
+	bottom: 10px;
+	margin-left: auto;
+	background: var(--bg-secondary);
+	border: 1px solid var(--border);
+	color: var(--text-secondary);
+	font-size: 12px;
+	padding: 8px 10px;
+	border-radius: 8px;
 }
 
 .my-message {
