@@ -101,7 +101,10 @@ export const messageSlice = createSlice({
 		},
 		sendMessage: (currentState, action: PayloadAction<{
 			roomId: string | number;
-			content: string
+			content: {
+				content: string
+				replyToMessageId: null
+			}
 		}>) => { },
 		sendPrivateMessage: (currentState, action: PayloadAction<{
 			receiver: string,

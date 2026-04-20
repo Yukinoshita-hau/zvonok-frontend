@@ -385,13 +385,6 @@ export function CallUi({
 				</div>
 			)}
 
-			{isLocalScreenShareActive && !hasLocalScreenShareAudio && (
-				<div className={styles["screen-audio-note"]}>
-					Screen audio is not shared for this source. Use a supported browser tab
-					and enable audio in the picker when available.
-				</div>
-			)}
-
 			<div className={styles["controls-bar"]}>
 				<MicrophoneToggleButton
 					className={styles["control-button"]}

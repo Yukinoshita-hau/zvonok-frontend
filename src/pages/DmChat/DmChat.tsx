@@ -101,7 +101,10 @@ export function DmChat() {
 		dispatch(
 			messageActions.sendMessage({
 				roomId: roomId,
-				content: text.trim(),
+				content: {
+					content: text.trim(),
+					replyToMessageId: null
+				}
 			})
 		);
 

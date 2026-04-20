@@ -17,6 +17,16 @@ export interface ShortMessageRoom {
 
 export type EventType = "MESSAGE" | "MESSAGE_EDIT" | "MESSAGE_DELETE";
 
+export interface ReplyPreviewDto {
+	id: number;
+	authorId: number;
+	authorUsername: string;
+	authorDisplayName: string;
+	snippet: string;
+	type: MessageType;
+	deleted: boolean;
+}
+
 export interface ShortMessage {
 	id: number;
 	content: string;
@@ -26,5 +36,7 @@ export interface ShortMessage {
 	sender: ShortMessageSender;
 	room: ShortMessageRoom;
 	editedAt: string;
+	replyToMessageId: number | null;
+	replyPreview: ReplyPreviewDto | null
 	readBy?: string[];
 }

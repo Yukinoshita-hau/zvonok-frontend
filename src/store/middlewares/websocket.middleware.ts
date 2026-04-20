@@ -223,7 +223,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				}
 				client?.publish({
 					destination: `${WS_SEND_MESSAGE_PATH}/${myAction.payload.roomId}`,
-					body: myAction.payload.content,
+					body: JSON.stringify(myAction.payload.content),
 				})
 
 				break;

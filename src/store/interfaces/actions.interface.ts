@@ -5,7 +5,12 @@ interface WsConnectAction {
 
 interface SendMessageAction {
 	type: "message/sendMessage";
-	payload: { roomId: string, content: string };
+	payload: {
+		roomId: string, content: {
+			content: string,
+			replyToMessage: number | null
+		}
+	};
 }
 
 interface SendPrivateMessageAction {
