@@ -14,6 +14,12 @@ export interface MessageState {
 	activeRoomId: number | null;
 	isAtBottom: boolean;
 	newDividerMessageId: number | null;
+	replyTarget: {
+		messageId: number;
+		authorDisplayName: string;
+		snippet: string;
+		deleted: boolean;
+	} | null;
 }
 
 const initialState: MessageState = {
@@ -24,7 +30,8 @@ const initialState: MessageState = {
 	oldestMessageId: null,
 	activeRoomId: null,
 	isAtBottom: false,
-	newDividerMessageId: null
+	newDividerMessageId: null,
+	replyTarget: null
 };
 
 export const fetchRoomMessages = createAsyncThunk(
@@ -103,9 +110,20 @@ export const messageSlice = createSlice({
 			roomId: string | number;
 			content: {
 				content: string
-				replyToMessageId: null
+				replyToMessageId: number | null
 			}
 		}>) => { },
+		startReply: (currentState, action: PayloadAction<{
+			messageId: number;
+			authorDisplayName: string;
+			snippet: string;
+			deleted: boolean;
+		}>) => {
+			currentState.replyTarget = action.payload;
+		},
+		cancelReply: (currentState) => {
+			currentState.replyTarget = null;
+		},
 		sendPrivateMessage: (currentState, action: PayloadAction<{
 			receiver: string,
 			content: string
@@ -138,9 +156,11 @@ export const messageSlice = createSlice({
 			currentState.oldestMessageId = null;
 			currentState.hasMore = true;
 			currentState.status = "idle";
+			currentState.replyTarget = null;
 		},
 		setActiveRoom: (currentState, action: PayloadAction<number | null>) => {
 			currentState.activeRoomId = action.payload;
+			currentState.replyTarget = null;
 			if (action.payload === null) {
 				currentState.newDividerMessageId = null;
 			}

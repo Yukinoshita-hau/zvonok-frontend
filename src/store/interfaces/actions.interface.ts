@@ -8,7 +8,7 @@ interface SendMessageAction {
 	payload: {
 		roomId: string, content: {
 			content: string,
-			replyToMessage: number | null
+			replyToMessageId: number | null
 		}
 	};
 }

@@ -8,7 +8,7 @@ import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
 import { fetchMyRooms } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.slice";
 import type { Room } from "../../entities/room";
-import { Phone, Send, SettingsIcon } from "lucide-react";
+import { Phone, Send, SettingsIcon, X } from "lucide-react";
 import { RoomSettingModal } from "../../components/RoomSettingModal/RoomSettingModal";
 import { StringToColor } from "../../utils/stringHelpers";
 
@@ -19,6 +19,7 @@ export function DmChat() {
 
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
+	const { replyTarget } = useSelector((s: RootState) => s.message);
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
@@ -103,12 +104,13 @@ export function DmChat() {
 				roomId: roomId,
 				content: {
 					content: text.trim(),
-					replyToMessageId: null
+					replyToMessageId: replyTarget?.messageId ?? null
 				}
 			})
 		);
 
 		setText("");
+		dispatch(messageActions.cancelReply());
 	};
 
 	const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -186,16 +188,39 @@ export function DmChat() {
 			<DmItemsList />
 
 			<div className={styles["input-bar"]}>
-				<input
-					className={styles["input"]}
-					placeholder="Message @here"
-					value={text}
-					onChange={(e) => setText(e.target.value)}
-					onKeyDown={handleKeyPress}
-				/>
-				<button className={styles["message-button"]} onClick={onSend}>
-					<Send color="white" size={20} />
-				</button>
+				{replyTarget && (
+					<div className={styles["reply-preview"]}>
+						<div className={styles["reply-preview-content"]}>
+							<span className={styles["reply-label"]}>
+								Replying to {replyTarget.authorDisplayName}
+							</span>
+							<span className={styles["reply-snippet"]}>
+								{replyTarget.deleted
+									? "Original message was deleted"
+									: replyTarget.snippet || "Message unavailable"}
+							</span>
+						</div>
+						<button
+							className={styles["reply-cancel"]}
+							onClick={() => dispatch(messageActions.cancelReply())}
+							aria-label="Cancel reply"
+						>
+							<X size={14} />
+						</button>
+					</div>
+				)}
+				<div className={styles["composer-row"]}>
+					<input
+						className={styles["input"]}
+						placeholder="Message @here"
+						value={text}
+						onChange={(e) => setText(e.target.value)}
+						onKeyDown={handleKeyPress}
+					/>
+					<button className={styles["message-button"]} onClick={onSend}>
+						<Send color="white" size={20} />
+					</button>
+				</div>
 			</div>
 		</div>
 	);

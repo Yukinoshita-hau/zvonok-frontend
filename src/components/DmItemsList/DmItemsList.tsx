@@ -26,6 +26,8 @@ export function DmItemsList() {
 	const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
 	const [editContent, setEditContent] = useState("");
 	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+	const [highlightedMessageId, setHighlightedMessageId] = useState<number | null>(null);
+	const [replyJumpNotice, setReplyJumpNotice] = useState<string | null>(null);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -206,11 +208,50 @@ export function DmItemsList() {
 		setEditContent("");
 	}
 
+	const getReplySnippet = (msg: ShortMessage) => {
+		if (msg.replyPreview?.deleted) return "Original message was deleted";
+		const source = msg.replyPreview?.snippet || msg.content || "";
+		return source.replace(/\s+/g, " ").trim().slice(0, 120);
+	}
+
+	const handleStartReply = (msg: ShortMessage) => {
+		if (msg.eventType === "MESSAGE_DELETE") return;
+
+		dispatch(
+			messageActions.startReply({
+				messageId: msg.id,
+				authorDisplayName: msg.sender.displayName,
+				snippet: getReplySnippet(msg),
+				deleted: msg.replyPreview?.deleted ?? false
+			})
+		);
+	}
+
+	const handleReplyJump = (msg: ShortMessage) => {
+		if (!msg.replyToMessageId) return;
+
+		const targetEl = messageRefs.current.get(msg.replyToMessageId);
+		if (!targetEl) {
+			setReplyJumpNotice("Original message is not loaded in the current list");
+			window.setTimeout(() => setReplyJumpNotice(null), 2200);
+			return;
+		}
+
+		targetEl.scrollIntoView({
+			behavior: "smooth",
+			block: "center"
+		});
+		setHighlightedMessageId(msg.replyToMessageId);
+		window.setTimeout(() => {
+			setHighlightedMessageId(current => (current === msg.replyToMessageId ? null : current));
+		}, 1600);
+	}
+
 	const openContextMenu = (e: React.MouseEvent, msg: ShortMessage) => {
 		e.preventDefault();
 
 		const menuWidth = 160;
-		const menuHeight = 96;
+		const menuHeight = msg.sender.username === myUser?.username ? 132 : 48;
 
 		let x = e.clientX;
 		let y = e.clientY;
@@ -282,9 +323,12 @@ export function DmItemsList() {
 						}}
 						data-id={item.payload.id}
 						data-sender={item.payload.sender.username}
-						className={styles["message-row"]}
+						className={cn(
+							styles["message-row"],
+							highlightedMessageId === item.payload.id && styles["message-row-highlighted"]
+						)}
 						onContextMenu={(e) => {
-							isMyMessage && openContextMenu(e, item.payload)
+							openContextMenu(e, item.payload)
 						}}>
 						<div className={styles["msg-avatar"]} style={{background: StringToColor(item.payload.sender.username)}}>
 							{item.payload.sender.avatarUrl ? (
@@ -327,10 +371,28 @@ export function DmItemsList() {
 									</div>
 								</div>
 							) : (
+								<>
+									{item.payload.replyToMessageId !== null && (
+										<button
+											className={styles["reply-block"]}
+											onClick={() => handleReplyJump(item.payload)}
+											type="button"
+										>
+											<span className={styles["reply-author"]}>
+												{item.payload.replyPreview?.authorDisplayName || "Unknown user"}
+											</span>
+											<span className={styles["reply-content"]}>
+												{item.payload.replyPreview?.deleted
+													? "Original message was deleted"
+													: item.payload.replyPreview?.snippet || "Original message unavailable"}
+											</span>
+										</button>
+									)}
 
-								<div className={styles["msg-text"]}>
-									{item.payload.content}
-								</div>
+									<div className={styles["msg-text"]}>
+										{item.payload.content}
+									</div>
+								</>
 							)}
 
 						</div>
@@ -338,12 +400,28 @@ export function DmItemsList() {
 				)
 			})}
 
+			{replyJumpNotice && (
+				<div className={styles["reply-jump-notice"]}>{replyJumpNotice}</div>
+			)}
+
 			{contextMenu && (
 				<div
 					className={cn(styles["context-menu"], styles["menu-animate"])}
 					style={{ top: contextMenu.y, left: contextMenu.x }}
 					onClick={(e) => e.stopPropagation()}
 				>
+					<button
+						onClick={() => {
+							const msg = messages.find(m => m.id === contextMenu.messageId);
+							if (msg) handleStartReply(msg);
+							setContextMenu(null);
+						}}>
+						Reply
+					</button>
+
+					{messages.find(m => m.id === contextMenu.messageId)?.sender.username === myUser?.username && (
+						<>
+							<div className={styles["menu-divider"]} />
 					<button
 						onClick={() => {
 							const msg = messages.find(m => m.id === contextMenu.messageId);
@@ -364,6 +442,8 @@ export function DmItemsList() {
 					>
 						Delete
 					</button>
+						</>
+					)}
 				</div>
 			)}
 		</div>
