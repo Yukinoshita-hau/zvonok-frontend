@@ -87,7 +87,7 @@ export function InboxLayout() {
 			} else {
 				return dateA - dateB
 			}
-		})
+		}).filter(r => r.lastMessageId !== null)
 	}, [rooms, filterMode])
 
 	const sortedFriends = useMemo(() => {
@@ -107,10 +107,11 @@ export function InboxLayout() {
 			r.type === "PRIVATE" &&
 			r.members?.some(m => m.username === friendUsername)
 		)
+
 		if (existing) {
 			navigate(`/dm?roomId=${existing.id}`)
 		} else {
-			navigate(`/dm?username=${friendUsername}`)
+			navigate(`/`)
 		}
 	}
 

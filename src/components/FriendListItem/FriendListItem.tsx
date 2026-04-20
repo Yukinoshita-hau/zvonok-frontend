@@ -10,7 +10,7 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 	const avatarBg = StringToColor(friend.friendUsername);
 
 	const removeHandle = (displayName: string) => {
-		dispatch(friendActions.removeFriend({ friendDisplayName: displayName }))
+		dispatch(friendActions.removeFriend({ friendUsername: friend.friendUsername }))
 	}
 
 	return (

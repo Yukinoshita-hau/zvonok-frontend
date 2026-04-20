@@ -321,7 +321,7 @@ export function CallUi({
 							</div>
 						)}
 						<div className={styles["name"]}>
-							{mainScreenTrack.participant.identity}
+							{mainScreenTrack.participant.name}
 						</div>
 					</div>
 

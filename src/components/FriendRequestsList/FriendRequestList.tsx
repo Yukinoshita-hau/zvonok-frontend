@@ -6,13 +6,14 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store/store";
 import { friendActions } from "../../store/slices/friend.slice";
 import { StringToColor } from "../../utils/stringHelpers";
+import { fetchMyRooms } from "../../store/slices/room.slice";
 
 
 export function FriendRequestsList({ requestsList, mode }: FriendRequestsListProps) {
 	const dispatch = useDispatch<AppDispatch>();
 
 	const acceptHandle = (requestId: number) => {
-		dispatch(friendActions.acceptFriendRequest({ requestId: requestId }));
+		dispatch(friendActions.acceptFriendRequest({ requestId: requestId }))
 	}
 
 	const rejectHandle = (requestId: number) => {
@@ -29,15 +30,23 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 				requestsList.map((r: FriendRequest) => (
 					<div className={styles["request"]} key={r.requestId}>
 						<div className={styles["info"]}>
-							<div className={styles["avatar"]} style={!r.senderAvatarUrl ? { backgroundColor: StringToColor(r.senderUsername) } : undefined}>
-								{r.senderAvatarUrl ? (
+							<div className={styles["avatar"]}
+								style={{ backgroundColor: StringToColor(mode === "incoming" ? r.senderUsername : r.receiverUsername) }}>
+								{mode === "incoming" && r.senderAvatarUrl !== null && (
 									<img src={r.senderAvatarUrl} crossOrigin="anonymous" />
-								) : (
+								)}
+								{mode === "incoming" && r.senderAvatarUrl === null && (
 									<div>{(r.senderDisplayName?.[0] || "?").toUpperCase()}</div>
+								)}
+								{mode === "outgoing" && r.receiverAvatarUrl !== null && (
+									<img src={r.receiverAvatarUrl} crossOrigin="anonymous" />
+								)}
+								{mode === "outgoing" && r.receiverAvatarUrl === null && (
+									<div>{(r.receiverDisplayName?.[0] || "?").toUpperCase()}</div>
 								)}
 							</div>
 							<div className={styles["meta"]}>
-								<div className={styles["username"]}>{mode === "incoming" ? r.senderUsername : r.receiverUsername}</div>
+								<div className={styles["username"]}>{mode === "incoming" ? r.senderDisplayName : r.receiverDisplayName}</div>
 								<div className={styles["date"]}>{new Date(r.createdAt).toLocaleDateString()}</div>
 							</div>
 						</div>
@@ -56,6 +65,6 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 					</div>
 				))
 			}
-		</div>
+		</div >
 	)
 }

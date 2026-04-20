@@ -108,7 +108,7 @@ export const friendSlice = createSlice({
 			requestId: number
 		}>) => { },
 		removeFriend: (currentState, action: PayloadAction<{
-			friendDisplayName: string
+			friendUsername: string
 		}>) => { },
 	},
 	extraReducers: builder => {

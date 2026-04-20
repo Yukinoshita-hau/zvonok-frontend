@@ -23,7 +23,7 @@ export function CallParticipantTile({
 	isScreenShareSelected = false,
 	onOpenScreenShare,
 }: CallParticipantTileProps) {
-	const identity = participant.identity || "Unknown";
+	const identity = participant.name || "Unknown";
 	const avatarLabel = identity.slice(0, 1).toUpperCase();
 	const avatarBg = StringToColor(identity);
 	const micEnabled = participant.isMicrophoneEnabled;

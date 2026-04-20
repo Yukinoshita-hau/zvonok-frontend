@@ -52,7 +52,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 						const data = JSON.parse(message.body);
 						const state = storeApi.getState();
-						const pending = state.message.pendingPrivateUsername;
 						const myUsername = storeApi.getState().user.myUser?.username;
 						const activeRoomId = state.message.activeRoomId;
 
@@ -68,10 +67,9 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 						await storeApi.dispatch(fetchMyRooms());
 
-						if (!activeRoomId && pending && data.room?.id
+						if (!activeRoomId && data.room?.id
 							&& data.sender?.username === state.user.myUser?.username) {
 							storeApi.dispatch(messageActions.setActiveRoom(data.room.id));
-							storeApi.dispatch(messageActions.setPendingPrivate(null));
 							storeApi.dispatch(fetchRoomMessages({ roomId: data.room.id }))
 						}
 
@@ -140,8 +138,8 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 								}
 
 								storeApi.dispatch(fetchMyFriends());
-
-								break;
+								storeApi.dispatch(fetchMyRooms());
+																break;
 							}
 							case "FRIEND_REQUEST_CREATED": {
 								if (data.payload?.senderUsername === myUsername) {
@@ -363,7 +361,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					destination: `${WS_ACCEPT_FRIEND_REQUEST_PATH}/${myAction.payload.requestId}`
 				})
 				break;
-			}
+			};
 
 			case "friend/rejectFriendRequest": {
 				if (!client?.active) {

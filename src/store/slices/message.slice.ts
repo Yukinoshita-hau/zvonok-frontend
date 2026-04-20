@@ -12,7 +12,6 @@ export interface MessageState {
 	hasMore: boolean;
 	oldestMessageId: number | null;
 	activeRoomId: number | null;
-	pendingPrivateUsername: string | null;
 	isAtBottom: boolean;
 	newDividerMessageId: number | null;
 }
@@ -24,7 +23,6 @@ const initialState: MessageState = {
 	hasMore: true,
 	oldestMessageId: null,
 	activeRoomId: null,
-	pendingPrivateUsername: null,
 	isAtBottom: false,
 	newDividerMessageId: null
 };
@@ -137,9 +135,6 @@ export const messageSlice = createSlice({
 			currentState.oldestMessageId = null;
 			currentState.hasMore = true;
 			currentState.status = "idle";
-		},
-		setPendingPrivate: (currentState, action: PayloadAction<string | null>) => {
-			currentState.pendingPrivateUsername = action.payload;
 		},
 		setActiveRoom: (currentState, action: PayloadAction<number | null>) => {
 			currentState.activeRoomId = action.payload;

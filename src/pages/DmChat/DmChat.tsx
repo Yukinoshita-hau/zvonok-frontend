@@ -19,61 +19,35 @@ export function DmChat() {
 
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
-	const activeRoomId = useSelector((s: RootState) => s.message.activeRoomId);
-	const pending = useSelector((s: RootState) => s.message.pendingPrivateUsername);
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
 
 	const roomIdParam = searchParams.get("roomId");
-	const nameParam = searchParams.get("username");
-
-	const roomId = roomIdParam ? Number(roomIdParam) : null;
-	const username = nameParam || null;
+	const parsedRoomId = roomIdParam ? Number(roomIdParam) : null;
+	const roomId = parsedRoomId !== null && !Number.isNaN(parsedRoomId) ? parsedRoomId: null;
 
 	useEffect(() => {
-		if (roomId) {
-			const numericId = Number(roomId);
-			dispatch(messageActions.setActiveRoom(numericId));
-			dispatch(messageActions.setPendingPrivate(null));
-			dispatch(messageActions.clearMessages());
-			dispatch(fetchMyRooms());
-			dispatch(fetchRoomMessages({ roomId: numericId }));
-		} else if (username) {
-			dispatch(messageActions.setPendingPrivate(username));
-			dispatch(messageActions.setActiveRoom(null));
-			dispatch(fetchMyRooms());
-			dispatch(messageActions.clearMessages());
-		} else {
-			navigate("/");
+		if (!roomId) {
+			navigate("/")
+			return
+
 		}
-	}, [dispatch, roomId, username, navigate]);
+		dispatch(messageActions.setActiveRoom(roomId));
+		dispatch(messageActions.clearMessages());
+		dispatch(fetchMyRooms());
+		dispatch(fetchRoomMessages({ roomId: roomId }));
+	}, [dispatch, roomId, navigate]);
 
 	useEffect(() => {
 		return () => {
 			dispatch(messageActions.setActiveRoom(null));
-			dispatch(messageActions.setPendingPrivate(null));
 		};
 	}, [dispatch]);
 
-	useEffect(() => {
-		if (!activeRoomId || roomId || pending !== null || !username) return;
-
-		const matchedRoom = rooms.find(
-			(r) =>
-				r.id === activeRoomId &&
-				r.type === "PRIVATE" &&
-				r.members?.some((m) => m.username === username)
-		);
-
-		if (matchedRoom) {
-			navigate(`?roomId=${activeRoomId}`, { replace: true });
-		}
-	}, [activeRoomId, pending, roomId, username, rooms, navigate]);
-
 	const currentRoom = useMemo(() => {
 		if (!roomId) return null;
-		return rooms?.find((room: Room) => room.id === Number(roomId)) ?? null;
+		return rooms?.find((room: Room) => room.id === roomId) ?? null;
 	}, [rooms, roomId]);
 
 	const interlocutor = useMemo(() => {
@@ -88,19 +62,19 @@ export function DmChat() {
 
 	const roomTitle = useMemo(() => {
 		if (currentRoom?.type === "PRIVATE") {
-			return interlocutor?.displayName || interlocutor?.username || username || "Unknown";
+			return interlocutor?.displayName || "Unknown";
 		}
 
 		return currentRoom?.name || "Unknown";
-	}, [currentRoom, interlocutor, username]);
+	}, [currentRoom, interlocutor]);
 
 	const avatarColorKey = useMemo(() => {
 		if (currentRoom?.type === "PRIVATE") {
-			return interlocutor?.username || username || "unknown-user";
+			return interlocutor?.username || "unknown-user";
 		}
 
 		return currentRoom?.name || "unknown-room";
-	}, [currentRoom, interlocutor, username]);
+	}, [currentRoom, interlocutor]);
 
 	const avatarBg = useMemo(() => {
 		return StringToColor(avatarColorKey);
@@ -108,38 +82,28 @@ export function DmChat() {
 
 	const avatarSrc = useMemo(() => {
 		if (currentRoom?.type === "PRIVATE") {
-			return interlocutor?.avatarUrl || interlocutor?.avatartUrl || null;
+			return interlocutor?.avatarUrl || null;
 		}
-
 		return currentRoom?.avatarUrl || null;
 	}, [currentRoom, interlocutor]);
 
 	const avatarFallback = useMemo(() => {
 		if (currentRoom?.type === "PRIVATE") {
-			return (interlocutor?.displayName?.[0] || interlocutor?.username?.[0] || "?").toUpperCase();
+			return (interlocutor?.displayName?.[0] || "?").toUpperCase();
 		}
 
 		return (currentRoom?.name?.[0] || "?").toUpperCase();
 	}, [currentRoom, interlocutor]);
 
 	const onSend = () => {
-		if (!text.trim()) return;
+		if (!text.trim() || !roomId) return;
 
-		if (roomId) {
-			dispatch(
-				messageActions.sendMessage({
-					roomId: Number(roomId),
-					content: text.trim(),
-				})
-			);
-		} else if (username) {
-			dispatch(
-				messageActions.sendPrivateMessage({
-					receiver: username,
-					content: text.trim(),
-				})
-			);
-		}
+		dispatch(
+			messageActions.sendMessage({
+				roomId: roomId,
+				content: text.trim(),
+			})
+		);
 
 		setText("");
 	};
