@@ -8,9 +8,12 @@ import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
 import { fetchMyRooms } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.slice";
 import type { Room } from "../../entities/room";
-import { Phone, Send, SettingsIcon, X } from "lucide-react";
+import { Phone, Send, SettingsIcon, UserPlus, X } from "lucide-react";
 import { RoomSettingModal } from "../../components/RoomSettingModal/RoomSettingModal";
 import { StringToColor } from "../../utils/stringHelpers";
+import { friendActions } from "../../store/slices/friend.slice";
+import { UserMiniCard } from "../../components/UserMiniCard/UserMiniCard";
+import type { UserCardRelationship } from "../../components/UserMiniCard/UserMiniCard.props";
 
 export function DmChat() {
 	const navigate = useNavigate();
@@ -20,9 +23,12 @@ export function DmChat() {
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const { replyTarget } = useSelector((s: RootState) => s.message);
+	const { friends, incomingRequests, outgoingRequests } = useSelector((s: RootState) => s.friend);
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
+	const [isProfileCardOpen, setIsProfileCardOpen] = useState(false);
+	const [profileAnchor, setProfileAnchor] = useState<DOMRect | null>(null);
 
 	const roomIdParam = searchParams.get("roomId");
 	const parsedRoomId = roomIdParam ? Number(roomIdParam) : null;
@@ -96,6 +102,15 @@ export function DmChat() {
 		return (currentRoom?.name?.[0] || "?").toUpperCase();
 	}, [currentRoom, interlocutor]);
 
+	const relationship = useMemo<UserCardRelationship>(() => {
+		if (!interlocutor || !myUser) return "none";
+		if (interlocutor.id === myUser.id) return "self";
+		if (friends.some((friend) => friend.friendUsername === interlocutor.username)) return "friend";
+		if (outgoingRequests.some((request) => request.receiverUsername === interlocutor.username)) return "outgoing";
+		if (incomingRequests.some((request) => request.senderUsername === interlocutor.username)) return "incoming";
+		return "none";
+	}, [friends, incomingRequests, interlocutor, myUser, outgoingRequests]);
+
 	const onSend = () => {
 		if (!text.trim() || !roomId) return;
 
@@ -148,42 +163,92 @@ export function DmChat() {
 		setIsRoomSettingOpen(true);
 	};
 
+	const handleHeaderIdentityClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+		setProfileAnchor(event.currentTarget.getBoundingClientRect());
+		setIsProfileCardOpen(true);
+	};
+
+	const handleAddFriend = () => {
+		if (!interlocutor) return;
+		dispatch(friendActions.sendFriendRequest({ username: interlocutor.username }));
+		setIsProfileCardOpen(false);
+	};
+
+	const handleRemoveFriend = () => {
+		if (!interlocutor) return;
+		dispatch(friendActions.removeFriend({ friendUsername: interlocutor.username }));
+		setIsProfileCardOpen(false);
+	};
+
+	const isPrivateRoom = currentRoom?.type === "PRIVATE";
+
 	return (
 		<div className={styles["chat"]}>
 			<div className={styles["header"]}>
 				<div className={styles["header-left"]}>
-					<div className={styles["avatar"]} style={{ background: avatarBg }}>
-						{avatarSrc ? (
-							<img
-								src={avatarSrc}
-								alt={roomTitle}
-								crossOrigin="anonymous"
-								className={styles["avatar-image"]}
-							/>
-						) : (
-							<div className={styles["avatar-fallback"]}>{avatarFallback}</div>
-						)}
-					</div>
+					<button
+						type="button"
+						className={styles["identity-button"]}
+						onClick={handleHeaderIdentityClick}
+					>
+						<div className={styles["avatar"]} style={{ background: avatarBg }}>
+							{avatarSrc ? (
+								<img
+									src={avatarSrc}
+									alt={roomTitle}
+									crossOrigin="anonymous"
+									className={styles["avatar-image"]}
+								/>
+							) : (
+								<div className={styles["avatar-fallback"]}>{avatarFallback}</div>
+							)}
+						</div>
 
-					<span className={styles["title"]}>{roomTitle}</span>
+						<span className={styles["title"]}>{roomTitle}</span>
+					</button>
 				</div>
 
 				<div className={styles["header-right"]}>
-					<button className={styles["btn"]} onClick={handleStartCall}>
+					{isPrivateRoom && relationship === "none" && (
+						<button className={styles["btn"]} onClick={handleAddFriend} aria-label="Add friend">
+							<UserPlus color="white" size={18} />
+						</button>
+					)}
+					<button className={styles["btn"]} onClick={handleStartCall} aria-label="Start voice call">
 						<Phone color="white" size={20} />
 					</button>
-					<button className={styles["btn"]} onClick={handleOpenChatSetting}>
+					<button className={styles["btn"]} onClick={handleOpenChatSetting} aria-label="Chat settings">
 						<SettingsIcon color="white" size={20} />
 					</button>
 				</div>
 			</div>
 
-			<RoomSettingModal
-				isOpen={isRoomSettingOpen}
-				onClose={() => setIsRoomSettingOpen(false)}
-				onStartCall={handleStartCall}
-				room={currentRoom}
-			/>
+			{currentRoom && (
+				<RoomSettingModal
+					isOpen={isRoomSettingOpen}
+					onClose={() => setIsRoomSettingOpen(false)}
+					onStartCall={handleStartCall}
+					room={currentRoom}
+				/>
+			)}
+
+			{isPrivateRoom && interlocutor && (
+				<UserMiniCard
+					isOpen={isProfileCardOpen}
+					displayName={interlocutor.displayName}
+					username={interlocutor.username}
+					avatarUrl={interlocutor.avatarUrl}
+					aboutMe={null}
+					statusLabel={interlocutor.status}
+					avatarBg={avatarBg}
+					relationship={relationship}
+					anchorRect={profileAnchor}
+					onClose={() => setIsProfileCardOpen(false)}
+					onMessage={() => setIsProfileCardOpen(false)}
+					onAddFriend={handleAddFriend}
+					onRemoveFriend={handleRemoveFriend}
+				/>
+			)}
 
 			<DmItemsList />
 

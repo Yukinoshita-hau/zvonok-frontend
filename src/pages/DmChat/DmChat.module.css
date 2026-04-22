@@ -22,6 +22,26 @@
 	gap: 8px;
 }
 
+.identity-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	border: none;
+	background: transparent;
+	padding: 4px 6px;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.identity-button:hover {
+	background: var(--bg-hover);
+}
+
+.identity-button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
 .header-right {
 	display: flex;
 	gap: 14px;
@@ -44,6 +64,10 @@
 	width: 100%;
 	height: 100%;
 	border-radius: 50%;
+}
+
+.avatar-image {
+	object-fit: cover;
 }
 
 .title {
