@@ -164,6 +164,7 @@ export function DmChat() {
 	};
 
 	const handleHeaderIdentityClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+		if (!isPrivateRoom || !interlocutor) return;
 		setProfileAnchor(event.currentTarget.getBoundingClientRect());
 		setIsProfileCardOpen(true);
 	};
@@ -190,6 +191,8 @@ export function DmChat() {
 						type="button"
 						className={styles["identity-button"]}
 						onClick={handleHeaderIdentityClick}
+						aria-label={isPrivateRoom ? `Open profile card for ${roomTitle}` : "Room identity"}
+						aria-disabled={!isPrivateRoom}
 					>
 						<div className={styles["avatar"]} style={{ background: avatarBg }}>
 							{avatarSrc ? (

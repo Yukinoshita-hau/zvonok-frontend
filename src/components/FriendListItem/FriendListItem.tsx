@@ -29,12 +29,26 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 		: incomingRequests.some((request) => request.senderUsername === friend.friendUsername)
 			? "incoming"
 			: "friend";
+	const openDmWithFriend = () => {
+		openDmWithFriend();
+	};
+
+	const handleItemKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (event.key === "Enter" || event.key === " ") {
+			event.preventDefault();
+			openDmWithFriend();
+		}
+	};
 
 	return (
 		<>
 			<div
 				className={styles["item"]}
-				onClick={() => onClick(friend.friendUsername)}
+				onClick={openDmWithFriend}
+				onKeyDown={handleItemKeyDown}
+				role="button"
+				tabIndex={0}
+				aria-label={`Open chat with ${friend.friendDisplayName}`}
 			>
 				<button type="button" className={styles["identity-button"]} onClick={openProfile}>
 					<div className={styles["avatar-wrapper"]}>
@@ -81,7 +95,7 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 				anchorRect={anchorRect}
 				onClose={() => setIsProfileOpen(false)}
 				onMessage={() => {
-					onClick(friend.friendUsername);
+					openDmWithFriend();
 					setIsProfileOpen(false);
 				}}
 				onRemoveFriend={() => {
