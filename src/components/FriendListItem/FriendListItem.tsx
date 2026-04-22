@@ -30,7 +30,7 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 			? "incoming"
 			: "friend";
 	const openDmWithFriend = () => {
-		openDmWithFriend();
+		onClick(friend.friendUsername);
 	};
 
 	const handleItemKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {

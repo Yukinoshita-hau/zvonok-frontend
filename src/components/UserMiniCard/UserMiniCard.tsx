@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import styles from "./UserMiniCard.module.css";
 import type { UserMiniCardProps } from "./UserMiniCard.props";
 
@@ -46,7 +47,7 @@ export function UserMiniCard({
 
 	useEffect(() => {
 		if (!isOpen || !rootRef.current) return;
-		rootRef.current.focus();
+		rootRef.current.focus({ preventScroll: true });
 	}, [isOpen]);
 
 	const position = useMemo(() => {
@@ -77,7 +78,7 @@ export function UserMiniCard({
 						? "You"
 						: "Not friends";
 
-	return (
+	const card = (
 		<div
 			ref={rootRef}
 			className={styles["popout"]}
@@ -127,4 +128,6 @@ export function UserMiniCard({
 			</div>
 		</div>
 	);
+
+	return createPortal(card, document.body);
 }

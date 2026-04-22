@@ -13,7 +13,7 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 	const isVisible = useModalAnimation(isOpen);
 	const normalizedName = room?.name?.trim();
 	const opponent = room?.members.find((member) => member.id !== myUser?.id);
-	const roomTitle = normalizedName || opponent?.username || "Unknown room";
+	const roomTitle = normalizedName || opponent?.displayName || opponent?.username || "Unknown room";
 
 	if (!isVisible || !room) return null;
 
