@@ -1,18 +1,8 @@
 import { MonitorUp, Mic, MicOff } from "lucide-react";
-import { VideoTrack, type TrackReference } from "@livekit/components-react";
-import type { Participant } from "livekit-client";
+import { VideoTrack } from "@livekit/components-react";
 import { StringToColor } from "../../utils/stringHelpers";
 import styles from "./CallUi.module.css";
-
-interface CallParticipantTileProps {
-	participant: Participant;
-	videoTrack?: TrackReference;
-	avatarUrl?: string | null;
-	className: string;
-	isScreenSharing?: boolean;
-	isScreenShareSelected?: boolean;
-	onOpenScreenShare?: () => void;
-}
+import type { CallParticipantTileProps } from "./CallParticipantTile.props";
 
 export function CallParticipantTile({
 	participant,
@@ -88,8 +78,7 @@ export function CallParticipantTile({
 
 			{isScreenSharing && videoTrack && (
 				<div className={styles["screen-share-badge"]}>
-					<MonitorUp size={13} />
-					<span>Screen</span>
+					<MonitorUp size={12} />
 				</div>
 			)}
 
@@ -99,7 +88,7 @@ export function CallParticipantTile({
 				}`}
 				title={micEnabled ? "Microphone is enabled" : "Microphone is muted"}
 			>
-				{micEnabled ? <Mic size={14} /> : <MicOff size={14} />}
+				{micEnabled ? <Mic size={10} /> : <MicOff size={10} />}
 			</div>
 
 			<div className={styles["name"]}>{identity}</div>

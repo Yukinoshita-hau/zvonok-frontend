@@ -123,15 +123,10 @@ export function DmChat() {
 		const prefix = currentRoom.type === "GROUP" ? "group-" : "dm-";
 		const livekitRoomName = `${prefix}${currentRoom.id}`;
 
-		const peerUsernames: string[] = currentRoom.members
-			.map((member) => member.username)
-			.filter((username) => username !== myUser?.username);
-
 		dispatch(
 			callActions.startOutgoing({
 				chatRoomId: currentRoom.id,
 				livekitRoomName,
-				peerUsernames,
 			})
 		);
 

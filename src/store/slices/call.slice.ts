@@ -55,7 +55,6 @@ export const callSlice = createSlice({
 		startOutgoing: (previousState, action: PayloadAction<{
 			chatRoomId: number,
 			livekitRoomName: string,
-			peerUsernames: string[]
 		}>) => {
 			previousState.status = "outgoing_ringing";
 			previousState.direction = "outgoing";

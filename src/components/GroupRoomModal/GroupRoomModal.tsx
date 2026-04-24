@@ -21,7 +21,7 @@ export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoom
 		})
 	};
 
-	const filtered = friends.filter(f => f.friendUsername.toLowerCase().includes(query.toLowerCase()));
+	const filtered = friends.filter(f => f.friendDisplayName.toLowerCase().includes(query.toLowerCase()));
 
 	return (
 		<div
@@ -73,7 +73,7 @@ export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoom
 											onChange={() => toggle(friend.friendUsername)}
 										/>
 										<span className={styles["custom-checkbox"]} />
-										<span>{friend.friendUsername}</span>
+										<span>{friend.friendDisplayName}</span>
 									</label>
 								))}
 							</div>
@@ -94,7 +94,6 @@ export function GroupRoomModal({ isOpen, friends, onClose, onCreate }: GroupRoom
 						className={styles["btn-primary"]}
 						onClick={() => {
 							if (name.trim() && selected.length >= 2) {
-								console.log(name, selected)
 								onCreate({ roomName: name.trim(), roomMemberUsernames: selected });
 							}
 						}}

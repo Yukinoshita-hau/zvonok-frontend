@@ -336,19 +336,17 @@
 	font-weight: 700;
 }
 
-/* ===== USERNAME ===== */
-
 .name {
 	position: absolute;
-	left: 10px;
-	bottom: 10px;
+	bottom: 5px;
+	left: 1px;
 	z-index: 10;
 	max-width: calc(100% - 20px);
 	padding: 6px 10px;
 	border-radius: 8px;
-	background-color: rgba(0, 0, 0, 0.45);
+	background-color: rgba(0, 0, 0, 0.2);
 	color: #fff;
-	font-size: 14px;
+	font-size: 12px;
 	font-weight: 600;
 	line-height: 1.2;
 	white-space: nowrap;

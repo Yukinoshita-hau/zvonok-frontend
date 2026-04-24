@@ -12,9 +12,13 @@ export interface CallInviteEvent extends BaseCallEvent {
 	liveKitRoomName: string;
 }
 export interface CallAcceptEvent extends BaseCallEvent {
-	toUsers: string
+	toUsers: string;
 	liveKitRoomName: string;
 }
-export interface CallDeclineEvent extends BaseCallEvent { }
+
+export interface CallDeclineEvent extends BaseCallEvent {
+	fromUser: string;
+}
+
 export interface CallBusyEvent extends BaseCallEvent { }
 export interface CallEndEvent extends BaseCallEvent { }	

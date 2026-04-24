@@ -22,15 +22,7 @@ import {
 	getScreenSharePublishOptions,
 	resolveQualitySetting,
 } from "../../utils/callQuality";
-
-interface CallUiProps {
-	hasChat: boolean;
-	isFocusMode: boolean;
-	onHide: () => void;
-	onOpenChat: () => void;
-	onMinimize: () => void;
-	onToggleFocus: () => void;
-}
+import type { CallUiProps } from "./CallUi.props";
 
 export function CallUi({
 	hasChat,
@@ -68,8 +60,7 @@ export function CallUi({
 
 	const currentRoom = useMemo(
 		() => rooms.find((room) => room.id === call.chatRoomId) ?? null,
-		[rooms, call.chatRoomId]
-	);
+		[rooms, call.chatRoomId]);
 
 	const participantAvatarResolver = useMemo(() => {
 		const avatarsByKey = new Map<string, string | null>();

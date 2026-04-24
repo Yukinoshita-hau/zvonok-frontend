@@ -73,7 +73,7 @@ export function InboxLayout() {
 	}
 
 	const handleCreateGroup = async (body: CreateGroupBody) => {
-		await dispatch(createGroupRoom(body));
+		await dispatch(createGroupRoom(body)).unwrap();
 		dispatch(fetchMyRooms());
 		setIsRoomModalOpen(false);
 	}
@@ -87,7 +87,7 @@ export function InboxLayout() {
 			} else {
 				return dateA - dateB
 			}
-		}).filter(r => r.lastMessageId !== null)
+		}).filter(r => r.type === "PRIVATE" && r.lastMessageId === null ? false: true)
 	}, [rooms, filterMode])
 
 	const sortedFriends = useMemo(() => {
