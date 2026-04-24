@@ -241,6 +241,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 				};
 
+
 				client.activate();
 				break;
 			}
