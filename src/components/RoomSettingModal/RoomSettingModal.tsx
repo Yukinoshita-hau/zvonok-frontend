@@ -10,14 +10,16 @@ import { useNavigate } from "react-router-dom";
 export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSettingModalProps) {
 	const navigate = useNavigate();
 	const myUser = useSelector((s: RootState) => s.user.myUser);
+	const usersById = useSelector((s: RootState) => s.users.usersById);
 	const isVisible = useModalAnimation(isOpen);
 	const normalizedName = room?.name?.trim();
-	const opponent = room?.members.find((member) => member.id !== myUser?.id);
+	const members = room?.memberIds.map((memberId) => usersById[memberId]).filter((member) => member !== undefined) ?? [];
+	const opponent = members.find((member) => member.id !== myUser?.id);
 	const roomTitle = normalizedName || opponent?.username || "Unknown room";
 
 	if (!isVisible || !room) return null;
 
-	const membersCount = room.members.length;
+	const membersCount = members.length;
 	const avatarLabel = room.type === "GROUP" ? "GR" : "DM";
 
 	return (
@@ -48,7 +50,7 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 
 				<div className={styles["room-info"]}>
 					<div className={styles["section-title"]}>Участники</div>
-					<RoomMembersList members={room.members} myUserId={myUser?.id} />
+					<RoomMembersList members={members} myUserId={myUser?.id} />
 				</div>
 			</div>
 		</div>

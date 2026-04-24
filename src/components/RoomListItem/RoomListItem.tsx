@@ -9,11 +9,12 @@ import { StringToColor } from "../../utils/stringHelpers";
 export function RoomListItem({ room }: RoomListItemProps) {
 	const navigate = useNavigate();
 	const myUser = useSelector((s: RootState) => s.user.myUser);
+	const usersById = useSelector((s: RootState) => s.users.usersById);
 
 	const isPrivateRoom = room.type === "PRIVATE";
 
 	const interlocutor = isPrivateRoom
-		? room.members?.find((member) => member.id !== myUser?.id) ?? null
+		? room.memberIds.map((memberId) => usersById[memberId]).find((member) => member?.id !== myUser?.id) ?? null
 		: null;
 
 	const title = isPrivateRoom
@@ -21,7 +22,7 @@ export function RoomListItem({ room }: RoomListItemProps) {
 		: room.name || "Unknown";
 
 	const avatarSrc = isPrivateRoom
-		? interlocutor?.avatarUrl || interlocutor?.avatartUrl || null
+		? interlocutor?.avatarUrl || null
 		: room.avatarUrl || null;
 
 	const avatarFallback = isPrivateRoom

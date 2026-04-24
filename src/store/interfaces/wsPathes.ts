@@ -9,10 +9,11 @@ export const WS_FRIEND_REQUESTS_PATH = `${USER_QUEUE_PREFIX}/friend-requests`;
 export const WS_ERROR_PATH = `${USER_QUEUE_PREFIX}/errors`;
 export const WS_MESSAGE_READ_PATH = `${USER_QUEUE_PREFIX}/message-read`;
 export const WS_ROOM_EVENTS_PATH = `${USER_QUEUE_PREFIX}/room-events`;
+export const WS_USER_EVENTS_PATH = `${USER_QUEUE_PREFIX}/user-events`;
 
 export const WS_SEND_MESSAGE_PATH = `${APP_CHAT_PREFIX}/send`;
-export const WS_SEND_PRIVATE_MESSAGE_PATH = `${APP_CHAT_PREFIX}/private`
-export const WS_SEND_CHANNEL_MESSAGE_PATH = `${APP_CHAT_PREFIX}/channel`
+export const WS_SEND_PRIVATE_MESSAGE_PATH = `${APP_CHAT_PREFIX}/private`;
+export const WS_SEND_CHANNEL_MESSAGE_PATH = `${APP_CHAT_PREFIX}/channel`;
 export const WS_EDIT_MESSAGE_PATH = `${APP_CHAT_PREFIX}/edit`;
 export const WS_DELETE_MESSAGE_PATH = `${APP_CHAT_PREFIX}/delete`;
 export const WS_UPDATE_READ_MESSAGE_PATH = `${APP_CHAT_PREFIX}/read`;

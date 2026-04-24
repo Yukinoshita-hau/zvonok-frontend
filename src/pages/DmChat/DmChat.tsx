@@ -7,7 +7,6 @@ import { fetchRoomMessages, messageActions } from "../../store/slices/message.sl
 import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
 import { fetchMyRooms } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.slice";
-import type { Room } from "../../entities/room";
 import { Phone, Send, SettingsIcon, X } from "lucide-react";
 import { RoomSettingModal } from "../../components/RoomSettingModal/RoomSettingModal";
 import { StringToColor } from "../../utils/stringHelpers";
@@ -19,6 +18,7 @@ export function DmChat() {
 
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
+	const usersById = useSelector((s: RootState) => s.users.usersById);
 	const { replyTarget } = useSelector((s: RootState) => s.message);
 
 	const [text, setText] = useState("");
@@ -48,18 +48,18 @@ export function DmChat() {
 
 	const currentRoom = useMemo(() => {
 		if (!roomId) return null;
-		return rooms?.find((room: Room) => room.id === roomId) ?? null;
+		return rooms?.find((room) => room.id === roomId) ?? null;
 	}, [rooms, roomId]);
 
 	const interlocutor = useMemo(() => {
 		if (!currentRoom || !myUser) return null;
 
 		return (
-			currentRoom.members?.find(
-				(member) => member.username !== myUser.username
-			) ?? null
+			currentRoom.memberIds
+				.map((memberId) => usersById[memberId])
+				.find((member) => member?.username !== myUser.username) ?? null
 		);
-	}, [currentRoom, myUser]);
+	}, [currentRoom, myUser, usersById]);
 
 	const roomTitle = useMemo(() => {
 		if (currentRoom?.type === "PRIVATE") {
@@ -173,12 +173,14 @@ export function DmChat() {
 				</div>
 			</div>
 
-			<RoomSettingModal
-				isOpen={isRoomSettingOpen}
-				onClose={() => setIsRoomSettingOpen(false)}
-				onStartCall={handleStartCall}
-				room={currentRoom}
-			/>
+			{currentRoom && (
+				<RoomSettingModal
+					isOpen={isRoomSettingOpen}
+					onClose={() => setIsRoomSettingOpen(false)}
+					onStartCall={handleStartCall}
+					room={currentRoom}
+				/>
+			)}
 
 			<DmItemsList />
 

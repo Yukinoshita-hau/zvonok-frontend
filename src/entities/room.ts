@@ -1,8 +1,8 @@
-import type { RoomMembers } from "./roomMember";
+import type { RoomMemberShort } from "./roomMember";
 
 export type RoomType = "GROUP" | "PRIVATE";
 
-export interface Room {
+export interface RoomApiResponse {
 	id: number;
 	name: string;
 	type: RoomType;
@@ -14,5 +14,22 @@ export interface Room {
 	lastActivityAt: string | null;
 	unreadCount: number;
 	firstUnreadMessageId: number;
-	members: RoomMembers[]
+	members: RoomMemberShort[];
 }
+
+export interface RoomStateItem {
+	id: number;
+	name: string;
+	type: RoomType;
+	avatarUrl: string;
+	isActive: boolean;
+	createdAt: string;
+	lastMessageId: number | null;
+	lastMessageContent: string | null;
+	lastActivityAt: string | null;
+	unreadCount: number;
+	firstUnreadMessageId: number;
+	memberIds: number[];
+}
+
+export type Room = RoomStateItem;

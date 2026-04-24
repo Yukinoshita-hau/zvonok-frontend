@@ -33,8 +33,9 @@ export function InboxLayout() {
 		call.presentationMode === "expanded" &&
 		call.isCallFocusMode;
 
-	const { rooms } = room;
+		const { rooms } = room;
 	const { friends } = friend
+	const usersById = useSelector((s: RootState) => s.users.usersById);
 	const unreadRoomCount = room.rooms.filter(r => r.unreadCount > 0).length;
 
 	useEffect(() => {
@@ -105,7 +106,7 @@ export function InboxLayout() {
 	const handleFriendClick = (friendUsername: string) => {
 		const existing = rooms.find(r =>
 			r.type === "PRIVATE" &&
-			r.members?.some(m => m.username === friendUsername)
+			r.memberIds?.some((memberId) => usersById[memberId]?.username === friendUsername)
 		)
 
 		if (existing) {

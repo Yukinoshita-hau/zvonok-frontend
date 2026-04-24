@@ -38,6 +38,7 @@ export function CallUi({
 	const call = useSelector((s: RootState) => s.call);
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 	const rooms = useSelector((s: RootState) => s.room.rooms);
+	const usersById = useSelector((s: RootState) => s.users.usersById);
 	const device = useSelector((s: RootState) => s.device);
 
 	const participants = useParticipants();
@@ -64,15 +65,18 @@ export function CallUi({
 
 	const participantAvatarResolver = useMemo(() => {
 		const avatarsByKey = new Map<string, string | null>();
-		const remoteMembers = currentRoom?.members.filter(
+		const roomMembers = currentRoom?.memberIds
+			.map((memberId) => usersById[memberId])
+			.filter((member) => member !== undefined) ?? [];
+		const remoteMembers = roomMembers.filter(
 			(member) => member.username !== myUser?.username
-		) ?? [];
+		);
 
 		if (myUser?.username) {
 			avatarsByKey.set(normalizeIdentityKey(myUser.username), myUser.avatarUrl ?? null);
 		}
 
-		currentRoom?.members.forEach((member) => {
+		roomMembers.forEach((member) => {
 			avatarsByKey.set(normalizeIdentityKey(member.username), member.avatarUrl ?? null);
 			avatarsByKey.set(String(member.id), member.avatarUrl ?? null);
 		});
@@ -99,7 +103,7 @@ export function CallUi({
 
 			return null;
 		};
-	}, [currentRoom, myUser?.avatarUrl, myUser?.username]);
+	}, [currentRoom, myUser?.avatarUrl, myUser?.username, usersById]);
 
 	const availableScreenTracks = useMemo(
 		() =>

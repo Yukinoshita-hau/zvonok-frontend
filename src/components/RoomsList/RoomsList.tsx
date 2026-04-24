@@ -8,6 +8,7 @@ import { formatTime } from "../../utils/timeHelpers";
 export function RoomsList({ rooms }: RoomsListProps) {
 	const navigate = useNavigate();
 	const { myUser } = useSelector((s: RootState) => s.user)
+	const usersById = useSelector((s: RootState) => s.users.usersById);
 
 	if (rooms.length === 0) {
 		return (
@@ -35,9 +36,9 @@ export function RoomsList({ rooms }: RoomsListProps) {
 					<div className={styles["content"]}>
 						<div className={styles["title-row"]}>
 							<span className={styles["title"]}>
-								{room.name ?? room.members?.find(member =>
-									member.id !== myUser?.id
-								)?.username ?? "Unknown"}
+								{room.name ?? room.memberIds
+									.map((memberId) => usersById[memberId])
+									.find((member) => member?.id !== myUser?.id)?.username ?? "Unknown"}
 							</span>
 							<div className={styles["right-side"]}>
 								{room.unreadCount > 0 && (

@@ -1,15 +1,13 @@
 import type { UserStatus } from "./interfaces/UserStatus";
 
-export interface RoomMemberShort {
+export interface UserShort {
 	id: number;
 	username: string;
 	displayName: string;
+	avatarUrl: string | null;
+	aboutMe?: string;
 	status: UserStatus;
 	lastSeenAt: string;
-	avatarUrl: string | null;
 	updatedAt: string;
 	createdAt: string;
-	aboutMe?: string;
 }
-
-export type RoomMembers = RoomMemberShort;

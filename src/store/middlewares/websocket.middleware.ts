@@ -4,8 +4,9 @@ import type { Actions } from "../interfaces/actions.interface";
 import { websocketActions } from "../slices/websocket.slice";
 import { createWebSocketClient } from "../../services/websocket.service";
 import { fetchRoomMessages, messageActions } from "../slices/message.slice";
-import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGE_READ_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_ROOM_EVENTS_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_CHANNEL_MESSAGE_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH, WS_UPDATE_READ_MESSAGE_PATH } from "../interfaces/wsPathes";
+import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGE_READ_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_ROOM_EVENTS_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_CHANNEL_MESSAGE_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH, WS_UPDATE_READ_MESSAGE_PATH, WS_USER_EVENTS_PATH } from "../interfaces/wsPathes";
 import { fetchMyRooms } from "../slices/room.slice";
+import { usersActions } from "../slices/users.slice";
 import type { BaseCallEvent, CallInviteEvent } from "../interfaces/callEvents.interface";
 import { callActions, getToken } from "../slices/call.slice";
 import type { AppDispatch, RootState } from "../interfaces/rootState.interface";
@@ -17,6 +18,7 @@ import { soundPlayer } from "../../utils/soundPlayer";
 import { channelMessageActions } from "../slices/channelMessage.slice";
 import type { MessageReadStatusContent } from "../../api/interfaces/MessageReadStatusContent";
 import type { RoomEvents } from "../../api/interfaces/RoomEvents";
+import type { UserProfileUpdatedEvent } from "../interfaces/userEvents.interface";
 
 
 export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (storeApi) => {
@@ -214,6 +216,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					if (messageReadSub) subscriptions[WS_MESSAGE_READ_PATH] = messageReadSub;
 
 					const messageRoomEventsSub = client?.subscribe(WS_ROOM_EVENTS_PATH, (message) => {
+
 						const data = JSON.parse(message.body) as RoomEvents;
 
 						switch (data.type) {
@@ -223,6 +226,19 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 							}
 						}
 					})
+					const userEventsSub = client?.subscribe(WS_USER_EVENTS_PATH, (message) => {
+						const data = JSON.parse(message.body) as UserProfileUpdatedEvent;
+
+						switch (data.type) {
+							case "USER_PROFILE_UPDATED": {
+								storeApi.dispatch(usersActions.userProfileUpdated(data.payload));
+								break;
+							}
+						}
+					});
+
+					if (userEventsSub) subscriptions[WS_USER_EVENTS_PATH] = userEventsSub;
+
 				};
 
 				client.activate();

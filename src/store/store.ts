@@ -13,6 +13,7 @@ import toastSlice from "./slices/toast.slice";
 import deviceSlice from "./slices/device.slice";
 import uiSlice from "./slices/ui.slice";
 import channelMessageSlice from "./slices/channelMessage.slice";
+import usersSlice from "./slices/users.slice";
 
 
 const appReducer = combineReducers({
@@ -27,7 +28,8 @@ const appReducer = combineReducers({
 	notification: notificationSlice,
 	toast: toastSlice,
 	device: deviceSlice,
-	ui: uiSlice
+	ui: uiSlice,
+	users: usersSlice
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {

@@ -1,6 +1,6 @@
-﻿import type { RoomMembers } from "../../entities/roomMember";
+﻿import type { RoomMemberShort } from "../../entities/roomMember";
 
 export interface RoomMembersListProps {
-	members: RoomMembers[];
+	members: RoomMemberShort[];
 	myUserId?: number;
 }
