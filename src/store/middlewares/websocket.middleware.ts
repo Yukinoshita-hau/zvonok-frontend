@@ -223,7 +223,10 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 							}
 						}
 					})
+
+					if (messageRoomEventsSub) subscriptions[WS_ROOM_EVENTS_PATH] = messageRoomEventsSub;
 				};
+
 
 				client.activate();
 				break;
