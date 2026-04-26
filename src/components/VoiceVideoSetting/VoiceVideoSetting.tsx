@@ -12,6 +12,7 @@ import {
 	recommendQualityFromMetrics,
 	type NetworkQualityMetrics,
 	type CallQualitySetting,
+	type ScreenShareQualitySetting,
 } from "../../utils/callQuality";
 
 interface PublishStats {
@@ -37,6 +38,11 @@ export function VoiceVideoSetting() {
 		cameraQuality,
 		screenShareQuality,
 		isNoiseSuppressionEnabled,
+		isEchoCancellationEnabled,
+		isAutoGainControlEnabled,
+		voiceActivityThreshold,
+		isAutoInputSensitivity,
+		screenShareRuntime,
 		connectionTestResult,
 	} = useSelector((s: RootState) => s.device);
 	const myUser = useSelector((s: RootState) => s.user.myUser);
@@ -78,8 +84,8 @@ export function VoiceVideoSetting() {
 						selectedMicrophoneId === "default"
 							? undefined
 							: { exact: selectedMicrophoneId },
-					autoGainControl: true,
-					echoCancellation: true,
+					autoGainControl: isAutoGainControlEnabled,
+					echoCancellation: isEchoCancellationEnabled,
 					noiseSuppression: isNoiseSuppressionEnabled,
 					channelCount: 1,
 					sampleRate: 48000,
@@ -154,7 +160,13 @@ export function VoiceVideoSetting() {
 				streamRef.current.getTracks().forEach((track) => track.stop());
 			}
 		};
-	}, [selectedMicrophoneId, isListening, isNoiseSuppressionEnabled]);
+	}, [
+		selectedMicrophoneId,
+		isListening,
+		isNoiseSuppressionEnabled,
+		isEchoCancellationEnabled,
+		isAutoGainControlEnabled,
+	]);
 
 	const runConnectionTest = async () => {
 		dispatch(deviceActions.setConnectionTestRunning());
@@ -280,6 +292,30 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Echo Cancellation</label>
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={isEchoCancellationEnabled}
+								onChange={(e) => dispatch(deviceActions.setEchoCancellation(e.target.checked))}
+							/>
+							<span>{isEchoCancellationEnabled ? "Enabled" : "Disabled"}</span>
+						</label>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Auto Gain Control</label>
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={isAutoGainControlEnabled}
+								onChange={(e) => dispatch(deviceActions.setAutoGainControl(e.target.checked))}
+							/>
+							<span>{isAutoGainControlEnabled ? "Enabled" : "Disabled"}</span>
+						</label>
+					</div>
+
+					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Microphone Test</label>
 						<div className={styles["volume-bar-bg"]}>
 							<div
@@ -293,7 +329,39 @@ export function VoiceVideoSetting() {
 						>
 							{isListening ? "Stop monitoring" : "Monitor myself"}
 						</button>
+						<div className={styles["help-text"]}>
+							Voice activity:{" "}
+							{volumeLevel >= (isAutoInputSensitivity ? 30 : voiceActivityThreshold)
+								? "Detected"
+								: "Below threshold"}
+						</div>
 						<audio ref={audioPreviewRef} autoPlay style={{ display: "none" }} />
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Input sensitivity / Voice activity threshold</label>
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={isAutoInputSensitivity}
+								onChange={(e) => dispatch(deviceActions.setAutoInputSensitivity(e.target.checked))}
+							/>
+							<span>{isAutoInputSensitivity ? "Auto sensitivity" : "Manual threshold"}</span>
+						</label>
+						<input
+							type="range"
+							min={5}
+							max={90}
+							step={1}
+							disabled={isAutoInputSensitivity}
+							value={voiceActivityThreshold}
+							onChange={(e) =>
+								dispatch(deviceActions.setVoiceActivityThreshold(Number(e.target.value)))
+							}
+						/>
+						<span className={styles["help-text"]}>
+							Lower sensitivity may cut background noise but can also cut quiet speech.
+						</span>
 					</div>
 
 					<div className={styles["form-group"]}>
@@ -318,14 +386,27 @@ export function VoiceVideoSetting() {
 							className={styles["input"]}
 							value={screenShareQuality}
 							onChange={(e) =>
-								dispatch(deviceActions.setScreenShareQuality(e.target.value as CallQualitySetting))
+								dispatch(deviceActions.setScreenShareQuality(e.target.value as ScreenShareQualitySetting))
 							}
 						>
 							<option value="auto">Auto</option>
 							<option value="high">High (1080p, 30 FPS)</option>
 							<option value="medium">Medium (1080p, 15 FPS)</option>
 							<option value="low">Low (720p, 5 FPS)</option>
+							<option value="game60">Gaming 1080p60</option>
+							<option value="game120">Gaming 1080p120 Experimental</option>
 						</select>
+						{screenShareQuality === "game120" && (
+							<span className={styles["help-text"]}>
+								Experimental. Requires strong upload and browser/source support. 120 FPS is best effort, not guaranteed.
+							</span>
+						)}
+						{screenShareRuntime.updatedAt && (
+							<div className={styles["summary-text"]}>
+								Requested FPS: {screenShareRuntime.requestedFps ?? "N/A"}, actual: {screenShareRuntime.actualFps ?? "N/A"}, applied mode: {screenShareRuntime.activePreset ?? "N/A"}.
+								{screenShareRuntime.fallbackReason ? ` ${screenShareRuntime.fallbackReason}` : ""}
+							</div>
+						)}
 					</div>
 
 					<div className={styles["form-group"]}>

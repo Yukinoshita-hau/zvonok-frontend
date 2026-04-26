@@ -7,6 +7,8 @@ import type {
 
 export type ManualCallQuality = "low" | "medium" | "high";
 export type CallQualitySetting = "auto" | ManualCallQuality;
+export type ScreenShareManualQuality = ManualCallQuality | "game60" | "game120";
+export type ScreenShareQualitySetting = "auto" | ScreenShareManualQuality;
 export type CallMediaKind = "camera" | "screenShare";
 
 export interface CallQualityPreset {
@@ -19,9 +21,17 @@ export interface CallQualityPreset {
 	description: string;
 }
 
+export interface ScreenShareQualityPreset
+	extends Omit<CallQualityPreset, "value"> {
+	value: ScreenShareManualQuality;
+	warning?: string;
+	bandwidthHint?: string;
+	isExperimental?: boolean;
+}
+
 export interface CallQualityRecommendation {
 	cameraQuality: ManualCallQuality;
-	screenShareQuality: ManualCallQuality;
+	screenShareQuality: ScreenShareManualQuality;
 }
 
 export interface NetworkQualityMetrics {
@@ -63,7 +73,10 @@ export const CAMERA_QUALITY_PRESETS: Record<ManualCallQuality, CallQualityPreset
 	},
 };
 
-export const SCREEN_SHARE_QUALITY_PRESETS: Record<ManualCallQuality, CallQualityPreset> = {
+export const SCREEN_SHARE_QUALITY_PRESETS: Record<
+	ScreenShareManualQuality,
+	ScreenShareQualityPreset
+> = {
 	low: {
 		value: "low",
 		label: "Low",
@@ -90,27 +103,66 @@ export const SCREEN_SHARE_QUALITY_PRESETS: Record<ManualCallQuality, CallQuality
 		frameRate: 30,
 		maxBitrate: 5_000_000,
 		description: "1080p, smoother screen motion",
-	}
+	},
+	game60: {
+		value: "game60",
+		label: "Gaming 1080p60",
+		width: 1920,
+		height: 1080,
+		frameRate: 60,
+		maxBitrate: 8_000_000,
+		description: "1080p60, low-latency motion-focused stream",
+		bandwidthHint: "Needs stable upload around 8+ Mbps",
+	},
+	game120: {
+		value: "game120",
+		label: "Gaming 1080p120 Experimental",
+		width: 1920,
+		height: 1080,
+		frameRate: 120,
+		maxBitrate: 12_000_000,
+		description: "1080p120 best effort for high-motion game streams",
+		warning:
+			"Experimental. Requires strong upload and browser/source support.",
+		bandwidthHint: "Needs very stable upload around 12+ Mbps",
+		isExperimental: true,
+	},
 };
 
 export const DEFAULT_AUTO_QUALITY: ManualCallQuality = "medium";
 
-export function getQualityPreset(kind: CallMediaKind, quality: ManualCallQuality) {
+export function getQualityPreset(
+	kind: "camera",
+	quality: ManualCallQuality
+): CallQualityPreset;
+export function getQualityPreset(
+	kind: "screenShare",
+	quality: ScreenShareManualQuality
+): ScreenShareQualityPreset;
+export function getQualityPreset(
+	kind: CallMediaKind,
+	quality: ManualCallQuality | ScreenShareManualQuality
+) {
 	return kind === "camera"
-		? CAMERA_QUALITY_PRESETS[quality]
-		: SCREEN_SHARE_QUALITY_PRESETS[quality];
+		? CAMERA_QUALITY_PRESETS[quality as ManualCallQuality]
+		: SCREEN_SHARE_QUALITY_PRESETS[quality as ScreenShareManualQuality];
 }
 
 export function resolveQualitySetting(
-	kind: CallMediaKind,
+	kind: "camera",
 	setting: CallQualitySetting,
 	recommendation?: CallQualityRecommendation | null
 ): ManualCallQuality {
 	if (setting !== "auto") return setting;
 
-	if (kind === "camera") {
-		return recommendation?.cameraQuality ?? DEFAULT_AUTO_QUALITY;
-	}
+	return recommendation?.cameraQuality ?? DEFAULT_AUTO_QUALITY;
+}
+
+export function resolveScreenShareQualitySetting(
+	setting: ScreenShareQualitySetting,
+	recommendation?: CallQualityRecommendation | null
+): ScreenShareManualQuality {
+	if (setting !== "auto") return setting;
 
 	return recommendation?.screenShareQuality ?? DEFAULT_AUTO_QUALITY;
 }
@@ -131,7 +183,7 @@ export function getCameraCaptureOptions(
 }
 
 export function getScreenShareCaptureOptions(
-	preset: CallQualityPreset
+	preset: ScreenShareQualityPreset
 ): ScreenShareCaptureOptions {
 	return {
 		audio: true,
@@ -152,9 +204,12 @@ export function getCameraPublishOptions(preset: CallQualityPreset): TrackPublish
 	};
 }
 
-export function getScreenSharePublishOptions(preset: CallQualityPreset): TrackPublishOptions {
+export function getScreenSharePublishOptions(
+	preset: ScreenShareQualityPreset
+): TrackPublishOptions {
 	return {
-		degradationPreference: "maintain-resolution",
+		degradationPreference:
+			preset.frameRate >= 60 ? "maintain-framerate" : "maintain-resolution",
 		screenShareEncoding: getVideoEncoding(preset, "high"),
 	};
 }

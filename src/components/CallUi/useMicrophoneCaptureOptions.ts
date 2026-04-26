@@ -12,14 +12,19 @@ export function useMicrophoneCaptureOptions(): AudioCaptureOptions {
 				device.selectedMicrophoneId !== "default"
 					? device.selectedMicrophoneId
 					: undefined,
-			autoGainControl: true,
-			echoCancellation: true,
+			autoGainControl: device.isAutoGainControlEnabled,
+			echoCancellation: device.isEchoCancellationEnabled,
 			noiseSuppression: device.isNoiseSuppressionEnabled,
 			voiceIsolation: device.isNoiseSuppressionEnabled,
 			channelCount: 1,
 			sampleRate: 48000,
 			sampleSize: 16,
 		}),
-		[device.selectedMicrophoneId, device.isNoiseSuppressionEnabled]
+		[
+			device.selectedMicrophoneId,
+			device.isNoiseSuppressionEnabled,
+			device.isEchoCancellationEnabled,
+			device.isAutoGainControlEnabled,
+		]
 	);
 }

@@ -1,8 +1,10 @@
 import { MonitorUp, Mic, MicOff } from "lucide-react";
 import { VideoTrack } from "@livekit/components-react";
+import { useSelector } from "react-redux";
 import { StringToColor } from "../../utils/stringHelpers";
 import styles from "./CallUi.module.css";
 import type { CallParticipantTileProps } from "./CallParticipantTile.props";
+import type { RootState } from "../../store/store";
 
 export function CallParticipantTile({
 	participant,
@@ -13,11 +15,17 @@ export function CallParticipantTile({
 	isScreenShareSelected = false,
 	onOpenScreenShare,
 }: CallParticipantTileProps) {
+	const { voiceActivityThreshold, isAutoInputSensitivity } = useSelector(
+		(state: RootState) => state.device
+	);
 	const identity = participant.name || "Unknown";
 	const avatarLabel = identity.slice(0, 1).toUpperCase();
 	const avatarBg = StringToColor(identity);
 	const micEnabled = participant.isMicrophoneEnabled;
-	const isSpeaking = participant.isSpeaking;
+	const localThreshold = (isAutoInputSensitivity ? 30 : voiceActivityThreshold) / 100;
+	const isSpeaking = participant.isLocal
+		? participant.audioLevel >= localThreshold
+		: participant.isSpeaking;
 	const isClickableScreenShare = isScreenSharing && onOpenScreenShare;
 
 	return (

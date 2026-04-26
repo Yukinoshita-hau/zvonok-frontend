@@ -1,108 +1,120 @@
 # Call Domain Notes
 
-## Responsible Modules
+## 1. Screen share quality presets
 
-- `src/components/ActiveCallOverlay/ActiveCallOverlay.tsx` owns the active `LiveKitRoom`, call presentation modes, hidden bubble, and room-level call helpers.
-- `src/components/ActiveCallOverlay/MiniCallDock.tsx` renders minimized call controls.
-- `src/components/ActiveCallOverlay/MiniSpeakingStatus.tsx` renders aggregated LiveKit speaking state in minimized mode.
-- `src/components/ActiveCallOverlay/CallHotkeys.tsx` owns the global in-call microphone hotkey.
-- `src/components/ActiveCallOverlay/CallAudioLayer.tsx` renders subscribed remote microphone and screen share audio tracks.
-- `src/components/CallUi/CallUi.tsx` renders expanded call participants, camera tracks, selected screen share, screen-share tile states, and main controls.
-- `src/components/CallUi/MicrophoneToggleButton.tsx` toggles the real LiveKit microphone track and is reused by expanded and minimized controls.
-- `src/components/CallUi/useMicrophoneCaptureOptions.ts` builds selected microphone/noise suppression capture options from Redux device settings.
-- `src/components/CallUi/CallParticipantTile.tsx` renders each participant tile and uses LiveKit `participant.isSpeaking` / `participant.isMicrophoneEnabled`.
-- `src/components/CallUi/CallQualityController.tsx` applies active camera and screen share quality changes inside the LiveKit room context.
-- `src/utils/callQuality.ts` defines camera, microphone-adjacent, and screen share capture/publish quality helpers.
-- `src/store/slices/call.slice.ts` stores call status, LiveKit credentials, selected screen share track, and presentation mode. It does not store microphone mute or speaking state.
-- `src/store/slices/device.slice.ts` stores selected devices, noise suppression, camera quality, screen share quality, and connection-test recommendation.
+Source of truth: `src/utils/callQuality.ts`.
 
-## Track Creation And Publishing
+- `low`: 1280x720, 5 FPS, 0.8 Mbps.
+- `medium`: 1920x1080, 15 FPS, 2.5 Mbps.
+- `high`: 1920x1080, 30 FPS, 5 Mbps.
+- `game60`: 1920x1080, 60 FPS, 8 Mbps.
+- `game120`: 1920x1080, 120 FPS, 12 Mbps (experimental).
 
-- Microphone publishing is triggered through LiveKit React `useTrackToggle` / `TrackToggle` with `Track.Source.Microphone`.
-- `useMicrophoneCaptureOptions.ts` applies the selected microphone device and noise suppression options to microphone creation.
-- Camera publishing is triggered by `TrackToggle` with `Track.Source.Camera` in `CallUi.tsx`.
-- Screen share publishing is triggered by `TrackToggle` with `Track.Source.ScreenShare` in `CallUi.tsx`.
-- Multiple screen shares use a Discord-like model: participant tiles stay visible, the selected share opens in the main screen, and non-selected shares show static tile badges/placeholders instead of live previews.
-- Normal calls do not manually call `createLocalTracks`, `createScreenTracks`, or `publishTrack`; LiveKit React delegates to `room.localParticipant.setMicrophoneEnabled`, `setCameraEnabled`, and `setScreenShareEnabled`.
-- `getScreenShareCaptureOptions()` requests screen share audio with `audio: true` and `systemAudio: "include"`. LiveKit publishes `Track.Source.ScreenShareAudio` only when the browser/source returns an audio track from `getDisplayMedia`.
-- `CallUi.tsx` shows a local note when screen share video is active but no local `Track.Source.ScreenShareAudio` publication exists.
-- `CallUi.tsx` uses `RemoteTrackPublication.setSubscribed(...)` to keep non-selected remote screen share video unsubscribed where LiveKit allows it.
-- `CallAudioLayer.tsx` renders remote `Track.Source.ScreenShareAudio` only for the participant whose screen share is selected.
-- The app keeps LiveKit room `autoSubscribe` enabled globally; screen share optimization is done with targeted `setSubscribed(false)` after publications appear. Switching the whole room to `autoSubscribe: false` would require a broader manual subscription flow for microphone and camera too.
+Screen-share capture options are requested as ideal values (`resolution.width/height/frameRate`) and remain best-effort at browser/WebRTC level.
 
-## Speaking, Events, And Hotkeys
+## 2. Gaming screen share modes
 
-- Speaking UI uses LiveKit participant state through `useParticipants()` and `participant.isSpeaking`.
-- Expanded participant tiles highlight a speaking participant in `CallParticipantTile.tsx`.
-- Minimized speaking status aggregates current speakers in `MiniSpeakingStatus.tsx`.
-- Local speaking has priority and displays `Вы говорите`.
-- Remote speaking displays up to three names and then `+ ещё N`.
-- A short hold window smooths speaking state after LiveKit reports no active speaker, reducing flicker without fake timer-based speech.
-- Existing room events are used in `CallQualityController.tsx`: `RoomEvent.ConnectionQualityChanged` plus local sender stats.
-- The in-call mute hotkey is `Ctrl+Alt+M`, implemented in `CallHotkeys.tsx` through `room.localParticipant.setMicrophoneEnabled(...)`.
-- The hotkey accepts the physical Latin `M` key and Cyrillic `ь`/`м` key values to work predictably across English and Russian keyboard layouts.
-- The hotkey ignores key repeat, focused editable targets, and open modal-like DOM markers: `input`, `textarea`, `select`, `contenteditable`, `[aria-modal="true"]`, `[role="dialog"]`, and `[data-state="open"]`.
+- `game60` prioritizes smoother motion and lower perceived latency compared to regular screen presets.
+- `game120` is marked experimental in UI and quality metadata.
+- For high-FPS modes, publish defaults prefer `maintain-framerate` for screen share encoding.
 
-## Browser And LiveKit Limits
+## 3. Why 1080p120 is experimental / best effort
 
-- Screen share audio is browser/source dependent. The frontend can request audio, but cannot force the browser picker to include or return an audio track.
-- Common limitation: browser-tab audio may require the user to enable the browser's "share tab audio" or equivalent picker option.
-- If no screen share audio track is returned, screen share video should continue and remote playback remains limited to video.
-- The expanded call UI exposes this as a source/browser limitation note while local screen share video is active.
-- Non-selected remote screen shares may still appear as publications/metadata, but should not be rendered as live `<VideoTrack>` previews.
-- `CallAudioLayer.tsx` filters out local, unsubscribed, muted, and missing audio tracks before rendering.
-- Screen share resolution should not be restarted silently during an active share because browsers may show a picker again or interrupt capture.
-- Changing `LiveKitRoom options` during a call can recreate the LiveKit room; keep active quality changes in `TrackToggle` props and `CallQualityController`.
+`1080p120` is not guaranteed because real output depends on:
 
-## Safe Vs Risky Changes
+- browser implementation of `getDisplayMedia`;
+- selected source type (tab/window/monitor);
+- OS and GPU/encoder limits;
+- monitor refresh rate and source rendering rate;
+- current CPU/upload/network constraints.
 
-Safe:
-- Tune speaking hold timing in `MiniSpeakingStatus.tsx`.
-- Adjust minimized call layout and labels in `ActiveCallOverlay.module.css`.
-- Tune quality presets in `src/utils/callQuality.ts`.
-- Improve screen share audio copy/tooltips without changing LiveKit publishing flow.
+Runtime logic in `CallQualityController` reads `track.getSourceTrackSettings().frameRate` when available. For `game120` it applies fallback chain:
 
-Risky:
-- Adding a Redux mirror for microphone mute or speaking state.
-- Replacing LiveKit `useTrackToggle` / `TrackToggle` with custom publish/unpublish logic.
-- Changing call status strings or WebSocket call payloads without backend confirmation.
-- Recreating `LiveKitRoom` when device, quality, or presentation mode changes.
-- Restarting active screen share capture to force audio or resolution changes.
+- if actual FPS < 100 and >= 55 → fallback to `game60` sender encoding;
+- if actual FPS < 55 → fallback to `high` sender encoding.
 
-## Known Edge Cases
+UI in Voice/Video settings shows requested FPS, actual FPS, active applied mode, and fallback reason.
 
-- `Ctrl+Alt+M` should not toggle microphone while the user types in chat, edits a message, selects an input, uses contenteditable content, or has a modal with a known open marker.
-- Holding `Ctrl+Alt+M` should not repeatedly toggle mute because repeat keydown events are ignored.
-- Minimized mute button and expanded mute button must show the same LiveKit microphone state.
-- If local and remote participants speak at the same time, minimized status shows local priority: `Вы говорите`.
-- If four or more remote participants speak, minimized status shows the first three plus `+ ещё N`.
-- Screen share video without audio is expected when the browser/source does not provide an audio track.
-- The screen audio limitation note should appear for local screen share video without local `ScreenShareAudio`.
-- Remote screen share audio only plays for the currently selected screen share participant.
-- When the selected screen share ends, `CallUi.tsx` should select the next available screen share or clear selected state.
-- Leaving, reconnecting, or rejoining should reset call slice state through existing call lifecycle reducers.
+## 4. Per-user volume architecture
 
-## Manual QA Checklist
+- Local-only preference, no backend mutation.
+- Preferences are stored in Redux `device.participantVolumes` and persisted in `localStorage` key `device-preferences-v2`.
+- Key dimensions:
+  - `participantIdentity`;
+  - `source` (`microphone` or `screenShareAudio`).
+- Value range in current MVP: `0..100` (no boost above 100%).
+- UI surface: in-call `Audio Mix` panel in `CallUi`.
 
-- Start an outgoing DM call and accept an incoming call.
-- Toggle microphone in expanded call controls.
-- Minimize the call and toggle microphone from the mini button.
-- Press `Ctrl+Alt+M` once and confirm one mute state change.
-- Hold `Ctrl+Alt+M` and confirm there is no rapid repeated toggling.
-- Focus chat input, message edit input, and any textarea/select/contenteditable target; confirm the hotkey does not toggle microphone.
-- In minimized mode, test speaking status with nobody speaking, local speaking, one remote speaker, two remote speakers, three remote speakers, and four or more remote speakers.
-- Confirm the wave animation appears only when speaking status is active.
-- Start screen share from a source with audio support and confirm remote audio playback.
-- Start screen share from a source without audio or without selecting shared audio; confirm video continues and the call does not fail.
-- Confirm the screen audio limitation note appears only when local screen share video is active without local screen audio.
-- Start two or more simultaneous screen shares and confirm only the selected share is rendered in the main screen.
-- Confirm screen-sharing participants show tile badges/placeholders and open the main screen share on click.
-- Confirm remote screen share audio switches when selecting a different participant's screen share.
-- Leave call, rejoin, and verify call state resets.
-- Verify outgoing accept, incoming accept, decline, busy, and end events still follow existing WebSocket flow.
+## 5. Screen share audio volume architecture
 
-## Future Call UX Work
+- Separate slider/key from microphone volume.
+- Screen-share-audio slider appears only when remote `Track.Source.ScreenShareAudio` track exists.
+- Playback logic remains centralized in `CallAudioLayer`.
+- `CallAudioLayer` keeps existing behavior: screen-share-audio plays only for currently selected screen-share participant.
 
-- Use this document first when adding push-to-talk, device switching during a call, per-participant volume, screen share status badges, or call diagnostics.
-- Prefer extending the existing LiveKit room-context components instead of duplicating call state in Redux.
-- Open question: if product needs explicit "screen audio not shared" runtime feedback, add a small local screen share audio detector based on local `Track.Source.ScreenShareAudio` publication presence after share starts.
+## 6. Input sensitivity / voice threshold architecture
+
+Current implementation is safe MVP (frontend-only):
+
+- Setting is named `Input sensitivity / Voice activity threshold`.
+- It does not modify published microphone track.
+- It is used for local speaking UI thresholding and meter feedback.
+- Auto/manual toggle:
+  - auto threshold baseline: 30%;
+  - manual threshold range: 5..90.
+
+Related toggles in device settings:
+
+- noise suppression;
+- echo cancellation;
+- auto gain control.
+
+These map to browser capture constraints in `useMicrophoneCaptureOptions` and microphone preview constraints in `VoiceVideoSetting`.
+
+## 7. Noise gate / WebAudio limitations
+
+Full realtime mic processing (noise gate/high-pass/filter chain) is intentionally not included in this PR because it requires:
+
+- stable WebAudio processing graph for outgoing mic;
+- republish/restart coordination with LiveKit mute/unmute;
+- robust handling of device switching and reconnects;
+- careful artifact/performance testing across browsers.
+
+Open question: whether to implement processed outgoing track replacement in a dedicated follow-up after call-flow regression tests.
+
+## 8. Safe vs risky call/audio changes
+
+Safe in this iteration:
+
+- extending preset tables and UI mode selection;
+- runtime sender-encoding fallback for screen-share game120;
+- local-only per-user volume preferences;
+- speaking UI threshold tuning without touching published mic track.
+
+Risky (kept out of scope):
+
+- recreating `LiveKitRoom` on setting changes;
+- hidden screen-share restart / re-prompt from settings change;
+- replacing raw mic publish path with always-on WebAudio processor;
+- changing websocket call contracts.
+
+## 9. Manual QA for call/audio/screen-share features
+
+1. Select each legacy screen preset (`low/medium/high`) and start share.
+2. Select `game60`, start share, confirm call remains stable.
+3. Select `game120`, start share, verify fallback info if actual FPS is lower.
+4. Switch screen-share mode while active share is running; confirm no room recreation.
+5. Verify camera + screen share simultaneous behavior.
+6. Open `Audio Mix`, change remote mic volume, reset to default.
+7. If participant shares audio, adjust separate stream volume.
+8. Reconnect/rejoin and confirm volumes are re-applied.
+9. Toggle input sensitivity auto/manual and observe local speaking/meter behavior.
+10. Confirm mute/unmute and device selection still work.
+
+## 10. Future improvements
+
+- Optional WebAudio gain stage for >100% per-user boost (separate guarded feature flag).
+- Full outgoing mic processing pipeline (noise gate + optional high-pass filter) with controlled republish path.
+- Better automatic input-threshold calibration against ambient noise floor.
+- Live call diagnostics panel (send/recv bitrate, FPS, packet loss) with recommendations.
+- Optional backend sync for user AV preferences across devices (currently local only).

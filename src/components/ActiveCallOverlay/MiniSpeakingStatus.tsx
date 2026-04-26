@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParticipants } from "@livekit/components-react";
+import { useSelector } from "react-redux";
 import styles from "./ActiveCallOverlay.module.css";
+import type { RootState } from "../../store/store";
 
 interface SpeakingParticipant {
 	identity: string;
@@ -12,13 +14,22 @@ const MAX_VISIBLE_SPEAKERS = 3;
 
 export function MiniSpeakingStatus() {
 	const participants = useParticipants();
+	const { voiceActivityThreshold, isAutoInputSensitivity } = useSelector(
+		(state: RootState) => state.device
+	);
 	const clearTimerRef = useRef<number | null>(null);
 	const [displayedSpeakers, setDisplayedSpeakers] = useState<SpeakingParticipant[]>([]);
 
 	const currentSpeakers = useMemo(
 		() =>
 			participants
-				.filter((participant) => participant.isSpeaking)
+				.filter((participant) => {
+					if (participant.isLocal) {
+						const threshold = (isAutoInputSensitivity ? 30 : voiceActivityThreshold) / 100;
+						return participant.audioLevel >= threshold;
+					}
+					return participant.isSpeaking;
+				})
 				.sort((left, right) => {
 					if (left.isLocal !== right.isLocal) return left.isLocal ? -1 : 1;
 					return left.identity.localeCompare(right.identity);
@@ -27,7 +38,7 @@ export function MiniSpeakingStatus() {
 					identity: participant.name || "Unknown",
 					isLocal: participant.isLocal,
 				})),
-		[participants]
+		[participants, isAutoInputSensitivity, voiceActivityThreshold]
 	);
 
 	useEffect(() => {
