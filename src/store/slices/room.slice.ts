@@ -1,7 +1,10 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { Room } from "../../entities/room";
+import type { Room, RoomResponse } from "../../entities/room";
 import { roomApi } from "../../api/roomApi";
 import type { CreateGroupBody } from "../../api/interfaces/CreateGroupBody";
+import { normalizeRoom, normalizeRooms } from "../../utils/normalizeRoom";
+import { usersActions } from "./users.slice";
+import type { AppDispatch } from "../store";
 
 export interface RoomState {
 	rooms: Room[];
@@ -15,66 +18,113 @@ const initialState: RoomState = {
 	error: null,
 };
 
-export const fetchMyRooms = createAsyncThunk(
+export const fetchMyRooms = createAsyncThunk<
+	Room[],
+	void,
+	{
+		dispatch: AppDispatch;
+		rejectValue: string;
+	}
+>(
 	"room/fetchMyRooms",
 	async (_, thunkAPI) => {
 		try {
 			const { data } = await roomApi.myRooms();
-			return data;
+
+			const { rooms, users } = normalizeRooms(data as RoomResponse[]);
+
+			thunkAPI.dispatch(usersActions.upsertUsers(users));
+
+			return rooms;
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load rooms");
 		}
 	}
-)
+);
 
-export const createGroupRoom = createAsyncThunk(
+export const createGroupRoom = createAsyncThunk<
+	Room,
+	CreateGroupBody,
+	{
+		dispatch: AppDispatch;
+		rejectValue: string;
+	}
+>(
 	"room/createGroup",
-	async (body: CreateGroupBody, thunkAPI) => {
+	async (body, thunkAPI) => {
 		try {
 			const { data } = await roomApi.createGroup(body);
-			return data;
+
+			const { room, users } = normalizeRoom(data);
+
+			thunkAPI.dispatch(usersActions.upsertUsers(users));
+
+			return room;
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to create group room");
 		}
 	}
-)
+);
 
-export const markRoomAsRead = createAsyncThunk(
+export const markRoomAsRead = createAsyncThunk<
+	number,
+	{ roomId: number },
+	{
+		rejectValue: string;
+	}
+>(
 	"room/markRoomAsRead",
-	async (body: { roomId: number }, thunkAPI) => {
+	async (body, thunkAPI) => {
 		try {
 			await roomApi.markRoomRead({ roomId: body.roomId });
 			return body.roomId;
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to mark room");
 		}
-
 	}
-)
+);
 
 export const roomSlice = createSlice({
 	name: "room",
-	initialState: initialState,
+	initialState,
 	reducers: {},
 	extraReducers: builder => {
 		builder
-			.addCase(fetchMyRooms.pending, currentState => {
-				currentState.status = "loading";
-				currentState.error = null;
+			.addCase(fetchMyRooms.pending, state => {
+				state.status = "loading";
+				state.error = null;
 			})
-			.addCase(fetchMyRooms.fulfilled, (currentState, action) => {
-				currentState.status = "succeeded";
-				currentState.rooms = action.payload;
+			.addCase(fetchMyRooms.fulfilled, (state, action) => {
+				state.status = "succeeded";
+				state.rooms = action.payload;
 			})
-			.addCase(fetchMyRooms.rejected, (currentState, action) => {
-				currentState.status = "failed";
-				currentState.error = typeof action.payload === "string" ? action.payload : "Unknown error";
+			.addCase(fetchMyRooms.rejected, (state, action) => {
+				state.status = "failed";
+				state.error = action.payload ?? "Unknown error";
 			})
 
-			.addCase(markRoomAsRead.fulfilled, (currentState, action) => {
-				const room = currentState.rooms.find(r => r.id === action.payload);
-				if (room !== undefined) room.unreadCount = 0;
+			.addCase(createGroupRoom.fulfilled, (state, action) => {
+				const createdRoom = action.payload;
+
+				const existingIndex = state.rooms.findIndex(
+					room => room.id === createdRoom.id
+				);
+
+				if (existingIndex === -1) {
+					state.rooms.unshift(createdRoom);
+				} else {
+					state.rooms[existingIndex] = createdRoom;
+				}
 			})
+
+			.addCase(markRoomAsRead.fulfilled, (state, action) => {
+				const room = state.rooms.find(r => r.id === action.payload);
+
+				if (room) {
+					room.unreadCount = 0;
+					room.firstUnreadMessageId = null;
+				}
+			});
 	}
 });
 

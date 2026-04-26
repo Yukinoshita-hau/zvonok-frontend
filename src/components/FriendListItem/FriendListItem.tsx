@@ -1,29 +1,38 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import styles from "./FriendListItem.module.css";
 import type { FriendListItemProps } from "./FriendListItem.props";
-import type { AppDispatch } from "../../store/store";
+import type { AppDispatch, RootState } from "../../store/store";
 import { friendActions } from "../../store/slices/friend.slice";
 import { StringToColor } from "../../utils/stringHelpers";
 
 export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 	const dispatch = useDispatch<AppDispatch>();
-	const avatarBg = StringToColor(friend.friendUsername);
 
-	const removeHandle = (displayName: string) => {
-		dispatch(friendActions.removeFriend({ friendUsername: friend.friendUsername }))
-	}
+	const normalizedUser = useSelector((s: RootState) =>
+		s.users.byId[friend.friendId]
+	);
+
+	const username = normalizedUser?.username ?? friend.friendUsername;
+	const displayName = normalizedUser?.displayName ?? friend.friendDisplayName;
+	const avatarUrl = normalizedUser?.avatarUrl ?? friend.friendAvatarUrl;
+
+	const avatarBg = StringToColor(username);
+
+	const removeHandle = () => {
+		dispatch(friendActions.removeFriend({ friendUsername: username }));
+	};
 
 	return (
 		<div
 			className={styles["item"]}
-			onClick={() => onClick(friend.friendUsername)}
+			onClick={() => onClick(friend.friendId)}
 		>
 			<div className={styles["avatar-wrapper"]}>
 				<div className={styles["avatar"]} style={{ background: avatarBg }}>
-					{friend.friendAvatarUrl ? (
-						<img src={friend.friendAvatarUrl} crossOrigin="anonymous" />
+					{avatarUrl ? (
+						<img src={avatarUrl} crossOrigin="anonymous" />
 					) : (
-						<div>{(friend.friendDisplayName[0] || "?").toUpperCase()}</div>
+						<div>{(displayName?.[0] || "?").toUpperCase()}</div>
 					)}
 				</div>
 				<span className={styles["status-dot"]} />
@@ -32,17 +41,20 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 			<div className={styles["content"]}>
 				<div className={styles["title-row"]}>
 					<span className={styles["title"]}>
-						{friend.friendDisplayName ?? "Unknown"}
+						{displayName ?? "Unknown"}
 					</span>
-					<button className={styles["remove-friend-btn"]}
+
+					<button
+						className={styles["remove-friend-btn"]}
 						onClick={(e) => {
 							e.stopPropagation();
-							removeHandle(friend.friendUsername);
-						}}>
-						<img src="../../../public/cross-icon.svg" />
+							removeHandle();
+						}}
+					>
+						<img src="/cross-icon.svg" />
 					</button>
 				</div>
 			</div>
 		</div>
-	)
+	);
 }

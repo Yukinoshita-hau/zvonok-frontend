@@ -149,7 +149,17 @@ export const userSlice = createSlice({
 		},
 		addUser: (previousState, action: PayloadAction<User>) => {
 			previousState.myUser = action.payload;
-		}
+		},
+
+		patchMyUser: (previousState, action) => {
+			if (!previousState.myUser) return;
+			if (previousState.myUser.id !== action.payload.id) return;
+
+			previousState.myUser = {
+				...previousState.myUser,
+				...action.payload,
+			};
+		},
 	},
 	extraReducers: (builder) => {
 		builder

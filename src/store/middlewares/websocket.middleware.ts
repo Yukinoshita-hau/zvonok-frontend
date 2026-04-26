@@ -4,7 +4,7 @@ import type { Actions } from "../interfaces/actions.interface";
 import { websocketActions } from "../slices/websocket.slice";
 import { createWebSocketClient } from "../../services/websocket.service";
 import { fetchRoomMessages, messageActions } from "../slices/message.slice";
-import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGE_READ_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_ROOM_EVENTS_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_CHANNEL_MESSAGE_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH, WS_UPDATE_READ_MESSAGE_PATH } from "../interfaces/wsPathes";
+import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGE_READ_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_ROOM_EVENTS_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_CHANNEL_MESSAGE_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH, WS_UPDATE_READ_MESSAGE_PATH, WS_USER_EVENTS_PATH } from "../interfaces/wsPathes";
 import { fetchMyRooms } from "../slices/room.slice";
 import type { BaseCallEvent, CallInviteEvent } from "../interfaces/callEvents.interface";
 import { callActions, getToken } from "../slices/call.slice";
@@ -17,6 +17,10 @@ import { soundPlayer } from "../../utils/soundPlayer";
 import { channelMessageActions } from "../slices/channelMessage.slice";
 import type { MessageReadStatusContent } from "../../api/interfaces/MessageReadStatusContent";
 import type { RoomEvents } from "../../api/interfaces/RoomEvents";
+import { usersActions } from "../slices/users.slice";
+import type { UserProfileUpdatedEvent } from "../../api/interfaces/UserProfileUpdatedEvent";
+import { userActions } from "../slices/user.slice";
+import { normalizeMessage } from "../../utils/normalizeMessage";
 
 
 export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (storeApi) => {
@@ -50,11 +54,20 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					storeApi.dispatch(websocketActions.connectSuccess());
 
 					const personalMessageSub = client?.subscribe(WS_MESSAGES_PATH, async (message) => {
-
 						const data = JSON.parse(message.body);
+
+						const normalized = normalizeMessage(data);
 						const state = storeApi.getState();
 						const myUsername = storeApi.getState().user.myUser?.username;
 						const activeRoomId = state.message.activeRoomId;
+
+						if (data.sender) {
+							storeApi.dispatch(usersActions.upsertUser(data.sender));
+						}
+
+						if (data.room?.members) {
+							storeApi.dispatch(usersActions.upsertUsers(data.room.members));
+						}
 
 						const isFromMe = data.sender?.username === myUsername;
 						const isActiveRoom = data.room?.id === activeRoomId;
@@ -64,16 +77,16 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 							soundPlayer.playMessage();
 						}
 
-						storeApi.dispatch(messageActions.execEventMessage(data))
+						storeApi.dispatch(usersActions.upsertUser(normalized.user));
+						storeApi.dispatch(messageActions.execEventMessage(normalized.message));
 
 						await storeApi.dispatch(fetchMyRooms());
 
 						if (!activeRoomId && data.room?.id
 							&& data.sender?.username === state.user.myUser?.username) {
 							storeApi.dispatch(messageActions.setActiveRoom(data.room.id));
-							storeApi.dispatch(fetchRoomMessages({ roomId: data.room.id }))
+							storeApi.dispatch(fetchRoomMessages({ roomId: data.room.id }));
 						}
-
 					});
 
 					if (personalMessageSub) subscriptions[WS_MESSAGES_PATH] = personalMessageSub;
@@ -225,6 +238,32 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					})
 
 					if (messageRoomEventsSub) subscriptions[WS_ROOM_EVENTS_PATH] = messageRoomEventsSub;
+
+					const userEventsSub = client?.subscribe(WS_USER_EVENTS_PATH, (message) => {
+						const data = JSON.parse(message.body) as UserProfileUpdatedEvent;
+
+						const eventType = data.type ?? data.eventType;
+
+						switch (eventType) {
+							case "USER_PROFILE_UPDATED": {
+								const updatedUser = data.user;
+
+								if (!updatedUser?.id) return;
+
+								storeApi.dispatch(usersActions.upsertUser(updatedUser));
+
+								const myUserId = storeApi.getState().user.myUser?.id;
+
+								if (myUserId === updatedUser.id) {
+									storeApi.dispatch(userActions.patchMyUser(updatedUser));
+								}
+
+								break;
+							}
+						}
+					});
+
+					if (userEventsSub) subscriptions[WS_USER_EVENTS_PATH] = userEventsSub;
 				};
 
 

@@ -1,9 +1,11 @@
-import { createAction, createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { ShortMessage } from "../../entities/shortMessage";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { ShortMessage, ShortMessageResponse } from "../../entities/shortMessage";
 import type { GetRoomMessageParams } from "../../api/interfaces/GetRoomMessagesParams";
 import { roomApi } from "../../api/roomApi";
 import { messageApi } from "../../api/messageApi";
 import type { MessageReaderDto } from "../../api/interfaces/MessageReadersDto";
+import { normalizeMessages } from "../../utils/normalizeMessage";
+import { usersActions } from "./users.slice";
 
 export interface MessageState {
 	messages: ShortMessage[];
@@ -31,20 +33,37 @@ const initialState: MessageState = {
 	activeRoomId: null,
 	isAtBottom: false,
 	newDividerMessageId: null,
-	replyTarget: null
+	replyTarget: null,
 };
 
-export const fetchRoomMessages = createAsyncThunk(
+export const fetchRoomMessages = createAsyncThunk<
+	{
+		messages: ShortMessage[];
+		beforeMessageId?: number;
+	},
+	GetRoomMessageParams,
+	{
+		rejectValue: string;
+	}
+>(
 	"message/fetchRoomMessages",
-	async (params: GetRoomMessageParams, thunkAPI) => {
+	async (params, thunkAPI) => {
 		try {
 			const { data } = await roomApi.getRoomMessage(params);
-			return { data, beforeMessageId: params.beforeMessageId };
+
+			const { messages, users } = normalizeMessages(data as ShortMessageResponse[]);
+
+			thunkAPI.dispatch(usersActions.upsertUsers(users));
+
+			return {
+				messages,
+				beforeMessageId: params.beforeMessageId,
+			};
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load message");
 		}
 	}
-)
+);
 
 export const getMessagesReaders = createAsyncThunk(
 	"message/getMessagesReaders",
@@ -56,19 +75,18 @@ export const getMessagesReaders = createAsyncThunk(
 			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load message readers");
 		}
 	}
-)
+);
 
 export const messageSlice = createSlice({
 	name: "message",
-	initialState: initialState,
+	initialState,
 	reducers: {
-		execEventMessage: (currentState, action: PayloadAction<ShortMessage>) => {
+		execEventMessage: (state, action: PayloadAction<ShortMessage>) => {
 			const incomingMessage = action.payload;
-			console.log("Reducer caught event:", incomingMessage.eventType, "for ID:", incomingMessage.id);
 
-			const isForActiveRoom = currentState.activeRoomId !== null &&
-				incomingMessage.room?.id === currentState.activeRoomId;
-
+			const isForActiveRoom =
+				state.activeRoomId !== null &&
+				incomingMessage.room?.id === state.activeRoomId;
 
 			if (!isForActiveRoom) {
 				return;
@@ -76,137 +94,189 @@ export const messageSlice = createSlice({
 
 			switch (incomingMessage.eventType) {
 				case "MESSAGE": {
-					const isDuplicate = currentState.messages.some(msg => msg.id === incomingMessage.id);
+					const isDuplicate = state.messages.some(
+						msg => msg.id === incomingMessage.id
+					);
+
 					if (!isDuplicate) {
-						currentState.messages.push(incomingMessage);
+						state.messages.push(incomingMessage);
 					}
+
 					break;
 				}
 
 				case "MESSAGE_EDIT": {
-					const index = currentState.messages.findIndex(msg => msg.id === incomingMessage.id)
-					if (index !== -1) {
-						currentState.messages[index] = {
-							...currentState.messages[index],
-							content: incomingMessage.content,
-							type: incomingMessage.type,
-							eventType: incomingMessage.eventType
-						}
+					const message = state.messages.find(
+						msg => msg.id === incomingMessage.id
+					);
+
+					if (message) {
+						message.content = incomingMessage.content;
+						message.type = incomingMessage.type;
+						message.eventType = incomingMessage.eventType;
+						message.editedAt = incomingMessage.editedAt;
+						message.replyPreview = incomingMessage.replyPreview;
 					}
+
 					break;
 				}
 
 				case "MESSAGE_DELETE": {
-					currentState.messages = currentState.messages.filter(msg => msg.id !== incomingMessage.id);
+					state.messages = state.messages.filter(
+						msg => msg.id !== incomingMessage.id
+					);
+
 					break;
 				}
 			}
+		},
 
+		setIsAtBottom: (state, action: PayloadAction<boolean>) => {
+			state.isAtBottom = action.payload;
 		},
-		setIsAtBottom: (currentState, action: PayloadAction<boolean>) => {
-			currentState.isAtBottom = action.payload;
+
+		sendMessage: (
+			state,
+			action: PayloadAction<{
+				roomId: string | number;
+				content: {
+					content: string;
+					replyToMessageId: number | null;
+				};
+			}>
+		) => {},
+
+		startReply: (
+			state,
+			action: PayloadAction<{
+				messageId: number;
+				authorDisplayName: string;
+				snippet: string;
+				deleted: boolean;
+			}>
+		) => {
+			state.replyTarget = action.payload;
 		},
-		sendMessage: (currentState, action: PayloadAction<{
-			roomId: string | number;
-			content: {
-				content: string
-				replyToMessageId: number | null
-			}
-		}>) => { },
-		startReply: (currentState, action: PayloadAction<{
-			messageId: number;
-			authorDisplayName: string;
-			snippet: string;
-			deleted: boolean;
-		}>) => {
-			currentState.replyTarget = action.payload;
+
+		cancelReply: (state) => {
+			state.replyTarget = null;
 		},
-		cancelReply: (currentState) => {
-			currentState.replyTarget = null;
-		},
-		sendPrivateMessage: (currentState, action: PayloadAction<{
-			receiver: string,
-			content: string
-		}>) => { },
-		editMessage: (currentState, action: PayloadAction<{
-			messageId: number;
-			newContent: string
-		}>) => { },
-		deleteMessage: (currentState, action: PayloadAction<{
-			messageId: number;
-		}>) => { },
-		markMessageRead: (currentState, action: PayloadAction<{
-			messageId: number;
-		}>) => { },
-		messageReadUpdate: (currentState, action: PayloadAction<{
-			messageId: number;
-			readBy: string;
-		}>) => {
+
+		sendPrivateMessage: (
+			state,
+			action: PayloadAction<{
+				receiver: string;
+				content: string;
+			}>
+		) => {},
+
+		editMessage: (
+			state,
+			action: PayloadAction<{
+				messageId: number;
+				newContent: string;
+			}>
+		) => {},
+
+		deleteMessage: (
+			state,
+			action: PayloadAction<{
+				messageId: number;
+			}>
+		) => {},
+
+		markMessageRead: (
+			state,
+			action: PayloadAction<{
+				messageId: number;
+			}>
+		) => {},
+
+		messageReadUpdate: (
+			state,
+			action: PayloadAction<{
+				messageId: number;
+				readBy: string;
+			}>
+		) => {
 			const { messageId, readBy } = action.payload;
-			const message = currentState.messages.find(m => m.id === messageId);
-			if (message !== undefined) {
+			const message = state.messages.find(m => m.id === messageId);
+
+			if (message) {
 				if (!message.readBy) message.readBy = [];
+
 				if (!message.readBy.includes(readBy)) {
 					message.readBy.push(readBy);
 				}
 			}
 		},
-		clearMessages: (currentState) => {
-			currentState.messages = [];
-			currentState.oldestMessageId = null;
-			currentState.hasMore = true;
-			currentState.status = "idle";
-			currentState.replyTarget = null;
+
+		clearMessages: (state) => {
+			state.messages = [];
+			state.oldestMessageId = null;
+			state.hasMore = true;
+			state.status = "idle";
+			state.replyTarget = null;
 		},
-		setActiveRoom: (currentState, action: PayloadAction<number | null>) => {
-			currentState.activeRoomId = action.payload;
-			currentState.replyTarget = null;
+
+		setActiveRoom: (state, action: PayloadAction<number | null>) => {
+			state.activeRoomId = action.payload;
+			state.replyTarget = null;
+
 			if (action.payload === null) {
-				currentState.newDividerMessageId = null;
+				state.newDividerMessageId = null;
 			}
 		},
-		setNewDividerMessageId: (currentState, action: PayloadAction<number | null>) => {
-			currentState.newDividerMessageId = action.payload;
+
+		setNewDividerMessageId: (state, action: PayloadAction<number | null>) => {
+			state.newDividerMessageId = action.payload;
 		},
 	},
+
 	extraReducers: builder => {
 		builder
-			.addCase(fetchRoomMessages.pending, currentState => {
-				currentState.status = "loading";
-				currentState.error = null;
+			.addCase(fetchRoomMessages.pending, state => {
+				state.status = "loading";
+				state.error = null;
 			})
-			.addCase(fetchRoomMessages.fulfilled, (currentState, action) => {
-				currentState.status = "succeeded";
-				const newMessages = action.payload.data;
+
+			.addCase(fetchRoomMessages.fulfilled, (state, action) => {
+				state.status = "succeeded";
+
+				const newMessages = action.payload.messages;
 				const isPagination = action.payload.beforeMessageId !== undefined;
 
 				if (isPagination) {
-					currentState.messages = [...newMessages, ...currentState.messages];
+					state.messages = [...newMessages, ...state.messages];
 				} else {
-					currentState.messages = newMessages;
+					state.messages = newMessages;
 				}
 
-				if (currentState.messages.length > 0) {
-					currentState.oldestMessageId = currentState.messages[0].id;
+				if (state.messages.length > 0) {
+					state.oldestMessageId = state.messages[0].id;
 				}
 
-				currentState.hasMore = newMessages.length === 15;
-			})
-			.addCase(fetchRoomMessages.rejected, (currentState, action) => {
-				currentState.status = "failed";
-				currentState.error = typeof action.payload === "string" ? action.payload : "Unknown error";
+				state.hasMore = newMessages.length === 15;
 			})
 
+			.addCase(fetchRoomMessages.rejected, (state, action) => {
+				state.status = "failed";
+				state.error =
+					typeof action.payload === "string"
+						? action.payload
+						: "Unknown error";
+			})
 
-			.addCase(getMessagesReaders.fulfilled, (currentState, action) => {
+			.addCase(getMessagesReaders.fulfilled, (state, action) => {
 				action.payload.forEach(({ messageId, readers }) => {
-					const message = currentState.messages.find(m => m.id === messageId);
+					const message = state.messages.find(m => m.id === messageId);
+
 					if (message) {
 						message.readBy = readers;
 					}
 				});
-			})
-	}
+			});
+	},
 });
 
 export default messageSlice.reducer;

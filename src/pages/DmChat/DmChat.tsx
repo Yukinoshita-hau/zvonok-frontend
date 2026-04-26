@@ -19,6 +19,7 @@ export function DmChat() {
 
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
+	const usersById = useSelector((s: RootState) => s.users.byId);
 	const { replyTarget } = useSelector((s: RootState) => s.message);
 
 	const [text, setText] = useState("");
@@ -26,7 +27,7 @@ export function DmChat() {
 
 	const roomIdParam = searchParams.get("roomId");
 	const parsedRoomId = roomIdParam ? Number(roomIdParam) : null;
-	const roomId = parsedRoomId !== null && !Number.isNaN(parsedRoomId) ? parsedRoomId: null;
+	const roomId = parsedRoomId !== null && !Number.isNaN(parsedRoomId) ? parsedRoomId : null;
 
 	useEffect(() => {
 		if (!roomId) {
@@ -54,12 +55,14 @@ export function DmChat() {
 	const interlocutor = useMemo(() => {
 		if (!currentRoom || !myUser) return null;
 
-		return (
-			currentRoom.members?.find(
-				(member) => member.username !== myUser.username
-			) ?? null
+		const interlocutorId = currentRoom.memberIds.find(
+			(memberId) => memberId !== myUser.id
 		);
-	}, [currentRoom, myUser]);
+
+		if (!interlocutorId) return null;
+
+		return usersById[interlocutorId] ?? null;
+	}, [currentRoom, myUser, usersById]);
 
 	const roomTitle = useMemo(() => {
 		if (currentRoom?.type === "PRIVATE") {

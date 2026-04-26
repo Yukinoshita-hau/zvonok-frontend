@@ -1,4 +1,4 @@
-import { combineReducers, configureStore, type Action, type AnyAction, type UnknownAction } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import userSlice from "./slices/user.slice";
 import serverSlice from "./slices/server.slice";
 import { setStore } from "../api/api";
@@ -13,10 +13,12 @@ import toastSlice from "./slices/toast.slice";
 import deviceSlice from "./slices/device.slice";
 import uiSlice from "./slices/ui.slice";
 import channelMessageSlice from "./slices/channelMessage.slice";
+import usersSlice from "./slices/users.slice";
 
 
 const appReducer = combineReducers({
 	user: userSlice,
+	users: usersSlice,
 	server: serverSlice,
 	room: roomSlice,
 	message: messageSlice,

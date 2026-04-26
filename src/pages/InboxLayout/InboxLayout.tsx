@@ -87,7 +87,7 @@ export function InboxLayout() {
 			} else {
 				return dateA - dateB
 			}
-		}).filter(r => r.type === "PRIVATE" && r.lastMessageId === null ? false: true)
+		}).filter(r => r.type === "PRIVATE" && r.lastMessageId === null ? false : true)
 	}, [rooms, filterMode])
 
 	const sortedFriends = useMemo(() => {
@@ -102,16 +102,16 @@ export function InboxLayout() {
 		})
 	}, [friends, filterMode])
 
-	const handleFriendClick = (friendUsername: string) => {
+	const handleFriendClick = (friendId: number) => {
 		const existing = rooms.find(r =>
 			r.type === "PRIVATE" &&
-			r.members?.some(m => m.username === friendUsername)
-		)
+			r.memberIds.includes(friendId)
+		);
 
 		if (existing) {
-			navigate(`/dm?roomId=${existing.id}`)
+			navigate(`/dm?roomId=${existing.id}`);
 		} else {
-			navigate(`/`)
+			navigate(`/`);
 		}
 	}
 
@@ -162,10 +162,10 @@ export function InboxLayout() {
 					) : (
 						<div className={styles["friend-list"]}>
 							{sortedFriends.map(f => (
-								<FriendListItem 
-								key={f.friendId}
-								friend={f}
-								onClick={handleFriendClick} />
+								<FriendListItem
+									key={f.friendId}
+									friend={f}
+									onClick={handleFriendClick} />
 							))}
 						</div>
 					)}

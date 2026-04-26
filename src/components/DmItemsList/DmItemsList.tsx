@@ -23,6 +23,7 @@ export function DmItemsList() {
 	const { messages, status, hasMore, oldestMessageId, isAtBottom, newDividerMessageId } = useSelector((s: RootState) => s.message);
 	const { rooms } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
+	const usersById = useSelector((s: RootState) => s.users.byId);
 	const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
 	const [editContent, setEditContent] = useState("");
 	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -100,21 +101,20 @@ export function DmItemsList() {
 	}, [dispatch, isAtBottom, currentRoom?.unreadCount, numericRoomId])
 
 	useEffect(() => {
-		if (status !== "succeeded" || !messages.length || !myUser?.username) return;
+		if (status !== "succeeded" || !messages.length || !myUser?.id) return;
 
 		const newMessageIds = messages
 			.slice(-15)
-			.filter(msg => msg.sender.username === myUser.username)
+			.filter(msg => msg.senderId === myUser.id)
 			.map(msg => msg.id);
-
 
 		if (newMessageIds.length > 0) {
 			dispatch(getMessagesReaders({ messageIds: newMessageIds }));
 		}
-	}, [status, myUser?.username, dispatch]);
+	}, [status, messages, myUser?.id, dispatch]);
 
 	useEffect(() => {
-		if (!myUser?.username) return;
+		if (!myUser?.id || !myUser?.username) return;
 
 		const observer = new IntersectionObserver(
 			(entries) => {
@@ -127,12 +127,10 @@ export function DmItemsList() {
 					if (!currentMessage) return;
 
 					// свои сообщения не помечаем
-					if (currentMessage.sender.username === myUser.username) return;
+					if (currentMessage.senderId === myUser.id) return;
 
-					// уже обработали локально
 					if (processedIdsRef.current.has(messageId)) return;
 
-					// уже прочитано
 					if (currentMessage.readBy?.includes(myUser.username)) return;
 
 					processedIdsRef.current.add(messageId);
@@ -149,7 +147,7 @@ export function DmItemsList() {
 			const msg = messages.find(m => m.id === id);
 			if (!el || !msg) return;
 
-			if (msg.sender.username === myUser.username) return;
+			if (msg.senderId === myUser.id) return;
 			if (msg.readBy?.includes(myUser.username)) return;
 			if (processedIdsRef.current.has(id)) return;
 
@@ -157,7 +155,7 @@ export function DmItemsList() {
 		});
 
 		return () => observer.disconnect();
-	}, [messages, myUser?.username, dispatch]);
+	}, [messages, myUser?.id, myUser?.username, dispatch]);
 
 	const handleScroll = async (e: UIEvent<HTMLDivElement>) => {
 		const container = e.currentTarget;
@@ -217,15 +215,17 @@ export function DmItemsList() {
 	const handleStartReply = (msg: ShortMessage) => {
 		if (msg.eventType === "MESSAGE_DELETE") return;
 
+		const sender = usersById[msg.senderId];
+
 		dispatch(
 			messageActions.startReply({
 				messageId: msg.id,
-				authorDisplayName: msg.sender.displayName,
+				authorDisplayName: sender?.displayName ?? "Unknown user",
 				snippet: getReplySnippet(msg),
 				deleted: msg.replyPreview?.deleted ?? false
 			})
 		);
-	}
+	};
 
 	const handleReplyJump = (msg: ShortMessage) => {
 		if (!msg.replyToMessageId) return;
@@ -251,7 +251,7 @@ export function DmItemsList() {
 		e.preventDefault();
 
 		const menuWidth = 160;
-		const menuHeight = msg.sender.username === myUser?.username ? 132 : 48;
+		const menuHeight = msg.senderId === myUser?.id ? 132 : 48;
 
 		let x = e.clientX;
 		let y = e.clientY;
@@ -311,7 +311,14 @@ export function DmItemsList() {
 					)
 				}
 
-				const isMyMessage = item.payload.sender.username === myUser?.username;
+				const sender = usersById[item.payload.senderId];
+
+				if (!sender) {
+					console.warn("Sender not found for message:", item.payload);
+					return null;
+				}
+
+				const isMyMessage = item.payload.senderId === myUser?.id;
 				const isEditing = editingMsgId === item.payload.id;
 				const isEdited = item.payload.eventType === "MESSAGE_EDIT" || item.payload.editedAt !== null;
 
@@ -322,7 +329,7 @@ export function DmItemsList() {
 							else messageRefs.current.delete(item.payload.id);
 						}}
 						data-id={item.payload.id}
-						data-sender={item.payload.sender.username}
+						data-sender={sender.username}
 						className={cn(
 							styles["message-row"],
 							highlightedMessageId === item.payload.id && styles["message-row-highlighted"]
@@ -330,16 +337,19 @@ export function DmItemsList() {
 						onContextMenu={(e) => {
 							openContextMenu(e, item.payload)
 						}}>
-						<div className={styles["msg-avatar"]} style={{background: StringToColor(item.payload.sender.username)}}>
-							{item.payload.sender.avatarUrl ? (
-								<img src={item.payload.sender.avatarUrl} crossOrigin="anonymous" />
+						<div
+							className={styles["msg-avatar"]}
+							style={{ background: StringToColor(sender.username) }}
+						>
+							{sender.avatarUrl ? (
+								<img src={sender.avatarUrl} crossOrigin="anonymous" />
 							) : (
-								<div>{(item.payload.sender.displayName[0] || "?").toUpperCase()}</div>
+								<div>{(sender.displayName?.[0] || "?").toUpperCase()}</div>
 							)}
 						</div>
 						<div className={styles["msg-body"]}>
 							<div className={styles["msg-meta"]}>
-								<span className={styles["msg-author"]}>{item.payload.sender.displayName}</span>
+								<span className={styles["msg-author"]}>{sender.displayName}</span>
 								{isMyMessage && (
 									<div className={styles["read-status"]}>
 										{item.payload.readBy?.length ?
@@ -419,29 +429,29 @@ export function DmItemsList() {
 						Reply
 					</button>
 
-					{messages.find(m => m.id === contextMenu.messageId)?.sender.username === myUser?.username && (
+					{messages.find(m => m.id === contextMenu.messageId)?.senderId === myUser?.id && (
 						<>
 							<div className={styles["menu-divider"]} />
-					<button
-						onClick={() => {
-							const msg = messages.find(m => m.id === contextMenu.messageId);
-							if (msg) handleStartEdit(msg.id, msg.content);
-							setContextMenu(null);
-						}}>
-						Edit
-					</button>
+							<button
+								onClick={() => {
+									const msg = messages.find(m => m.id === contextMenu.messageId);
+									if (msg) handleStartEdit(msg.id, msg.content);
+									setContextMenu(null);
+								}}>
+								Edit
+							</button>
 
-					<div className={styles["menu-divider"]} />
+							<div className={styles["menu-divider"]} />
 
-					<button
-						className={styles["danger"]}
-						onClick={() => {
-							handleDelete(contextMenu.messageId);
-							setContextMenu(null);
-						}}
-					>
-						Delete
-					</button>
+							<button
+								className={styles["danger"]}
+								onClick={() => {
+									handleDelete(contextMenu.messageId);
+									setContextMenu(null);
+								}}
+							>
+								Delete
+							</button>
 						</>
 					)}
 				</div>

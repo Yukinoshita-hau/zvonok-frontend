@@ -23,6 +23,7 @@ import {
 	resolveQualitySetting,
 } from "../../utils/callQuality";
 import type { CallUiProps } from "./CallUi.props";
+import type { UserMini } from "../../entities/UserMini";
 
 export function CallUi({
 	hasChat,
@@ -35,9 +36,11 @@ export function CallUi({
 	const [hadRemoteParticipant, setHadRemoteParticipant] = useState(false);
 
 	const dispatch = useDispatch<AppDispatch>();
+
 	const call = useSelector((s: RootState) => s.call);
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 	const rooms = useSelector((s: RootState) => s.room.rooms);
+	const usersById = useSelector((s: RootState) => s.users.byId);
 	const device = useSelector((s: RootState) => s.device);
 
 	const participants = useParticipants();
@@ -60,38 +63,76 @@ export function CallUi({
 
 	const currentRoom = useMemo(
 		() => rooms.find((room) => room.id === call.chatRoomId) ?? null,
-		[rooms, call.chatRoomId]);
+		[rooms, call.chatRoomId]
+	);
+
+	const currentRoomMembers = useMemo(() => {
+		if (!currentRoom) return [];
+
+		return (currentRoom.memberIds ?? [])
+			.map((memberId) => usersById[memberId])
+			.filter(isUserMini);
+	}, [currentRoom, usersById]);
 
 	const participantAvatarResolver = useMemo(() => {
 		const avatarsByKey = new Map<string, string | null>();
-		const remoteMembers = currentRoom?.members.filter(
-			(member) => member.username !== myUser?.username
-		) ?? [];
 
-		if (myUser?.username) {
-			avatarsByKey.set(normalizeIdentityKey(myUser.username), myUser.avatarUrl ?? null);
+		const normalizedMyUser =
+			myUser?.id ? usersById[myUser.id] ?? myUser : myUser;
+
+		const remoteMembers = currentRoomMembers.filter(
+			(member) => member.id !== myUser?.id
+		);
+
+		if (normalizedMyUser?.username) {
+			avatarsByKey.set(
+				normalizeIdentityKey(normalizedMyUser.username),
+				normalizedMyUser.avatarUrl ?? null
+			);
+
+			avatarsByKey.set(
+				String(normalizedMyUser.id),
+				normalizedMyUser.avatarUrl ?? null
+			);
 		}
 
-		currentRoom?.members.forEach((member) => {
-			avatarsByKey.set(normalizeIdentityKey(member.username), member.avatarUrl ?? null);
-			avatarsByKey.set(String(member.id), member.avatarUrl ?? null);
+		currentRoomMembers.forEach((member) => {
+			avatarsByKey.set(
+				normalizeIdentityKey(member.username),
+				member.avatarUrl ?? null
+			);
+
+			avatarsByKey.set(
+				String(member.id),
+				member.avatarUrl ?? null
+			);
 		});
 
 		return (identity: string, isLocal: boolean) => {
-			if (isLocal) return myUser?.avatarUrl ?? null;
+			if (isLocal) {
+				return normalizedMyUser?.avatarUrl ?? null;
+			}
 
 			const normalizedIdentity = normalizeIdentityKey(identity);
+
 			const exactAvatar = avatarsByKey.get(normalizedIdentity);
-			if (exactAvatar !== undefined) return exactAvatar;
+
+			if (exactAvatar !== undefined) {
+				return exactAvatar;
+			}
 
 			const matchedMember = remoteMembers.find((member) => {
 				const normalizedUsername = normalizeIdentityKey(member.username);
+
 				return (
 					normalizedIdentity.includes(normalizedUsername) ||
 					normalizedUsername.includes(normalizedIdentity)
 				);
 			});
-			if (matchedMember) return matchedMember.avatarUrl ?? null;
+
+			if (matchedMember) {
+				return matchedMember.avatarUrl ?? null;
+			}
 
 			if (remoteMembers.length === 1) {
 				return remoteMembers[0].avatarUrl ?? null;
@@ -99,7 +140,7 @@ export function CallUi({
 
 			return null;
 		};
-	}, [currentRoom, myUser?.avatarUrl, myUser?.username]);
+	}, [currentRoomMembers, myUser, usersById]);
 
 	const availableScreenTracks = useMemo(
 		() =>
@@ -111,12 +152,14 @@ export function CallUi({
 
 	const subscribedVideoTracks = useMemo(
 		() =>
-			videoTracks.filter(
-				(trackRef) =>
-					trackRef.publication &&
-					(trackRef.participant.isLocal || trackRef.publication.isSubscribed) &&
-					!trackRef.publication.isMuted
-			).filter(isTrackReference),
+			videoTracks
+				.filter(
+					(trackRef) =>
+						trackRef.publication &&
+						(trackRef.participant.isLocal || trackRef.publication.isSubscribed) &&
+						!trackRef.publication.isMuted
+				)
+				.filter(isTrackReference),
 		[videoTracks]
 	);
 
@@ -155,6 +198,8 @@ export function CallUi({
 		const trackMap = new Map<string, TrackReference>();
 
 		availableScreenTracks.forEach((trackRef) => {
+			if (!isTrackReference(trackRef)) return;
+
 			trackMap.set(trackRef.participant.identity, trackRef);
 		});
 
@@ -165,6 +210,7 @@ export function CallUi({
 		() =>
 			[...participants].sort((left, right) => {
 				if (left.isLocal !== right.isLocal) return left.isLocal ? -1 : 1;
+
 				return left.identity.localeCompare(right.identity);
 			}),
 		[participants]
@@ -181,7 +227,12 @@ export function CallUi({
 					participant.isLocal
 				),
 			})),
-		[sortedParticipants, videoTrackByParticipant, screenTrackByParticipant, participantAvatarResolver]
+		[
+			sortedParticipants,
+			videoTrackByParticipant,
+			screenTrackByParticipant,
+			participantAvatarResolver,
+		]
 	);
 
 	const remoteParticipantsCount = useMemo(
@@ -190,12 +241,14 @@ export function CallUi({
 	);
 
 	const qualityRecommendation = device.connectionTestResult.recommendation;
+
 	const cameraPreset = useMemo(() => {
 		const quality = resolveQualitySetting(
 			"camera",
 			device.cameraQuality,
 			qualityRecommendation
 		);
+
 		return getQualityPreset("camera", quality);
 	}, [device.cameraQuality, qualityRecommendation]);
 
@@ -205,6 +258,7 @@ export function CallUi({
 			device.screenShareQuality,
 			qualityRecommendation
 		);
+
 		return getQualityPreset("screenShare", quality);
 	}, [device.screenShareQuality, qualityRecommendation]);
 
@@ -212,14 +266,17 @@ export function CallUi({
 		() => getCameraCaptureOptions(device.selectedCameraId, cameraPreset),
 		[device.selectedCameraId, cameraPreset]
 	);
+
 	const cameraPublishOptions = useMemo(
 		() => getCameraPublishOptions(cameraPreset),
 		[cameraPreset]
 	);
+
 	const screenShareCaptureOptions = useMemo(
 		() => getScreenShareCaptureOptions(screenSharePreset),
 		[screenSharePreset]
 	);
+
 	const screenSharePublishOptions = useMemo(
 		() => getScreenSharePublishOptions(screenSharePreset),
 		[screenSharePreset]
@@ -246,18 +303,22 @@ export function CallUi({
 	}, [call.status, hadRemoteParticipant, remoteParticipantsCount, dispatch]);
 
 	const hasScreenShare = availableScreenTracks.length > 0;
-	const isSingleParticipantView = !hasScreenShare && participantCards.length === 1;
+
+	const isSingleParticipantView =
+		!hasScreenShare && participantCards.length === 1;
 
 	useEffect(() => {
 		if (!availableScreenTracks.length) {
 			if (call.selectedScreenTrackSid !== null) {
 				dispatch(callActions.setSelectedScreenTrackSid(null));
 			}
+
 			return;
 		}
 
 		const selectedStillExists = availableScreenTracks.some(
-			(trackRef) => trackRef.publication?.trackSid === call.selectedScreenTrackSid
+			(trackRef) =>
+				trackRef.publication?.trackSid === call.selectedScreenTrackSid
 		);
 
 		if (!selectedStillExists) {
@@ -272,9 +333,12 @@ export function CallUi({
 	useEffect(() => {
 		availableScreenTracks.forEach((trackRef) => {
 			const publication = trackRef.publication;
+
 			if (!(publication instanceof RemoteTrackPublication)) return;
 
-			const shouldSubscribe = publication.trackSid === call.selectedScreenTrackSid;
+			const shouldSubscribe =
+				publication.trackSid === call.selectedScreenTrackSid;
+
 			if (publication.isDesired !== shouldSubscribe) {
 				publication.setSubscribed(shouldSubscribe);
 			}
@@ -286,13 +350,15 @@ export function CallUi({
 
 		return (
 			availableScreenTracks.find(
-				(trackRef) => trackRef.publication?.trackSid === call.selectedScreenTrackSid
+				(trackRef) =>
+					trackRef.publication?.trackSid === call.selectedScreenTrackSid
 			) ?? availableScreenTracks[0]
 		);
 	}, [availableScreenTracks, call.selectedScreenTrackSid]);
 
 	const getOpenScreenShareHandler = (screenTrack?: TrackReference) => {
-		const trackSid = screenTrack?.publication.trackSid;
+		const trackSid = screenTrack?.publication?.trackSid;
+
 		if (!trackSid) return undefined;
 
 		return () => dispatch(callActions.setSelectedScreenTrackSid(trackSid));
@@ -300,76 +366,92 @@ export function CallUi({
 
 	return (
 		<div className={styles["call-root"]}>
-
 			{hasScreenShare && mainScreenTrack ? (
 				<div className={styles["screen-layout"]}>
 					<div className={styles["main-screen"]}>
-						{mainScreenTrack.participant.isLocal || mainScreenTrack.publication.isSubscribed ? (
+						{mainScreenTrack.participant.isLocal ||
+						mainScreenTrack.publication?.isSubscribed ? (
 							<VideoTrack trackRef={mainScreenTrack} />
 						) : (
 							<div className={styles["screen-loading"]}>
 								Opening screen share...
 							</div>
 						)}
+
 						<div className={styles["name"]}>
-							{mainScreenTrack.participant.name}
+							{mainScreenTrack.participant.name ||
+								mainScreenTrack.participant.identity}
 						</div>
 					</div>
 
 					<div className={styles["participants-strip"]}>
-						{participantCards.map(({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
+						{participantCards.map(
+							(
+								{ participant, videoTrack, screenTrack, avatarUrl },
+								index
+							) => (
+								<CallParticipantTile
+									key={participant.sid ?? participant.identity ?? index}
+									className={styles["participant-tile"]}
+									participant={participant}
+									videoTrack={videoTrack}
+									avatarUrl={avatarUrl}
+									isScreenSharing={Boolean(screenTrack)}
+									isScreenShareSelected={
+										screenTrack?.publication?.trackSid ===
+										call.selectedScreenTrackSid
+									}
+									onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
+								/>
+							)
+						)}
+					</div>
+				</div>
+			) : isSingleParticipantView ? (
+				<div className={styles["single-layout"]}>
+					{participantCards.map(
+						({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
 							<CallParticipantTile
 								key={participant.sid ?? participant.identity ?? index}
-								className={styles["participant-tile"]}
+								className={styles["single-tile"]}
 								participant={participant}
 								videoTrack={videoTrack}
 								avatarUrl={avatarUrl}
 								isScreenSharing={Boolean(screenTrack)}
 								isScreenShareSelected={
-									screenTrack?.publication.trackSid === call.selectedScreenTrackSid
+									screenTrack?.publication?.trackSid ===
+									call.selectedScreenTrackSid
 								}
 								onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
 							/>
-						))}
-					</div>
-				</div>
-			) : isSingleParticipantView ? (
-				<div className={styles["single-layout"]}>
-					{participantCards.map(({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
-						<CallParticipantTile
-							key={participant.sid ?? participant.identity ?? index}
-							className={styles["single-tile"]}
-							participant={participant}
-							videoTrack={videoTrack}
-							avatarUrl={avatarUrl}
-							isScreenSharing={Boolean(screenTrack)}
-							isScreenShareSelected={
-								screenTrack?.publication.trackSid === call.selectedScreenTrackSid
-							}
-							onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-						/>
-					))}
+						)
+					)}
 				</div>
 			) : participantCards.length > 0 ? (
 				<div className={styles["participants-grid"]}>
-					{participantCards.map(({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
-						<CallParticipantTile
-							key={participant.sid ?? participant.identity ?? index}
-							className={styles["tile"]}
-							participant={participant}
-							videoTrack={videoTrack}
-							avatarUrl={avatarUrl}
-							isScreenSharing={Boolean(screenTrack)}
-							isScreenShareSelected={
-								screenTrack?.publication.trackSid === call.selectedScreenTrackSid
-							}
-							onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-						/>
-					))}
+					{participantCards.map(
+						({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
+							<CallParticipantTile
+								key={participant.sid ?? participant.identity ?? index}
+								className={styles["tile"]}
+								participant={participant}
+								videoTrack={videoTrack}
+								avatarUrl={avatarUrl}
+								isScreenSharing={Boolean(screenTrack)}
+								isScreenShareSelected={
+									screenTrack?.publication?.trackSid ===
+									call.selectedScreenTrackSid
+								}
+								onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
+							/>
+						)
+					)}
 				</div>
 			) : (
 				<div className={styles["empty-state"]}>
-					<div className={styles["empty-title"]}>Connecting call...</div>
+					<div className={styles["empty-title"]}>
+						Connecting call...
+					</div>
 					<div className={styles["empty-subtitle"]}>
 						Waiting for participants to join the room.
 					</div>
@@ -383,12 +465,14 @@ export function CallUi({
 					disabledLabel="Muted"
 					showIcon
 				/>
+
 				<TrackToggle
 					source={Track.Source.Camera}
 					className={styles["control-button"]}
 					captureOptions={cameraCaptureOptions}
 					publishOptions={cameraPublishOptions}
 				/>
+
 				<TrackToggle
 					source={Track.Source.ScreenShare}
 					className={styles["control-button"]}
@@ -396,6 +480,7 @@ export function CallUi({
 					publishOptions={screenSharePublishOptions}
 					title="Share screen. Audio is included only when your browser and selected source support it."
 				/>
+
 				{hasChat && (
 					<button
 						type="button"
@@ -406,6 +491,7 @@ export function CallUi({
 						Chat
 					</button>
 				)}
+
 				<button
 					type="button"
 					className={styles["control-button"]}
@@ -443,4 +529,8 @@ export function CallUi({
 
 function normalizeIdentityKey(value: string) {
 	return value.trim().toLowerCase();
+}
+
+function isUserMini(value: UserMini | undefined): value is UserMini {
+	return Boolean(value);
 }

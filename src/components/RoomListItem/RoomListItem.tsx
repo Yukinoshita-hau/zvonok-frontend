@@ -8,12 +8,18 @@ import { StringToColor } from "../../utils/stringHelpers";
 
 export function RoomListItem({ room }: RoomListItemProps) {
 	const navigate = useNavigate();
+
 	const myUser = useSelector((s: RootState) => s.user.myUser);
+	const usersById = useSelector((s: RootState) => s.users.byId);
 
 	const isPrivateRoom = room.type === "PRIVATE";
 
-	const interlocutor = isPrivateRoom
-		? room.members?.find((member) => member.id !== myUser?.id) ?? null
+	const interlocutorId = isPrivateRoom
+		? room.memberIds.find((memberId) => memberId !== myUser?.id)
+		: null;
+
+	const interlocutor = interlocutorId
+		? usersById[interlocutorId] ?? null
 		: null;
 
 	const title = isPrivateRoom
@@ -21,8 +27,8 @@ export function RoomListItem({ room }: RoomListItemProps) {
 		: room.name || "Unknown";
 
 	const avatarSrc = isPrivateRoom
-		? interlocutor?.avatarUrl || interlocutor?.avatartUrl || null
-		: room.avatarUrl || null;
+		? interlocutor?.avatarUrl ?? null
+		: room.avatarUrl ?? null;
 
 	const avatarFallback = isPrivateRoom
 		? (interlocutor?.displayName?.[0] || "?").toUpperCase()
@@ -71,6 +77,7 @@ export function RoomListItem({ room }: RoomListItemProps) {
 								{room.unreadCount > 99 ? "99+" : room.unreadCount}
 							</span>
 						)}
+
 						<span className={styles["time"]}>
 							{formatTime(room.lastActivityAt)}
 						</span>
