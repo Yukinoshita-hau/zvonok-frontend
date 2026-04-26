@@ -111,7 +111,7 @@ export function DmItemsList() {
 		if (newMessageIds.length > 0) {
 			dispatch(getMessagesReaders({ messageIds: newMessageIds }));
 		}
-	}, [status, messages, myUser?.id, dispatch]);
+	}, [status, myUser?.id, dispatch]);
 
 	useEffect(() => {
 		if (!myUser?.id || !myUser?.username) return;
