@@ -1,0 +1,5 @@
+.popover {
+	position: fixed;
+	z-index: 42;
+	max-width: min(360px, calc(100vw - 16px));
+}

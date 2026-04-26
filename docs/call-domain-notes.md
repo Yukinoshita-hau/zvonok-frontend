@@ -1,120 +1,97 @@
 # Call Domain Notes
 
-## 1. Screen share quality presets
+## Participant context menu architecture
 
-Source of truth: `src/utils/callQuality.ts`.
+- Entry point: `CallUi.tsx` stores `participantMenu` state (`x`, `y`, `participantIdentity`).
+- Trigger: right-click (`onContextMenu`) on `CallParticipantTile`.
+- Menu UI: `src/components/CallUi/ParticipantContextMenu/ParticipantContextMenu.tsx`.
+- Volume controls inside menu: `ParticipantVolumeMenu` + shared `ParticipantVolumeRow`.
+- Dismiss behavior: `useDismissibleLayer` (Escape, scroll, resize) + outside click container close.
+- Positioning: menu coordinates are clamped to viewport before opening.
 
-- `low`: 1280x720, 5 FPS, 0.8 Mbps.
-- `medium`: 1920x1080, 15 FPS, 2.5 Mbps.
-- `high`: 1920x1080, 30 FPS, 5 Mbps.
-- `game60`: 1920x1080, 60 FPS, 8 Mbps.
-- `game120`: 1920x1080, 120 FPS, 12 Mbps (experimental).
+## User profile/popover architecture
 
-Screen-share capture options are requested as ideal values (`resolution.width/height/frameRate`) and remain best-effort at browser/WebRTC level.
+- Popover state lives in `CallUi.tsx` (`profilePopover`).
+- UI component: `src/components/CallUi/UserProfilePopover/UserProfilePopover.tsx`.
+- Content reuses existing `UserProfileCard` component.
+- Open path: context menu action `Open profile`.
+- Close path: outside click + Escape/scroll/resize via `useDismissibleLayer`.
 
-## 2. Gaming screen share modes
+## Camera preview architecture and cleanup rules
 
-- `game60` prioritizes smoother motion and lower perceived latency compared to regular screen presets.
-- `game120` is marked experimental in UI and quality metadata.
-- For high-FPS modes, publish defaults prefer `maintain-framerate` for screen share encoding.
+- Camera preview was extracted from monolithic settings logic:
+  - hook: `src/components/VoiceVideoSetting/CameraPreview/useCameraPreview.ts`
+  - UI: `CameraPreviewCard` + `CameraPreviewState`
+- Preview capture source: `getUserMedia` only (not published to LiveKit room).
+- Capture constraints use existing quality helpers (`getCameraCaptureOptions` + camera quality preset resolution).
+- Cleanup rules:
+  1. stop old preview tracks before creating a new stream;
+  2. clear `video.srcObject = null` on re-create and unmount;
+  3. stop all preview tracks on component cleanup.
+- Error states are explicit: `denied`, `not_found`, `no_device`, `error`.
 
-## 3. Why 1080p120 is experimental / best effort
+## Noise suppression architecture
 
-`1080p120` is not guaranteed because real output depends on:
+- Device settings live in `device.slice.ts` (`noiseSuppression`, `echoCancellation`, `autoGainControl`).
+- Capture options builder: `useMicrophoneCaptureOptions.ts`.
+- Microphone toggle/hotkey uses those options when enabling mic.
+- Runtime sync pass: `MicrophoneSettingsSync` re-applies capture options to active local mic track when settings change and mic is enabled.
+- This keeps the behavior in frontend + LiveKit API boundaries without backend changes.
 
-- browser implementation of `getDisplayMedia`;
-- selected source type (tab/window/monitor);
-- OS and GPU/encoder limits;
-- monitor refresh rate and source rendering rate;
-- current CPU/upload/network constraints.
+## Enhanced noise suppression / Krisp plan
 
-Runtime logic in `CallQualityController` reads `track.getSourceTrackSettings().frameRate` when available. For `game120` it applies fallback chain:
+Current status: Krisp is **not enabled in this pass** to avoid call-flow regressions.
 
-- if actual FPS < 100 and >= 55 → fallback to `game60` sender encoding;
-- if actual FPS < 55 → fallback to `high` sender encoding.
+Safe integration plan:
+1. Add optional "Enhanced noise suppression" toggle in device settings.
+2. Dynamic import `@livekit/krisp-noise-filter` only when toggle is enabled.
+3. Check support via Krisp support API before applying processor.
+4. Apply processor only to current local microphone track.
+5. On mic track change/recreate, re-attach processor once (no duplicate processors).
+6. On toggle off / unsupported / error, dispose processor and fallback to standard WebRTC noise suppression.
 
-UI in Voice/Video settings shows requested FPS, actual FPS, active applied mode, and fallback reason.
+Open question: exact processor lifecycle hooks for the current LiveKit track re-creation path should be validated in browser matrix before default rollout.
 
-## 4. Per-user volume architecture
+## Theater mode architecture
 
-- Local-only preference, no backend mutation.
-- Preferences are stored in Redux `device.participantVolumes` and persisted in `localStorage` key `device-preferences-v2`.
-- Key dimensions:
-  - `participantIdentity`;
-  - `source` (`microphone` or `screenShareAudio`).
-- Value range in current MVP: `0..100` (no boost above 100%).
-- UI surface: in-call `Audio Mix` panel in `CallUi`.
+- Call state expanded with `isTheaterMode` in `call.slice.ts`.
+- Trigger points:
+  - dedicated control button in `CallUi`;
+  - context menu action `Open theater mode`.
+- View component: `src/components/CallUi/TheaterMode/TheaterModeView.tsx`.
+- Theater mode uses existing selected screen-share flow (`selectedScreenTrackSid`) and does not alter screen-audio routing semantics.
+- Escape exits theater mode.
+- If selected screen share disappears, theater mode auto-exits.
 
-## 5. Screen share audio volume architecture
+## Safe/risky call UI changes
 
-- Separate slider/key from microphone volume.
-- Screen-share-audio slider appears only when remote `Track.Source.ScreenShareAudio` track exists.
-- Playback logic remains centralized in `CallAudioLayer`.
-- `CallAudioLayer` keeps existing behavior: screen-share-audio plays only for currently selected screen-share participant.
+Safe:
+- presentation refactor into small UI components;
+- context menus and popovers with local UI state;
+- camera preview via isolated `getUserMedia` stream;
+- microphone settings re-apply using existing LiveKit participant API.
 
-## 6. Input sensitivity / voice threshold architecture
+Risky:
+- modifying `CallAudioLayer` subscribe/playback semantics;
+- reworking `LiveKitRoom` props/lifecycle;
+- changing websocket call contracts;
+- introducing heavyweight audio processing in active call path without fallback.
 
-Current implementation is safe MVP (frontend-only):
+## Manual QA checklist
 
-- Setting is named `Input sensitivity / Voice activity threshold`.
-- It does not modify published microphone track.
-- It is used for local speaking UI thresholding and meter feedback.
-- Auto/manual toggle:
-  - auto threshold baseline: 30%;
-  - manual threshold range: 5..90.
-
-Related toggles in device settings:
-
-- noise suppression;
-- echo cancellation;
-- auto gain control.
-
-These map to browser capture constraints in `useMicrophoneCaptureOptions` and microphone preview constraints in `VoiceVideoSetting`.
-
-## 7. Noise gate / WebAudio limitations
-
-Full realtime mic processing (noise gate/high-pass/filter chain) is intentionally not included in this PR because it requires:
-
-- stable WebAudio processing graph for outgoing mic;
-- republish/restart coordination with LiveKit mute/unmute;
-- robust handling of device switching and reconnects;
-- careful artifact/performance testing across browsers.
-
-Open question: whether to implement processed outgoing track replacement in a dedicated follow-up after call-flow regression tests.
-
-## 8. Safe vs risky call/audio changes
-
-Safe in this iteration:
-
-- extending preset tables and UI mode selection;
-- runtime sender-encoding fallback for screen-share game120;
-- local-only per-user volume preferences;
-- speaking UI threshold tuning without touching published mic track.
-
-Risky (kept out of scope):
-
-- recreating `LiveKitRoom` on setting changes;
-- hidden screen-share restart / re-prompt from settings change;
-- replacing raw mic publish path with always-on WebAudio processor;
-- changing websocket call contracts.
-
-## 9. Manual QA for call/audio/screen-share features
-
-1. Select each legacy screen preset (`low/medium/high`) and start share.
-2. Select `game60`, start share, confirm call remains stable.
-3. Select `game120`, start share, verify fallback info if actual FPS is lower.
-4. Switch screen-share mode while active share is running; confirm no room recreation.
-5. Verify camera + screen share simultaneous behavior.
-6. Open `Audio Mix`, change remote mic volume, reset to default.
-7. If participant shares audio, adjust separate stream volume.
-8. Reconnect/rejoin and confirm volumes are re-applied.
-9. Toggle input sensitivity auto/manual and observe local speaking/meter behavior.
-10. Confirm mute/unmute and device selection still work.
-
-## 10. Future improvements
-
-- Optional WebAudio gain stage for >100% per-user boost (separate guarded feature flag).
-- Full outgoing mic processing pipeline (noise gate + optional high-pass filter) with controlled republish path.
-- Better automatic input-threshold calibration against ambient noise floor.
-- Live call diagnostics panel (send/recv bitrate, FPS, packet loss) with recommendations.
-- Optional backend sync for user AV preferences across devices (currently local only).
+1. Right-click on participant tile opens menu.
+2. Menu is clamped in viewport and closes by Escape/outside click/scroll/resize.
+3. Left-click screen-share selection still works.
+4. Context menu mic volume changes only target participant mic audio.
+5. Stream volume row appears only when screen-share-audio exists.
+6. Profile popover opens and closes predictably.
+7. Camera preview updates after camera device change.
+8. Camera preview updates after camera quality change.
+9. Closing settings releases preview stream.
+10. Active call camera publish flow remains stable while preview is used.
+11. Noise/echo/agc toggles re-apply to active mic track when mic is enabled.
+12. Theater mode opens selected screen share in focused layout.
+13. Escape exits theater mode.
+14. Ending selected screen share exits theater mode safely.
+15. Minimized/expanded/hidden call modes still work.
+16. Screen-share audio routing continues to follow selected screen-share participant.

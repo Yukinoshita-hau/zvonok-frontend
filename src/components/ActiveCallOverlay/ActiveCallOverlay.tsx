@@ -12,6 +12,7 @@ import { getQualityPreset, getVideoEncoding } from "../../utils/callQuality";
 import { CallQualityController } from "../CallUi/CallQualityController";
 import { CallHotkeys } from "./CallHotkeys";
 import { MiniCallDock } from "./MiniCallDock";
+import { MicrophoneSettingsSync } from "../CallUi/MicrophoneSettingsSync";
 
 export function ActiveCallOverlay() {
 	const [callHeight, setCallHeight] = useState(52);
@@ -112,6 +113,7 @@ export function ActiveCallOverlay() {
 				<CallAudioLayer />
 				<CallQualityController />
 				<CallHotkeys />
+				<MicrophoneSettingsSync />
 
 				{isExpanded && (
 					<div

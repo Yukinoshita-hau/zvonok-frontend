@@ -9,14 +9,13 @@ import {
 	formatBitrate,
 	formatMilliseconds,
 	formatPercent,
-	getCameraCaptureOptions,
-	getQualityPreset,
 	recommendQualityFromMetrics,
-	resolveQualitySetting,
 	type NetworkQualityMetrics,
 	type CallQualitySetting,
 	type ScreenShareQualitySetting,
 } from "../../utils/callQuality";
+import { useCameraPreview } from "./CameraPreview/useCameraPreview";
+import { CameraPreviewCard } from "./CameraPreview/CameraPreviewCard";
 
 interface PublishStats {
 	packetsLost: number;
@@ -57,17 +56,11 @@ export function VoiceVideoSetting() {
 	const [mediaDevicesReady, setMediaDevicesReady] = useState(false);
 	const [volumeLevel, setVolumeLevel] = useState(0);
 	const [isListening, setIsListening] = useState(false);
-	const [cameraPreviewStatus, setCameraPreviewStatus] = useState<
-		"idle" | "loading" | "ready" | "no_device" | "denied" | "not_found" | "error"
-	>("idle");
-	const [cameraPreviewError, setCameraPreviewError] = useState<string | null>(null);
 
 	const streamRef = useRef<MediaStream | null>(null);
 	const audioContextRef = useRef<AudioContext | null>(null);
 	const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 	const animationRef = useRef<number | null>(null);
-	const cameraPreviewStreamRef = useRef<MediaStream | null>(null);
-	const cameraPreviewVideoRef = useRef<HTMLVideoElement | null>(null);
 
 	useEffect(() => {
 		const getDevices = async () => {
@@ -86,91 +79,19 @@ export function VoiceVideoSetting() {
 		getDevices();
 	}, []);
 
-	const cameraPreviewPreset = getQualityPreset(
-		"camera",
-		resolveQualitySetting("camera", cameraQuality, recommendation)
-	);
-
 	const selectedCameraLabel =
 		cameras.find((camera) => camera.deviceId === selectedCameraId)?.label ||
 		(selectedCameraId === "default" ? "Default camera" : "Selected camera");
-
-	useEffect(() => {
-		const stopCameraPreviewTracks = () => {
-			if (cameraPreviewStreamRef.current) {
-				cameraPreviewStreamRef.current.getTracks().forEach((track) => track.stop());
-				cameraPreviewStreamRef.current = null;
-			}
-			if (cameraPreviewVideoRef.current) {
-				cameraPreviewVideoRef.current.srcObject = null;
-			}
-		};
-
-		const startCameraPreview = async () => {
-			stopCameraPreviewTracks();
-			setCameraPreviewStatus("loading");
-			setCameraPreviewError(null);
-			if (mediaDevicesReady && cameras.length === 0) {
-				setCameraPreviewStatus("no_device");
-				setCameraPreviewError("No camera devices were detected.");
-				return;
-			}
-
-			if (!navigator.mediaDevices?.getUserMedia) {
-				setCameraPreviewStatus("error");
-				setCameraPreviewError("Camera preview is not supported in this browser.");
-				return;
-			}
-
-			try {
-				const captureOptions = getCameraCaptureOptions(
-					selectedCameraId,
-					cameraPreviewPreset
-				);
-				const resolution = captureOptions.resolution;
-				const videoConstraints: MediaTrackConstraints = {
-					deviceId: captureOptions.deviceId,
-					facingMode: captureOptions.facingMode,
-					width: resolution?.width,
-					height: resolution?.height,
-					frameRate: resolution?.frameRate,
-				};
-
-				const stream = await navigator.mediaDevices.getUserMedia({
-					video: videoConstraints,
-					audio: false,
-				});
-				cameraPreviewStreamRef.current = stream;
-
-				if (cameraPreviewVideoRef.current) {
-					cameraPreviewVideoRef.current.srcObject = stream;
-					await cameraPreviewVideoRef.current.play().catch(() => undefined);
-				}
-
-				setCameraPreviewStatus("ready");
-			} catch (error) {
-				const mediaError = error as DOMException;
-				if (mediaError?.name === "NotAllowedError") {
-					setCameraPreviewStatus("denied");
-					setCameraPreviewError("Camera permission denied.");
-					return;
-				}
-				if (mediaError?.name === "NotFoundError" || mediaError?.name === "OverconstrainedError") {
-					setCameraPreviewStatus("not_found");
-					setCameraPreviewError("Selected camera is unavailable.");
-					return;
-				}
-				setCameraPreviewStatus("error");
-				setCameraPreviewError("Could not start camera preview.");
-			}
-		};
-
-		void startCameraPreview();
-
-		return () => {
-			stopCameraPreviewTracks();
-		};
-	}, [selectedCameraId, cameraPreviewPreset, cameras.length, mediaDevicesReady]);
+	const {
+		status: cameraPreviewStatus,
+		error: cameraPreviewError,
+		videoElementRef: cameraPreviewVideoRef,
+	} = useCameraPreview({
+		selectedCameraId,
+		cameraQuality,
+		recommendation,
+		hasCameraDevices: !mediaDevicesReady || cameras.length > 0,
+	});
 
 	useEffect(() => {
 		const startAudio = async () => {
@@ -359,34 +280,12 @@ export function VoiceVideoSetting() {
 
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Camera Preview</label>
-						<div className={styles["camera-preview-card"]}>
-							<div className={styles["camera-preview-media"]}>
-								{cameraPreviewStatus === "ready" ? (
-									<video
-										ref={cameraPreviewVideoRef}
-										className={styles["camera-preview-video"]}
-										autoPlay
-										playsInline
-										muted
-									/>
-								) : (
-									<div className={styles["camera-preview-state"]}>
-										{cameraPreviewStatus === "loading" && "Loading camera preview..."}
-										{cameraPreviewStatus === "denied" && "Camera permission denied."}
-										{cameraPreviewStatus === "not_found" && "Selected camera is unavailable."}
-										{cameraPreviewStatus === "error" && "Could not start camera preview."}
-										{cameraPreviewStatus === "no_device" && "No camera devices found."}
-									</div>
-								)}
-							</div>
-							<div className={styles["camera-preview-caption"]}>{selectedCameraLabel}</div>
-							<div className={styles["help-text"]}>
-								Preview is local only and is not sent to the call.
-							</div>
-							{cameraPreviewError && (
-								<div className={styles["error-text"]}>{cameraPreviewError}</div>
-							)}
-						</div>
+						<CameraPreviewCard
+							status={cameraPreviewStatus}
+							error={cameraPreviewError}
+							selectedCameraLabel={selectedCameraLabel}
+							videoRef={cameraPreviewVideoRef}
+						/>
 					</div>
 
 					<div className={styles["form-group"]}>

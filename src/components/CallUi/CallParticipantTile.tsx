@@ -14,6 +14,7 @@ export function CallParticipantTile({
 	isScreenSharing = false,
 	isScreenShareSelected = false,
 	onOpenScreenShare,
+	onContextMenu,
 }: CallParticipantTileProps) {
 	const { voiceActivityThreshold, isAutoInputSensitivity } = useSelector(
 		(state: RootState) => state.device
@@ -31,8 +32,8 @@ export function CallParticipantTile({
 	return (
 		<button
 			type="button"
-			disabled={!isClickableScreenShare}
 			onClick={isClickableScreenShare ? onOpenScreenShare : undefined}
+			onContextMenu={onContextMenu}
 			className={[
 				className,
 				styles["participant-card"],
