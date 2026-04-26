@@ -1,12 +1,20 @@
 import { AudioTrack, useTracks } from "@livekit/components-react";
-import { RemoteTrackPublication, Track } from "livekit-client";
+import {
+	RemoteAudioTrack,
+	RemoteTrackPublication,
+	Track,
+} from "livekit-client";
 import { useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store/store";
+import type { ParticipantAudioSource } from "../../store/slices/device.slice";
 
 export function CallAudioLayer() {
 	const selectedScreenTrackSid = useSelector(
 		(s: RootState) => s.call.selectedScreenTrackSid
+	);
+	const participantVolumes = useSelector(
+		(s: RootState) => s.device.participantVolumes
 	);
 	const microphoneTracks = useTracks([Track.Source.Microphone]);
 	const screenTracks = useTracks([Track.Source.ScreenShare], {
@@ -50,6 +58,26 @@ export function CallAudioLayer() {
 		[microphoneTracks, screenAudioTracks, selectedScreenParticipantIdentity]
 	);
 
+	useEffect(() => {
+		audioTracks.forEach((trackRef) => {
+			const publication = trackRef.publication;
+			const track = publication?.track;
+			if (!(track instanceof RemoteAudioTrack)) return;
+			if (trackRef.participant.isLocal) return;
+
+			const source = toAudioSource(trackRef.source ?? publication?.source);
+			if (!source) return;
+
+			const preference = participantVolumes.find(
+				(item) =>
+					item.participantIdentity === trackRef.participant.identity &&
+					item.source === source
+			);
+			const volume = preference?.volume ?? 100;
+			track.setVolume(Math.max(0, Math.min(1, volume / 100)));
+		});
+	}, [audioTracks, participantVolumes]);
+
 	return (
 		<div aria-hidden="true" style={{ display: "none" }}>
 			{audioTracks.map((trackRef, index) => {
@@ -68,4 +96,10 @@ export function CallAudioLayer() {
 			})}
 		</div>
 	);
+}
+
+function toAudioSource(trackSource: Track.Source | undefined): ParticipantAudioSource | null {
+	if (trackSource === Track.Source.Microphone) return "microphone";
+	if (trackSource === Track.Source.ScreenShareAudio) return "screenShareAudio";
+	return null;
 }

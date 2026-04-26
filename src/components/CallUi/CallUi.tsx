@@ -6,11 +6,13 @@ import {
 	VideoTrack,
 	type TrackReference,
 } from "@livekit/components-react";
+import { Mic, MonitorUp, RotateCcw } from "lucide-react";
 import styles from "./CallUi.module.css";
 import { RemoteTrackPublication, Track } from "livekit-client";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
+import { deviceActions } from "../../store/slices/device.slice";
 import { useEffect, useMemo, useState } from "react";
 import { CallParticipantTile } from "./CallParticipantTile";
 import { MicrophoneToggleButton } from "./MicrophoneToggleButton";
@@ -21,6 +23,7 @@ import {
 	getScreenShareCaptureOptions,
 	getScreenSharePublishOptions,
 	resolveQualitySetting,
+	resolveScreenShareQualitySetting,
 } from "../../utils/callQuality";
 import type { CallUiProps } from "./CallUi.props";
 import type { UserMini } from "../../entities/UserMini";
@@ -34,6 +37,7 @@ export function CallUi({
 	onToggleFocus,
 }: CallUiProps) {
 	const [hadRemoteParticipant, setHadRemoteParticipant] = useState(false);
+	const [isAudioPanelOpen, setIsAudioPanelOpen] = useState(false);
 
 	const dispatch = useDispatch<AppDispatch>();
 
@@ -42,11 +46,15 @@ export function CallUi({
 	const rooms = useSelector((s: RootState) => s.room.rooms);
 	const usersById = useSelector((s: RootState) => s.users.byId);
 	const device = useSelector((s: RootState) => s.device);
+	const participantVolumes = useSelector((s: RootState) => s.device.participantVolumes);
 
 	const participants = useParticipants();
 
 	const videoTracks = useTracks([
 		{ source: Track.Source.Camera, withPlaceholder: false },
+	]);
+	const microphoneAudioTracks = useTracks([
+		{ source: Track.Source.Microphone, withPlaceholder: false },
 	]);
 
 	const screenTracks = useTracks([Track.Source.ScreenShare], {
@@ -163,26 +171,25 @@ export function CallUi({
 		[videoTracks]
 	);
 
-	const isLocalScreenShareActive = useMemo(
-		() =>
-			availableScreenTracks.some(
-				(trackRef) =>
-					trackRef.participant.isLocal &&
-					trackRef.publication
-			),
-		[availableScreenTracks]
-	);
+	const remoteMicrophoneParticipants = useMemo(() => {
+		const participantSet = new Set<string>();
+		microphoneAudioTracks.forEach((trackRef) => {
+			if (trackRef.participant.isLocal) return;
+			if (!trackRef.publication || trackRef.publication.isMuted) return;
+			participantSet.add(trackRef.participant.identity);
+		});
+		return participantSet;
+	}, [microphoneAudioTracks]);
 
-	const hasLocalScreenShareAudio = useMemo(
-		() =>
-			screenAudioTracks.some(
-				(trackRef) =>
-					trackRef.participant.isLocal &&
-					trackRef.publication &&
-					!trackRef.publication.isMuted
-			),
-		[screenAudioTracks]
-	);
+	const remoteScreenAudioParticipants = useMemo(() => {
+		const participantSet = new Set<string>();
+		screenAudioTracks.forEach((trackRef) => {
+			if (trackRef.participant.isLocal) return;
+			if (!trackRef.publication || trackRef.publication.isMuted) return;
+			participantSet.add(trackRef.participant.identity);
+		});
+		return participantSet;
+	}, [screenAudioTracks]);
 
 	const videoTrackByParticipant = useMemo(() => {
 		const trackMap = new Map<string, TrackReference>();
@@ -235,6 +242,20 @@ export function CallUi({
 		]
 	);
 
+	const participantCardByIdentity = useMemo(() => {
+		const map = new Map<
+			string,
+			{ avatarUrl: string | null; displayName: string }
+		>();
+		participantCards.forEach(({ participant, avatarUrl }) => {
+			map.set(participant.identity, {
+				avatarUrl,
+				displayName: participant.name || participant.identity,
+			});
+		});
+		return map;
+	}, [participantCards]);
+
 	const remoteParticipantsCount = useMemo(
 		() => sortedParticipants.filter((participant) => !participant.isLocal).length,
 		[sortedParticipants]
@@ -253,8 +274,7 @@ export function CallUi({
 	}, [device.cameraQuality, qualityRecommendation]);
 
 	const screenSharePreset = useMemo(() => {
-		const quality = resolveQualitySetting(
-			"screenShare",
+		const quality = resolveScreenShareQualitySetting(
 			device.screenShareQuality,
 			qualityRecommendation
 		);
@@ -364,6 +384,18 @@ export function CallUi({
 		return () => dispatch(callActions.setSelectedScreenTrackSid(trackSid));
 	};
 
+	const getVolumeValue = (
+		participantIdentity: string,
+		source: "microphone" | "screenShareAudio"
+	) =>
+		participantVolumes.find(
+			(item) =>
+				item.participantIdentity === participantIdentity && item.source === source
+		)?.volume ?? 100;
+
+	const hasAnyRemoteAudioTracks =
+		remoteMicrophoneParticipants.size > 0 || remoteScreenAudioParticipants.size > 0;
+
 	return (
 		<div className={styles["call-root"]}>
 			{hasScreenShare && mainScreenTrack ? (
@@ -458,6 +490,130 @@ export function CallUi({
 				</div>
 			)}
 
+			{isAudioPanelOpen && (
+				<div className={styles["audio-panel"]}>
+					<div className={styles["audio-panel-title"]}>Participant volume</div>
+					{sortedParticipants.filter((participant) => !participant.isLocal).length === 0 ? (
+						<div className={styles["audio-panel-empty"]}>No remote participants yet.</div>
+					) : !hasAnyRemoteAudioTracks ? (
+						<div className={styles["audio-panel-empty"]}>
+							Remote audio tracks are not available yet.
+						</div>
+					) : (
+						sortedParticipants
+							.filter((participant) => !participant.isLocal)
+							.map((participant) => {
+								const micAvailable = remoteMicrophoneParticipants.has(participant.identity);
+								const streamAvailable = remoteScreenAudioParticipants.has(participant.identity);
+								const micVolume = getVolumeValue(participant.identity, "microphone");
+								const streamVolume = getVolumeValue(participant.identity, "screenShareAudio");
+								const card = participantCardByIdentity.get(participant.identity);
+								const displayName = card?.displayName || participant.identity;
+								const avatarLabel = displayName.slice(0, 1).toUpperCase();
+
+								return (
+									<div key={participant.identity} className={styles["audio-row"]}>
+										<div className={styles["audio-header"]}>
+											<div className={styles["audio-avatar"]}>
+												{card?.avatarUrl ? (
+													<img
+														src={card.avatarUrl}
+														crossOrigin="anonymous"
+														alt={`${displayName} avatar`}
+														className={styles["audio-avatar-image"]}
+													/>
+												) : (
+													<span>{avatarLabel}</span>
+												)}
+											</div>
+											<div className={styles["audio-name"]} title={displayName}>
+												{displayName}
+											</div>
+										</div>
+										<div className={styles["audio-slider-row"]}>
+											<div className={styles["audio-source-label"]}>
+												<Mic size={14} />
+												<span>Mic</span>
+											</div>
+											<input
+												type="range"
+												min={0}
+												max={100}
+												value={micVolume}
+												disabled={!micAvailable}
+												onChange={(event) =>
+													dispatch(
+														deviceActions.setParticipantVolume({
+															participantIdentity: participant.identity,
+															source: "microphone",
+															volume: Number(event.target.value),
+														})
+													)
+												}
+											/>
+											<span className={styles["audio-percent"]}>{micVolume}%</span>
+											<button
+												type="button"
+												className={styles["audio-reset"]}
+												title="Reset to 100%"
+												onClick={() =>
+													dispatch(
+														deviceActions.resetParticipantVolume({
+															participantIdentity: participant.identity,
+															source: "microphone",
+														})
+													)
+												}
+											>
+												<RotateCcw size={13} />
+											</button>
+										</div>
+										{streamAvailable && (
+											<div className={styles["audio-slider-row"]}>
+												<div className={styles["audio-source-label"]}>
+													<MonitorUp size={14} />
+													<span>Stream</span>
+												</div>
+												<input
+													type="range"
+													min={0}
+													max={100}
+													value={streamVolume}
+													onChange={(event) =>
+														dispatch(
+															deviceActions.setParticipantVolume({
+																participantIdentity: participant.identity,
+																source: "screenShareAudio",
+																volume: Number(event.target.value),
+															})
+														)
+													}
+												/>
+												<span className={styles["audio-percent"]}>{streamVolume}%</span>
+												<button
+													type="button"
+													className={styles["audio-reset"]}
+													title="Reset to 100%"
+													onClick={() =>
+														dispatch(
+															deviceActions.resetParticipantVolume({
+																participantIdentity: participant.identity,
+																source: "screenShareAudio",
+															})
+														)
+													}
+												>
+													<RotateCcw size={13} />
+												</button>
+											</div>
+										)}
+									</div>
+								);
+							})
+					)}
+				</div>
+			)}
+
 			<div className={styles["controls-bar"]}>
 				<MicrophoneToggleButton
 					className={styles["control-button"]}
@@ -478,7 +634,7 @@ export function CallUi({
 					className={styles["control-button"]}
 					captureOptions={screenShareCaptureOptions}
 					publishOptions={screenSharePublishOptions}
-					title="Share screen. Audio is included only when your browser and selected source support it."
+					title="Share screen. Audio is included only when your browser and selected source support it. 1080p120 is experimental and best effort."
 				/>
 
 				{hasChat && (
@@ -491,6 +647,15 @@ export function CallUi({
 						Chat
 					</button>
 				)}
+
+				<button
+					type="button"
+					className={styles["control-button"]}
+					onClick={() => setIsAudioPanelOpen((prev) => !prev)}
+					title="Per-user audio volume controls"
+				>
+					{isAudioPanelOpen ? "Close Mix" : "Audio Mix"}
+				</button>
 
 				<button
 					type="button"

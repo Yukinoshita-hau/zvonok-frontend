@@ -18,6 +18,7 @@ export interface CallState {
 	selectedScreenTrackSid: string | null;
 	presentationMode: CallPresentationMode;
 	isCallFocusMode: boolean;
+	isTheaterMode: boolean;
 }
 
 export const initialState: CallState = {
@@ -34,6 +35,7 @@ export const initialState: CallState = {
 	selectedScreenTrackSid: null,
 	presentationMode: "expanded",
 	isCallFocusMode: false,
+	isTheaterMode: false,
 }
 
 export const getToken = createAsyncThunk(
@@ -66,6 +68,7 @@ export const callSlice = createSlice({
 			previousState.selectedScreenTrackSid = null;
 			previousState.presentationMode = "expanded";
 			previousState.isCallFocusMode = false;
+			previousState.isTheaterMode = false;
 		},
 		incomingInvite: (previousState, action: PayloadAction<CallInviteEvent>) => {
 			previousState.status = "incoming_ringing";
@@ -79,6 +82,7 @@ export const callSlice = createSlice({
 			previousState.selectedScreenTrackSid = null;
 			previousState.presentationMode = "expanded";
 			previousState.isCallFocusMode = false;
+			previousState.isTheaterMode = false;
 		},
 		setConnecting: (previousState) => {
 			previousState.status = "connecting";
@@ -107,6 +111,7 @@ export const callSlice = createSlice({
 			previousState.presentationMode = action.payload;
 			if (action.payload !== "expanded") {
 				previousState.isCallFocusMode = false;
+				previousState.isTheaterMode = false;
 			}
 		},
 
@@ -118,8 +123,16 @@ export const callSlice = createSlice({
 		setCallFocusMode: (previousState, action: PayloadAction<boolean>) => {
 			if (action.payload) {
 				previousState.presentationMode = "expanded";
+				previousState.isTheaterMode = false;
 			}
 			previousState.isCallFocusMode = action.payload;
+		},
+		setTheaterMode: (previousState, action: PayloadAction<boolean>) => {
+			if (action.payload) {
+				previousState.presentationMode = "expanded";
+				previousState.isCallFocusMode = false;
+			}
+			previousState.isTheaterMode = action.payload;
 		}
 	},
 	extraReducers: builder => {

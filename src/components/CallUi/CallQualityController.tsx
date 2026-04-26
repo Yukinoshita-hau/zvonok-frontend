@@ -1,6 +1,6 @@
 import { useRoomContext } from "@livekit/components-react";
 import { useEffect, useMemo, useRef } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
 	ConnectionQuality,
 	LocalVideoTrack,
@@ -9,14 +9,16 @@ import {
 	VideoQuality,
 	type Participant,
 } from "livekit-client";
-import type { RootState } from "../../store/store";
+import type { AppDispatch, RootState } from "../../store/store";
 import {
 	getCameraCaptureOptions,
 	getQualityPreset,
 	resolveQualitySetting,
 	type CallMediaKind,
 	type ManualCallQuality,
+	type ScreenShareManualQuality,
 } from "../../utils/callQuality";
+import { deviceActions } from "../../store/slices/device.slice";
 
 type AutoPressure = 0 | 1 | 2;
 
@@ -41,6 +43,7 @@ const APPLY_DEBOUNCE_MS = 450;
 
 export function CallQualityController() {
 	const room = useRoomContext();
+	const dispatch = useDispatch<AppDispatch>();
 	const device = useSelector((s: RootState) => s.device);
 	const recommendation = device.connectionTestResult.recommendation;
 
@@ -49,8 +52,8 @@ export function CallQualityController() {
 		[device.cameraQuality, recommendation]
 	);
 	const initialScreenQuality = useMemo(
-		() => resolveQualitySetting("screenShare", device.screenShareQuality, recommendation),
-		[device.screenShareQuality, recommendation]
+		() => normalizeToManualQuality(recommendation?.screenShareQuality),
+		[recommendation?.screenShareQuality]
 	);
 
 	const connectionQualityRef = useRef<ConnectionQuality>(ConnectionQuality.Unknown);
@@ -131,7 +134,7 @@ export function CallQualityController() {
 
 	const queueApply = (
 		kind: CallMediaKind,
-		quality: ManualCallQuality,
+		quality: ManualCallQuality | ScreenShareManualQuality,
 		includeResolutionRestart: boolean
 	) => {
 		const previousTimer = applyTimersRef.current[kind];
@@ -239,7 +242,7 @@ export function CallQualityController() {
 
 	const applyQuality = async (
 		kind: CallMediaKind,
-		quality: ManualCallQuality,
+		quality: ManualCallQuality | ScreenShareManualQuality,
 		options: {
 			includeResolutionRestart: boolean;
 			includeFrameRate: boolean;
@@ -248,12 +251,44 @@ export function CallQualityController() {
 		const track = getLocalVideoTrack(kind);
 		if (!track) return;
 
-		const preset = getQualityPreset(kind, quality);
+		const preset =
+			kind === "camera"
+				? getQualityPreset("camera", quality as ManualCallQuality)
+				: getQualityPreset("screenShare", quality as ScreenShareManualQuality);
 
 		await setSenderEncoding(track, preset.maxBitrate, options.includeFrameRate ? preset.frameRate : null);
 
 		if (kind === "screenShare") {
 			track.setPublishingQuality(toVideoQuality(quality));
+			const settings = track.getSourceTrackSettings();
+			const actualFps =
+				typeof settings.frameRate === "number"
+					? Math.round(settings.frameRate)
+					: null;
+			const fallbackPreset = resolveScreenShareFallbackPreset(
+				quality as ScreenShareManualQuality,
+				actualFps
+			);
+			const fallbackReason = resolveScreenShareFallbackReason(
+				quality as ScreenShareManualQuality,
+				actualFps,
+				fallbackPreset
+			);
+			const appliedPreset = fallbackPreset
+				? getQualityPreset("screenShare", fallbackPreset)
+				: preset;
+			if (fallbackPreset) {
+				await setSenderEncoding(track, appliedPreset.maxBitrate, appliedPreset.frameRate);
+				track.setPublishingQuality(toVideoQuality(fallbackPreset));
+			}
+			dispatch(
+				deviceActions.setScreenShareRuntimeInfo({
+					requestedFps: preset.frameRate,
+					actualFps,
+					activePreset: appliedPreset.value,
+					fallbackReason,
+				})
+			);
 			return;
 		}
 
@@ -302,6 +337,32 @@ export function CallQualityController() {
 	return null;
 }
 
+function resolveScreenShareFallbackReason(
+	quality: ScreenShareManualQuality,
+	actualFps: number | null,
+	fallbackPreset: ScreenShareManualQuality | null
+) {
+	if (actualFps === null) return null;
+	if (quality !== "game120") return null;
+	if (actualFps >= 100) return null;
+	if (fallbackPreset === "game60") {
+		return "120 FPS is not available on this browser/source. Using 60 FPS best effort.";
+	}
+	return "High FPS screen share is limited by browser/source or device. Falling back to lower motion quality.";
+}
+
+function resolveScreenShareFallbackPreset(
+	quality: ScreenShareManualQuality,
+	actualFps: number | null
+): ScreenShareManualQuality | null {
+	if (quality !== "game120" || actualFps === null || actualFps >= 100) {
+		return null;
+	}
+
+	if (actualFps >= 55) return "game60";
+	return "high";
+}
+
 async function setSenderEncoding(
 	track: LocalVideoTrack,
 	maxBitrate: number,
@@ -341,8 +402,19 @@ function getHigherQuality(quality: ManualCallQuality): ManualCallQuality {
 	return QUALITY_ORDER[Math.min(QUALITY_ORDER.length - 1, currentIndex + 1)];
 }
 
-function toVideoQuality(quality: ManualCallQuality): VideoQuality {
-	if (quality === "high") return VideoQuality.HIGH;
+function toVideoQuality(quality: ManualCallQuality | ScreenShareManualQuality): VideoQuality {
+	if (quality === "high" || quality === "game60" || quality === "game120") {
+		return VideoQuality.HIGH;
+	}
 	if (quality === "medium") return VideoQuality.MEDIUM;
 	return VideoQuality.LOW;
+}
+
+function normalizeToManualQuality(
+	quality: ScreenShareManualQuality | undefined
+): ManualCallQuality {
+	if (quality === "game60" || quality === "game120") {
+		return "high";
+	}
+	return quality ?? "medium";
 }
