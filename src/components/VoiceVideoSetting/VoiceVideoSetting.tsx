@@ -14,8 +14,6 @@ import {
 	type CallQualitySetting,
 	type ScreenShareQualitySetting,
 } from "../../utils/callQuality";
-import { useCameraPreview } from "./CameraPreview/useCameraPreview";
-import { CameraPreviewCard } from "./CameraPreview/CameraPreviewCard";
 
 interface PublishStats {
 	packetsLost: number;
@@ -78,20 +76,6 @@ export function VoiceVideoSetting() {
 
 		getDevices();
 	}, []);
-
-	const selectedCameraLabel =
-		cameras.find((camera) => camera.deviceId === selectedCameraId)?.label ||
-		(selectedCameraId === "default" ? "Default camera" : "Selected camera");
-	const {
-		status: cameraPreviewStatus,
-		error: cameraPreviewError,
-		videoElementRef: cameraPreviewVideoRef,
-	} = useCameraPreview({
-		selectedCameraId,
-		cameraQuality,
-		recommendation,
-		hasCameraDevices: !mediaDevicesReady || cameras.length > 0,
-	});
 
 	useEffect(() => {
 		const startAudio = async () => {
@@ -280,12 +264,6 @@ export function VoiceVideoSetting() {
 
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Camera Preview</label>
-						<CameraPreviewCard
-							status={cameraPreviewStatus}
-							error={cameraPreviewError}
-							selectedCameraLabel={selectedCameraLabel}
-							videoRef={cameraPreviewVideoRef}
-						/>
 					</div>
 
 					<div className={styles["form-group"]}>

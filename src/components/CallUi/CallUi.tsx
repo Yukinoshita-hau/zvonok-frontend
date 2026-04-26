@@ -6,13 +6,14 @@ import {
 	VideoTrack,
 	type TrackReference,
 } from "@livekit/components-react";
+import { Mic, MonitorUp, RotateCcw } from "lucide-react";
 import styles from "./CallUi.module.css";
 import { RemoteTrackPublication, Track } from "livekit-client";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
 import { deviceActions } from "../../store/slices/device.slice";
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CallParticipantTile } from "./CallParticipantTile";
 import { MicrophoneToggleButton } from "./MicrophoneToggleButton";
 import {
@@ -26,24 +27,6 @@ import {
 } from "../../utils/callQuality";
 import type { CallUiProps } from "./CallUi.props";
 import type { UserMini } from "../../entities/UserMini";
-import { AudioMixPanel } from "./AudioMixPanel/AudioMixPanel";
-import { ParticipantContextMenu } from "./ParticipantContextMenu/ParticipantContextMenu";
-import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
-import { UserProfilePopover } from "./UserProfilePopover/UserProfilePopover";
-import { StringToColor } from "../../utils/stringHelpers";
-import { TheaterModeView } from "./TheaterMode/TheaterModeView";
-
-interface ParticipantMenuState {
-	x: number;
-	y: number;
-	participantIdentity: string;
-}
-
-interface ProfilePopoverState {
-	x: number;
-	y: number;
-	participantIdentity: string;
-}
 
 export function CallUi({
 	hasChat,
@@ -55,8 +38,6 @@ export function CallUi({
 }: CallUiProps) {
 	const [hadRemoteParticipant, setHadRemoteParticipant] = useState(false);
 	const [isAudioPanelOpen, setIsAudioPanelOpen] = useState(false);
-	const [participantMenu, setParticipantMenu] = useState<ParticipantMenuState | null>(null);
-	const [profilePopover, setProfilePopover] = useState<ProfilePopoverState | null>(null);
 
 	const dispatch = useDispatch<AppDispatch>();
 
@@ -403,25 +384,6 @@ export function CallUi({
 		return () => dispatch(callActions.setSelectedScreenTrackSid(trackSid));
 	};
 
-	const getOpenParticipantContextMenuHandler =
-		(participantIdentity: string) => (event: MouseEvent<HTMLButtonElement>) => {
-			event.preventDefault();
-			event.stopPropagation();
-
-			const menuWidth = 340;
-			const menuHeight = 320;
-
-			let x = event.clientX;
-			let y = event.clientY;
-			if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 8;
-			if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 8;
-			if (x < 8) x = 8;
-			if (y < 8) y = 8;
-
-			setProfilePopover(null);
-			setParticipantMenu({ x, y, participantIdentity });
-		};
-
 	const getVolumeValue = (
 		participantIdentity: string,
 		source: "microphone" | "screenShareAudio"
@@ -434,62 +396,9 @@ export function CallUi({
 	const hasAnyRemoteAudioTracks =
 		remoteMicrophoneParticipants.size > 0 || remoteScreenAudioParticipants.size > 0;
 
-	const currentMenuParticipant = useMemo(
-		() =>
-			participantMenu
-				? sortedParticipants.find(
-						(participant) => participant.identity === participantMenu.participantIdentity
-				  ) ?? null
-				: null,
-		[participantMenu, sortedParticipants]
-	);
-
-	const currentMenuParticipantCard = useMemo(
-		() =>
-			currentMenuParticipant
-				? participantCardByIdentity.get(currentMenuParticipant.identity) ?? null
-				: null,
-		[currentMenuParticipant, participantCardByIdentity]
-	);
-
-	useDismissibleLayer({
-		isOpen: Boolean(participantMenu),
-		onDismiss: () => setParticipantMenu(null),
-	});
-
-	useDismissibleLayer({
-		isOpen: Boolean(profilePopover),
-		onDismiss: () => setProfilePopover(null),
-	});
-
-	useEffect(() => {
-		if (!call.isTheaterMode) return;
-
-		const onEscape = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				dispatch(callActions.setTheaterMode(false));
-			}
-		};
-
-		window.addEventListener("keydown", onEscape);
-		return () => window.removeEventListener("keydown", onEscape);
-	}, [call.isTheaterMode, dispatch]);
-
-	useEffect(() => {
-		if (!call.isTheaterMode) return;
-		if (mainScreenTrack) return;
-		dispatch(callActions.setTheaterMode(false));
-	}, [call.isTheaterMode, mainScreenTrack, dispatch]);
-
 	return (
 		<div className={styles["call-root"]}>
-			{call.isTheaterMode && hasScreenShare && mainScreenTrack ? (
-				<TheaterModeView
-					trackRef={mainScreenTrack}
-					displayName={mainScreenTrack.participant.name || mainScreenTrack.participant.identity}
-					onExit={() => dispatch(callActions.setTheaterMode(false))}
-				/>
-			) : hasScreenShare && mainScreenTrack ? (
+			{hasScreenShare && mainScreenTrack ? (
 				<div className={styles["screen-layout"]}>
 					<div className={styles["main-screen"]}>
 						{mainScreenTrack.participant.isLocal ||
@@ -525,7 +434,6 @@ export function CallUi({
 										call.selectedScreenTrackSid
 									}
 									onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-									onContextMenu={getOpenParticipantContextMenuHandler(participant.identity)}
 								/>
 							)
 						)}
@@ -547,7 +455,6 @@ export function CallUi({
 									call.selectedScreenTrackSid
 								}
 								onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-								onContextMenu={getOpenParticipantContextMenuHandler(participant.identity)}
 							/>
 						)
 					)}
@@ -568,7 +475,6 @@ export function CallUi({
 									call.selectedScreenTrackSid
 								}
 								onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-								onContextMenu={getOpenParticipantContextMenuHandler(participant.identity)}
 							/>
 						)
 					)}
@@ -585,59 +491,127 @@ export function CallUi({
 			)}
 
 			{isAudioPanelOpen && (
-				<AudioMixPanel
-					participants={sortedParticipants
-						.filter((participant) => !participant.isLocal)
-						.map((participant) => {
-							const card = participantCardByIdentity.get(participant.identity);
-							const displayName = card?.displayName || participant.identity;
-							return {
-								identity: participant.identity,
-								displayName,
-								avatarUrl: card?.avatarUrl ?? null,
-								avatarLabel: displayName.slice(0, 1).toUpperCase(),
-								micAvailable: remoteMicrophoneParticipants.has(participant.identity),
-								streamAvailable: remoteScreenAudioParticipants.has(participant.identity),
-								micVolume: getVolumeValue(participant.identity, "microphone"),
-								streamVolume: getVolumeValue(participant.identity, "screenShareAudio"),
-							};
-						})}
-					hasAnyRemoteAudioTracks={hasAnyRemoteAudioTracks}
-					onMicVolumeChange={(participantIdentity, value) =>
-						dispatch(
-							deviceActions.setParticipantVolume({
-								participantIdentity,
-								source: "microphone",
-								volume: value,
+				<div className={styles["audio-panel"]}>
+					<div className={styles["audio-panel-title"]}>Participant volume</div>
+					{sortedParticipants.filter((participant) => !participant.isLocal).length === 0 ? (
+						<div className={styles["audio-panel-empty"]}>No remote participants yet.</div>
+					) : !hasAnyRemoteAudioTracks ? (
+						<div className={styles["audio-panel-empty"]}>
+							Remote audio tracks are not available yet.
+						</div>
+					) : (
+						sortedParticipants
+							.filter((participant) => !participant.isLocal)
+							.map((participant) => {
+								const micAvailable = remoteMicrophoneParticipants.has(participant.identity);
+								const streamAvailable = remoteScreenAudioParticipants.has(participant.identity);
+								const micVolume = getVolumeValue(participant.identity, "microphone");
+								const streamVolume = getVolumeValue(participant.identity, "screenShareAudio");
+								const card = participantCardByIdentity.get(participant.identity);
+								const displayName = card?.displayName || participant.identity;
+								const avatarLabel = displayName.slice(0, 1).toUpperCase();
+
+								return (
+									<div key={participant.identity} className={styles["audio-row"]}>
+										<div className={styles["audio-header"]}>
+											<div className={styles["audio-avatar"]}>
+												{card?.avatarUrl ? (
+													<img
+														src={card.avatarUrl}
+														crossOrigin="anonymous"
+														alt={`${displayName} avatar`}
+														className={styles["audio-avatar-image"]}
+													/>
+												) : (
+													<span>{avatarLabel}</span>
+												)}
+											</div>
+											<div className={styles["audio-name"]} title={displayName}>
+												{displayName}
+											</div>
+										</div>
+										<div className={styles["audio-slider-row"]}>
+											<div className={styles["audio-source-label"]}>
+												<Mic size={14} />
+												<span>Mic</span>
+											</div>
+											<input
+												type="range"
+												min={0}
+												max={100}
+												value={micVolume}
+												disabled={!micAvailable}
+												onChange={(event) =>
+													dispatch(
+														deviceActions.setParticipantVolume({
+															participantIdentity: participant.identity,
+															source: "microphone",
+															volume: Number(event.target.value),
+														})
+													)
+												}
+											/>
+											<span className={styles["audio-percent"]}>{micVolume}%</span>
+											<button
+												type="button"
+												className={styles["audio-reset"]}
+												title="Reset to 100%"
+												onClick={() =>
+													dispatch(
+														deviceActions.resetParticipantVolume({
+															participantIdentity: participant.identity,
+															source: "microphone",
+														})
+													)
+												}
+											>
+												<RotateCcw size={13} />
+											</button>
+										</div>
+										{streamAvailable && (
+											<div className={styles["audio-slider-row"]}>
+												<div className={styles["audio-source-label"]}>
+													<MonitorUp size={14} />
+													<span>Stream</span>
+												</div>
+												<input
+													type="range"
+													min={0}
+													max={100}
+													value={streamVolume}
+													onChange={(event) =>
+														dispatch(
+															deviceActions.setParticipantVolume({
+																participantIdentity: participant.identity,
+																source: "screenShareAudio",
+																volume: Number(event.target.value),
+															})
+														)
+													}
+												/>
+												<span className={styles["audio-percent"]}>{streamVolume}%</span>
+												<button
+													type="button"
+													className={styles["audio-reset"]}
+													title="Reset to 100%"
+													onClick={() =>
+														dispatch(
+															deviceActions.resetParticipantVolume({
+																participantIdentity: participant.identity,
+																source: "screenShareAudio",
+															})
+														)
+													}
+												>
+													<RotateCcw size={13} />
+												</button>
+											</div>
+										)}
+									</div>
+								);
 							})
-						)
-					}
-					onMicReset={(participantIdentity) =>
-						dispatch(
-							deviceActions.resetParticipantVolume({
-								participantIdentity,
-								source: "microphone",
-							})
-						)
-					}
-					onStreamVolumeChange={(participantIdentity, value) =>
-						dispatch(
-							deviceActions.setParticipantVolume({
-								participantIdentity,
-								source: "screenShareAudio",
-								volume: value,
-							})
-						)
-					}
-					onStreamReset={(participantIdentity) =>
-						dispatch(
-							deviceActions.resetParticipantVolume({
-								participantIdentity,
-								source: "screenShareAudio",
-							})
-						)
-					}
-				/>
+					)}
+				</div>
 			)}
 
 			<div className={styles["controls-bar"]}>
@@ -683,17 +657,6 @@ export function CallUi({
 					{isAudioPanelOpen ? "Close Mix" : "Audio Mix"}
 				</button>
 
-				{hasScreenShare && (
-					<button
-						type="button"
-						className={styles["control-button"]}
-						onClick={() => dispatch(callActions.setTheaterMode(!call.isTheaterMode))}
-						title="Toggle theater mode"
-					>
-						{call.isTheaterMode ? "Exit Theater" : "Theater"}
-					</button>
-				)}
-
 				<button
 					type="button"
 					className={styles["control-button"]}
@@ -725,105 +688,6 @@ export function CallUi({
 					<img src="/leave-call-icon.svg" alt="Leave call" />
 				</button>
 			</div>
-
-			{participantMenu && currentMenuParticipant && currentMenuParticipantCard && (
-				<div onClick={() => setParticipantMenu(null)}>
-					<ParticipantContextMenu
-						x={participantMenu.x}
-						y={participantMenu.y}
-						displayName={currentMenuParticipantCard.displayName}
-						hasScreenShare={Boolean(screenTrackByParticipant.get(currentMenuParticipant.identity))}
-						hasScreenShareAudio={remoteScreenAudioParticipants.has(currentMenuParticipant.identity)}
-						micVolume={getVolumeValue(currentMenuParticipant.identity, "microphone")}
-						streamVolume={getVolumeValue(currentMenuParticipant.identity, "screenShareAudio")}
-						onOpenProfile={() => {
-							setParticipantMenu(null);
-							const popoverWidth = 360;
-							const popoverHeight = 420;
-							let x = participantMenu.x;
-							let y = participantMenu.y;
-							if (x + popoverWidth > window.innerWidth) x = window.innerWidth - popoverWidth - 8;
-							if (y + popoverHeight > window.innerHeight) y = window.innerHeight - popoverHeight - 8;
-							if (x < 8) x = 8;
-							if (y < 8) y = 8;
-							setProfilePopover({
-								x,
-								y,
-								participantIdentity: currentMenuParticipant.identity,
-							});
-						}}
-						onOpenScreenShare={() => {
-							setParticipantMenu(null);
-							const trackRef = screenTrackByParticipant.get(currentMenuParticipant.identity);
-							const sid = trackRef?.publication?.trackSid;
-							if (sid) {
-								dispatch(callActions.setSelectedScreenTrackSid(sid));
-							}
-						}}
-						onOpenTheater={() => {
-							const trackRef = screenTrackByParticipant.get(currentMenuParticipant.identity);
-							const sid = trackRef?.publication?.trackSid;
-							if (sid) {
-								dispatch(callActions.setSelectedScreenTrackSid(sid));
-								dispatch(callActions.setTheaterMode(true));
-							}
-							setParticipantMenu(null);
-						}}
-						onMicChange={(value) =>
-							dispatch(
-								deviceActions.setParticipantVolume({
-									participantIdentity: currentMenuParticipant.identity,
-									source: "microphone",
-									volume: value,
-								})
-							)
-						}
-						onMicReset={() =>
-							dispatch(
-								deviceActions.resetParticipantVolume({
-									participantIdentity: currentMenuParticipant.identity,
-									source: "microphone",
-								})
-							)
-						}
-						onStreamChange={(value) =>
-							dispatch(
-								deviceActions.setParticipantVolume({
-									participantIdentity: currentMenuParticipant.identity,
-									source: "screenShareAudio",
-									volume: value,
-								})
-							)
-						}
-						onStreamReset={() =>
-							dispatch(
-								deviceActions.resetParticipantVolume({
-									participantIdentity: currentMenuParticipant.identity,
-									source: "screenShareAudio",
-								})
-							)
-						}
-					/>
-				</div>
-			)}
-
-			{profilePopover && (
-				<div onClick={() => setProfilePopover(null)}>
-					<UserProfilePopover
-						x={profilePopover.x}
-						y={profilePopover.y}
-						displayName={
-							participantCardByIdentity.get(profilePopover.participantIdentity)?.displayName ??
-							profilePopover.participantIdentity
-						}
-						avatarUrl={
-							participantCardByIdentity.get(profilePopover.participantIdentity)?.avatarUrl ??
-							null
-						}
-						avatarBg={StringToColor(profilePopover.participantIdentity)}
-					/>
-				</div>
-			)}
 		</div>
 	);
 }
