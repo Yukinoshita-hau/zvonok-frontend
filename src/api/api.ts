@@ -1,5 +1,4 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { PREFIX } from "./baseApi";
 import { store, type AppDispatch, type RootState } from "../store/store";
 import authAPi from "./authApi";
 import { userActions } from "../store/slices/user.slice";
@@ -15,10 +14,12 @@ export const setStore = (store: { getState: () => RootState; dispatch: AppDispat
 	dispatch = store.dispatch;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 export const api = axios.create({
-	baseURL: PREFIX,
-	withCredentials: true
-})
+	baseURL: API_URL,
+	withCredentials: true,
+});
 
 api.interceptors.request.use(
 	async (config: InternalAxiosRequestConfig) => {

@@ -202,13 +202,14 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 					const errorSub = client?.subscribe(WS_ERROR_PATH, (message) => {
 						const data = JSON.parse(message.body) as { message: string, status: number };
-						storeApi.dispatch(toastActions.showToast({
-							id: crypto.randomUUID(),
-							type: "error",
-							title: "Error",
-							message: data.message
-						}))
-						console.log(data);
+						if (data.message !== "Message was not found") {
+							storeApi.dispatch(toastActions.showToast({
+								id: crypto.randomUUID(),
+								type: "error",
+								title: "Error",
+								message: data.message
+							}))
+						}
 					})
 
 					if (errorSub) subscriptions[WS_ERROR_PATH] = errorSub;
