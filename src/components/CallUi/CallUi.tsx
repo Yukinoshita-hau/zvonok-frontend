@@ -6,6 +6,7 @@ import {
 	VideoTrack,
 	type TrackReference,
 } from "@livekit/components-react";
+import { Mic, MonitorUp, RotateCcw } from "lucide-react";
 import styles from "./CallUi.module.css";
 import { RemoteTrackPublication, Track } from "livekit-client";
 import { useDispatch, useSelector } from "react-redux";
@@ -241,6 +242,20 @@ export function CallUi({
 		]
 	);
 
+	const participantCardByIdentity = useMemo(() => {
+		const map = new Map<
+			string,
+			{ avatarUrl: string | null; displayName: string }
+		>();
+		participantCards.forEach(({ participant, avatarUrl }) => {
+			map.set(participant.identity, {
+				avatarUrl,
+				displayName: participant.name || participant.identity,
+			});
+		});
+		return map;
+	}, [participantCards]);
+
 	const remoteParticipantsCount = useMemo(
 		() => sortedParticipants.filter((participant) => !participant.isLocal).length,
 		[sortedParticipants]
@@ -378,6 +393,9 @@ export function CallUi({
 				item.participantIdentity === participantIdentity && item.source === source
 		)?.volume ?? 100;
 
+	const hasAnyRemoteAudioTracks =
+		remoteMicrophoneParticipants.size > 0 || remoteScreenAudioParticipants.size > 0;
+
 	return (
 		<div className={styles["call-root"]}>
 			{hasScreenShare && mainScreenTrack ? (
@@ -477,6 +495,10 @@ export function CallUi({
 					<div className={styles["audio-panel-title"]}>Participant volume</div>
 					{sortedParticipants.filter((participant) => !participant.isLocal).length === 0 ? (
 						<div className={styles["audio-panel-empty"]}>No remote participants yet.</div>
+					) : !hasAnyRemoteAudioTracks ? (
+						<div className={styles["audio-panel-empty"]}>
+							Remote audio tracks are not available yet.
+						</div>
 					) : (
 						sortedParticipants
 							.filter((participant) => !participant.isLocal)
@@ -485,14 +507,33 @@ export function CallUi({
 								const streamAvailable = remoteScreenAudioParticipants.has(participant.identity);
 								const micVolume = getVolumeValue(participant.identity, "microphone");
 								const streamVolume = getVolumeValue(participant.identity, "screenShareAudio");
+								const card = participantCardByIdentity.get(participant.identity);
+								const displayName = card?.displayName || participant.identity;
+								const avatarLabel = displayName.slice(0, 1).toUpperCase();
 
 								return (
 									<div key={participant.identity} className={styles["audio-row"]}>
-										<div className={styles["audio-name"]}>
-											{participant.name || participant.identity}
+										<div className={styles["audio-header"]}>
+											<div className={styles["audio-avatar"]}>
+												{card?.avatarUrl ? (
+													<img
+														src={card.avatarUrl}
+														alt={`${displayName} avatar`}
+														className={styles["audio-avatar-image"]}
+													/>
+												) : (
+													<span>{avatarLabel}</span>
+												)}
+											</div>
+											<div className={styles["audio-name"]} title={displayName}>
+												{displayName}
+											</div>
 										</div>
 										<div className={styles["audio-slider-row"]}>
-											<span>Mic</span>
+											<div className={styles["audio-source-label"]}>
+												<Mic size={14} />
+												<span>Mic</span>
+											</div>
 											<input
 												type="range"
 												min={0}
@@ -509,8 +550,11 @@ export function CallUi({
 													)
 												}
 											/>
+											<span className={styles["audio-percent"]}>{micVolume}%</span>
 											<button
 												type="button"
+												className={styles["audio-reset"]}
+												title="Reset to 100%"
 												onClick={() =>
 													dispatch(
 														deviceActions.resetParticipantVolume({
@@ -520,12 +564,15 @@ export function CallUi({
 													)
 												}
 											>
-												Reset
+												<RotateCcw size={13} />
 											</button>
 										</div>
 										{streamAvailable && (
 											<div className={styles["audio-slider-row"]}>
-												<span>Stream</span>
+												<div className={styles["audio-source-label"]}>
+													<MonitorUp size={14} />
+													<span>Stream</span>
+												</div>
 												<input
 													type="range"
 													min={0}
@@ -541,8 +588,11 @@ export function CallUi({
 														)
 													}
 												/>
+												<span className={styles["audio-percent"]}>{streamVolume}%</span>
 												<button
 													type="button"
+													className={styles["audio-reset"]}
+													title="Reset to 100%"
 													onClick={() =>
 														dispatch(
 															deviceActions.resetParticipantVolume({
@@ -552,7 +602,7 @@ export function CallUi({
 														)
 													}
 												>
-													Reset
+													<RotateCcw size={13} />
 												</button>
 											</div>
 										)}
