@@ -38,7 +38,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 	return <div className={styles["navigate-bar"]}>
 		<div className={styles["top"]}>
 			<NavigateBarButton onClick={goToDM}>
-				<img src="../../../public/message-nav-icon.png" />
+				<img src="/message-nav-icon.png" />
 				{requestsCount > 0 && (
 					<span className={styles["messages-badge"]}></span>
 				)}
@@ -49,7 +49,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 
 		<div className={styles["middle"]}>
 			<NavigateBarButton onClick={() => navigate("/my-servers")}>
-				<img src="../../../public/server-all-list-icon.png" />
+				<img src="/server-all-list-icon.png" />
 			</NavigateBarButton>
 			{servers.map((server, index) => (
 				<ServerButton
@@ -63,7 +63,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 
 		<div className={styles["bottom"]}>
 			<NavigateBarButton onClick={notificationHandle}>
-				<img src="../../../public/notify-icon.png" />
+				<img src="/notify-icon.png" />
 
 				{unreadNotification > 0 && (
 					<span className={styles["messages-badge"]}/>

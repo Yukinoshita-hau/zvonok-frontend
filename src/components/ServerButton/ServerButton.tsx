@@ -16,7 +16,7 @@ export function ServerButton({ server, index, onClick }: ServerButtonProps) {
 			title={server.name}
 			onClick={onClick}
 		>
-			<img src="../../../public/server-button-img2.png" alt={server.name} />
+			<img src="/server-button-img2.png" alt={server.name} />
 		</button>
 	)
 }

@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { getCameraCaptureOptions, type CallQualityRecommendation, type CallQualitySetting, getQualityPreset, resolveQualitySetting } from "../../../utils/callQuality";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	getCameraCaptureOptions,
+	type CallQualityRecommendation,
+	type CallQualitySetting,
+	getQualityPreset,
+	resolveQualitySetting,
+} from "../../../utils/callQuality";
 
 export type CameraPreviewStatus =
 	| "idle"
@@ -27,20 +33,35 @@ export function useCameraPreview({
 	const [error, setError] = useState<string | null>(null);
 	const streamRef = useRef<MediaStream | null>(null);
 	const videoElementRef = useRef<HTMLVideoElement | null>(null);
+	const requestIdRef = useRef(0);
+
+	const resolvedCameraQuality = useMemo(
+		() => resolveQualitySetting("camera", cameraQuality, recommendation),
+		[cameraQuality, recommendation]
+	);
 
 	useEffect(() => {
-		const stopPreview = () => {
-			if (streamRef.current) {
-				streamRef.current.getTracks().forEach((track) => track.stop());
-				streamRef.current = null;
-			}
-			if (videoElementRef.current) {
-				videoElementRef.current.srcObject = null;
+		const stopStream = (stream: MediaStream | null) => {
+			if (!stream) return;
+			stream.getTracks().forEach((track) => track.stop());
+		};
+
+		const detachCurrentVideo = () => {
+			const video = videoElementRef.current;
+			if (!video) return;
+			if (video.srcObject === streamRef.current) {
+				video.srcObject = null;
 			}
 		};
 
 		const startPreview = async () => {
-			stopPreview();
+			requestIdRef.current += 1;
+			const requestId = requestIdRef.current;
+
+			detachCurrentVideo();
+			stopStream(streamRef.current);
+			streamRef.current = null;
+
 			setStatus("loading");
 			setError(null);
 
@@ -57,10 +78,7 @@ export function useCameraPreview({
 			}
 
 			try {
-				const preset = getQualityPreset(
-					"camera",
-					resolveQualitySetting("camera", cameraQuality, recommendation)
-				);
+				const preset = getQualityPreset("camera", resolvedCameraQuality);
 				const captureOptions = getCameraCaptureOptions(selectedCameraId, preset);
 				const resolution = captureOptions.resolution;
 
@@ -75,15 +93,16 @@ export function useCameraPreview({
 					audio: false,
 				});
 
-				streamRef.current = stream;
-
-				if (videoElementRef.current) {
-					videoElementRef.current.srcObject = stream;
-					await videoElementRef.current.play().catch(() => undefined);
+				if (requestId !== requestIdRef.current) {
+					stopStream(stream);
+					return;
 				}
 
+				streamRef.current = stream;
 				setStatus("ready");
 			} catch (rawError) {
+				if (requestId !== requestIdRef.current) return;
+
 				const mediaError = rawError as DOMException;
 				if (mediaError?.name === "NotAllowedError") {
 					setStatus("denied");
@@ -107,9 +126,31 @@ export function useCameraPreview({
 		void startPreview();
 
 		return () => {
-			stopPreview();
+			requestIdRef.current += 1;
+			detachCurrentVideo();
+			stopStream(streamRef.current);
+			streamRef.current = null;
 		};
-	}, [selectedCameraId, cameraQuality, recommendation, hasCameraDevices]);
+	}, [selectedCameraId, resolvedCameraQuality, hasCameraDevices]);
+
+	useEffect(() => {
+		if (status !== "ready") return;
+
+		const stream = streamRef.current;
+		const video = videoElementRef.current;
+		if (!stream || !video) return;
+
+		video.srcObject = stream;
+		video.muted = true;
+		video.playsInline = true;
+		void video.play().catch(() => undefined);
+
+		return () => {
+			if (video.srcObject === stream) {
+				video.srcObject = null;
+			}
+		};
+	}, [status]);
 
 	return {
 		status,

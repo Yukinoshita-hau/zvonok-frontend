@@ -44,7 +44,7 @@ console.log(friends)
 									e.stopPropagation();
 									removeHandle(friend.friendUsername);
 								}}>
-								<img src="../../../public/cross-icon.svg" />
+								<img src="/cross-icon.svg" />
 							</button>
 						</div>
 					</div>
