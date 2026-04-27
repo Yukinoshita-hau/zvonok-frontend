@@ -396,9 +396,9 @@ export function VoiceVideoSetting() {
 							}
 						>
 							<option value="auto">Auto</option>
-							<option value="high">High (1080p, 30 FPS)</option>
-							<option value="medium">Medium (1080p, 15 FPS)</option>
 							<option value="low">Low (720p, 5 FPS)</option>
+							<option value="medium">Medium (1080p, 15 FPS)</option>
+							<option value="high">High (1080p, 30 FPS)</option>
 							<option value="game60">Gaming 1080p60</option>
 							<option value="game120">Gaming 1080p120 Experimental</option>
 						</select>

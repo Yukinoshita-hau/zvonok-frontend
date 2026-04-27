@@ -1,6 +1,7 @@
 import { Client } from "@stomp/stompjs";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-export const WS_CONNECT_PATH = "ws://127.0.0.1:8080/api/ws-raw"
+export const WS_CONNECT_PATH = `${API_URL}/ws-raw`
 
 export const createWebSocketClient = (token: string) => {
 	const client = new Client({
