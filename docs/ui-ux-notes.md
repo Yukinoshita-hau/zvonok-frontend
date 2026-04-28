@@ -9,7 +9,7 @@
   - avatar/fallback
   - `you` badge
 - Member click opens profile popover in-place without leaving RoomSetting.
-- Cinema mode is separated from Focus mode and behaves as immersive stream-only view.
+- Cinema mode is separated from Focus mode and behaves as immersive stream-only full-window view.
 - Screen-share quality selection is grouped and warns for heavy/experimental presets.
 - Mic quality uses intent-based presets (Economy/Balanced/Studio/Gaming).
 

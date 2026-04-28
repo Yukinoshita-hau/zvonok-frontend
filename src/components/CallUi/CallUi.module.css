@@ -667,6 +667,6 @@
 	flex: 1;
 	min-height: 0;
 	background: #000;
-	border-radius: 12px;
+	border-radius: 0;
 	overflow: hidden;
 }

@@ -17,7 +17,7 @@
 ## Focus vs Cinema mode
 
 - Focus mode: previous behavior remains (selected screen share + participants visible).
-- Cinema mode: dedicated immersive layout using `TheaterModeView` + `CinemaModeOverlayControls`.
+- Cinema mode: dedicated immersive layout using `TheaterModeView` + `CinemaModeOverlayControls`, rendered as full-window in-app stage.
 - Cinema mode requires selected screen share (`selectedScreenTrackSid`).
 - Escape exits cinema mode.
 - If selected stream ends/unavailable, cinema mode auto-exits.
