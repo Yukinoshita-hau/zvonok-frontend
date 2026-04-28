@@ -132,7 +132,7 @@ export function ActiveCallOverlay() {
 						)}
 							<div
 								className={styles["room-container"]}
-								style={{ height: isCinemaMode ? "100%" : `${callHeight}vh` }}
+								style={{ height: isCinemaMode ? "110%" : `${callHeight}vh` }}
 							>
 							<CallUi
 								hasChat={Boolean(call.chatRoomId)}

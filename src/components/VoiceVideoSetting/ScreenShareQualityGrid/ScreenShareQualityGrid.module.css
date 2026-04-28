@@ -11,6 +11,10 @@
 	gap: 8px;
 }
 
+.mode-title {
+	color: var(--text-primary);
+}
+
 .base-select-row select {
 	min-width: 160px;
 }
@@ -20,6 +24,10 @@
 	align-items: center;
 	gap: 8px;
 	font-size: 13px;
+}
+
+.show-exp-mode {
+	color: var(--text-primary);
 }
 
 .group {
@@ -65,6 +73,7 @@
 .card-title {
 	font-weight: 700;
 	font-size: 13px;
+	color: var(--text-primary);
 }
 
 .card-meta,

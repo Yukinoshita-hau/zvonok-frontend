@@ -23,7 +23,7 @@ export function ScreenShareQualityGrid({
 	return (
 		<div className={styles["root"]}>
 			<label className={styles["base-select-row"]}>
-				<span>Base mode</span>
+				<span className={styles["mode-title"]}>Base mode</span>
 				<select value={value === "auto" ? "auto" : resolveBaseValue(value)} onChange={(event) => onChange(event.target.value as ScreenShareManualQuality | "auto")}>
 					<option value="auto">Auto</option>
 					<option value="low">Low</option>
@@ -34,7 +34,7 @@ export function ScreenShareQualityGrid({
 
 			<label className={styles["toggle-row"]}>
 				<input type="checkbox" checked={showExperimental} onChange={(event) => onShowExperimentalChange(event.target.checked)} />
-				<span>Show experimental modes</span>
+				<span className={styles["show-exp-mode"]}>Show experimental modes</span>
 			</label>
 
 			{ORDER.map((section) => {
