@@ -2,26 +2,23 @@ import { useMemo } from "react";
 import { useSelector } from "react-redux";
 import type { AudioCaptureOptions } from "livekit-client";
 import type { RootState } from "../../store/store";
+import { getMicrophoneCaptureOptions } from "../../utils/microphoneQuality";
 
 export function useMicrophoneCaptureOptions(): AudioCaptureOptions {
 	const device = useSelector((s: RootState) => s.device);
 
 	return useMemo(
-		() => ({
-			deviceId:
-				device.selectedMicrophoneId !== "default"
-					? device.selectedMicrophoneId
-					: undefined,
-			autoGainControl: device.isAutoGainControlEnabled,
-			echoCancellation: device.isEchoCancellationEnabled,
-			noiseSuppression: device.isNoiseSuppressionEnabled,
-			voiceIsolation: device.isNoiseSuppressionEnabled,
-			channelCount: 1,
-			sampleRate: 48000,
-			sampleSize: 16,
-		}),
+		() =>
+			getMicrophoneCaptureOptions({
+				selectedMicrophoneId: device.selectedMicrophoneId,
+				micQualitySetting: device.micQualitySetting,
+				isAutoGainControlEnabled: device.isAutoGainControlEnabled,
+				isEchoCancellationEnabled: device.isEchoCancellationEnabled,
+				isNoiseSuppressionEnabled: device.isNoiseSuppressionEnabled,
+			}),
 		[
 			device.selectedMicrophoneId,
+			device.micQualitySetting,
 			device.isNoiseSuppressionEnabled,
 			device.isEchoCancellationEnabled,
 			device.isAutoGainControlEnabled,

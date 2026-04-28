@@ -267,16 +267,20 @@ export function CallQualityController() {
 					: null;
 			const fallbackPreset = resolveScreenShareFallbackPreset(
 				quality as ScreenShareManualQuality,
+				preset.frameRate,
 				actualFps
 			);
 			const fallbackReason = resolveScreenShareFallbackReason(
 				quality as ScreenShareManualQuality,
+				preset.frameRate,
 				actualFps,
 				fallbackPreset
 			);
 			const appliedPreset = fallbackPreset
 				? getQualityPreset("screenShare", fallbackPreset)
 				: preset;
+			const actualWidth = typeof settings.width === "number" ? Math.round(settings.width) : null;
+			const actualHeight = typeof settings.height === "number" ? Math.round(settings.height) : null;
 			if (fallbackPreset) {
 				await setSenderEncoding(track, appliedPreset.maxBitrate, appliedPreset.frameRate);
 				track.setPublishingQuality(toVideoQuality(fallbackPreset));
@@ -285,6 +289,11 @@ export function CallQualityController() {
 				deviceActions.setScreenShareRuntimeInfo({
 					requestedFps: preset.frameRate,
 					actualFps,
+					requestedResolution: `${preset.width}x${preset.height}`,
+					actualResolution:
+						actualWidth !== null && actualHeight !== null
+							? `${actualWidth}x${actualHeight}`
+							: null,
 					activePreset: appliedPreset.value,
 					fallbackReason,
 				})
@@ -339,28 +348,31 @@ export function CallQualityController() {
 
 function resolveScreenShareFallbackReason(
 	quality: ScreenShareManualQuality,
+	requestedFps: number,
 	actualFps: number | null,
 	fallbackPreset: ScreenShareManualQuality | null
 ) {
 	if (actualFps === null) return null;
-	if (quality !== "game120") return null;
-	if (actualFps >= 100) return null;
-	if (fallbackPreset === "game60") {
-		return "120 FPS is not available on this browser/source. Using 60 FPS best effort.";
+	if (!fallbackPreset && actualFps >= requestedFps * 0.6) return null;
+	if (fallbackPreset) {
+		const fallback = getQualityPreset("screenShare", fallbackPreset);
+		return `Browser/source fallback detected. Requested ${requestedFps} FPS, got ${actualFps} FPS. Switched to ${fallback.label}.`;
 	}
-	return "High FPS screen share is limited by browser/source or device. Falling back to lower motion quality.";
+	return `Browser/source fallback detected. Requested ${requestedFps} FPS, got ${actualFps} FPS.`;
 }
 
 function resolveScreenShareFallbackPreset(
 	quality: ScreenShareManualQuality,
+	requestedFps: number,
 	actualFps: number | null
 ): ScreenShareManualQuality | null {
-	if (quality !== "game120" || actualFps === null || actualFps >= 100) {
+	if (actualFps === null) {
 		return null;
 	}
 
-	if (actualFps >= 55) return "game60";
-	return "high";
+	const chain = SCREEN_FPS_FALLBACK_CHAIN[quality];
+	if (!chain || actualFps >= requestedFps * 0.6) return null;
+	return chain.find((candidate) => getQualityPreset("screenShare", candidate).frameRate <= actualFps) ?? chain[chain.length - 1];
 }
 
 async function setSenderEncoding(
@@ -403,18 +415,32 @@ function getHigherQuality(quality: ManualCallQuality): ManualCallQuality {
 }
 
 function toVideoQuality(quality: ManualCallQuality | ScreenShareManualQuality): VideoQuality {
-	if (quality === "high" || quality === "game60" || quality === "game120") {
-		return VideoQuality.HIGH;
-	}
 	if (quality === "medium") return VideoQuality.MEDIUM;
-	return VideoQuality.LOW;
+	if (quality === "medium") return VideoQuality.MEDIUM;
+	if (quality === "low") return VideoQuality.LOW;
+	return VideoQuality.HIGH;
 }
 
 function normalizeToManualQuality(
 	quality: ScreenShareManualQuality | undefined
 ): ManualCallQuality {
-	if (quality === "game60" || quality === "game120") {
+	if (quality && !["low", "medium", "high"].includes(quality)) {
 		return "high";
 	}
 	return quality ?? "medium";
 }
+
+const SCREEN_FPS_FALLBACK_CHAIN: Partial<Record<ScreenShareManualQuality, ScreenShareManualQuality[]>> = {
+	g8k60: ["g8k30", "c4k60", "c4k30", "c1440p30", "high"],
+	g8k30: ["c4k60", "c4k30", "c1440p30", "high"],
+	c4k120: ["c4k60", "c4k30", "c1440p30", "high"],
+	c4k60: ["c4k30", "c1440p30", "high"],
+	c4k30: ["c1440p30", "high"],
+	g1080p300: ["g1080p220", "g1080p200", "g1080p180", "g1080p144", "game120", "game60", "high"],
+	g1080p220: ["g1080p200", "g1080p180", "g1080p144", "game120", "game60", "high"],
+	g1080p200: ["g1080p180", "g1080p144", "game120", "game60", "high"],
+	g1080p180: ["g1080p144", "game120", "game60", "high"],
+	g1080p144: ["game120", "game60", "high"],
+	game120: ["game60", "high"],
+	game60: ["high"],
+};

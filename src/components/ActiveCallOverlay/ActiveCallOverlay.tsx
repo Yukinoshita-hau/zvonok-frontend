@@ -135,10 +135,12 @@ export function ActiveCallOverlay() {
 							<CallUi
 								hasChat={Boolean(call.chatRoomId)}
 								isFocusMode={call.isCallFocusMode}
+									isCinemaMode={call.isTheaterMode}
 								onHide={() => dispatch(callActions.setPresentationMode("hidden"))}
 								onOpenChat={handleOpenChat}
 								onMinimize={() => dispatch(callActions.setPresentationMode("minimized"))}
 								onToggleFocus={() => dispatch(callActions.setCallFocusMode(!call.isCallFocusMode))}
+									onToggleCinema={() => dispatch(callActions.setTheaterMode(!call.isTheaterMode))}
 							/>
 						</div>
 

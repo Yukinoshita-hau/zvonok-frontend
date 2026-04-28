@@ -14,6 +14,12 @@ import {
 	type CallQualitySetting,
 	type ScreenShareQualitySetting,
 } from "../../utils/callQuality";
+import {
+	getMicrophoneCaptureOptions,
+	MICROPHONE_QUALITY_PRESETS,
+} from "../../utils/microphoneQuality";
+import { ScreenShareQualityGrid } from "./ScreenShareQualityGrid/ScreenShareQualityGrid";
+import { MicrophoneQualitySelector } from "./MicrophoneQualitySelector/MicrophoneQualitySelector";
 
 interface PublishStats {
 	packetsLost: number;
@@ -35,6 +41,7 @@ export function VoiceVideoSetting() {
 	const {
 		selectedCameraId,
 		selectedMicrophoneId,
+		micQualitySetting,
 		cameraQuality,
 		screenShareQuality,
 		isNoiseSuppressionEnabled,
@@ -54,6 +61,7 @@ export function VoiceVideoSetting() {
 	const [mediaDevicesReady, setMediaDevicesReady] = useState(false);
 	const [volumeLevel, setVolumeLevel] = useState(0);
 	const [isListening, setIsListening] = useState(false);
+	const [showExperimentalScreenModes, setShowExperimentalScreenModes] = useState(false);
 
 	const streamRef = useRef<MediaStream | null>(null);
 	const audioContextRef = useRef<AudioContext | null>(null);
@@ -84,17 +92,25 @@ export function VoiceVideoSetting() {
 					streamRef.current.getTracks().forEach((track) => track.stop());
 				}
 
+				const micCaptureOptions = getMicrophoneCaptureOptions({
+					selectedMicrophoneId,
+					micQualitySetting,
+					isAutoGainControlEnabled,
+					isEchoCancellationEnabled,
+					isNoiseSuppressionEnabled,
+				});
 				const audioConstraints: MediaTrackConstraints = {
 					deviceId:
 						selectedMicrophoneId === "default"
 							? undefined
 							: { exact: selectedMicrophoneId },
-					autoGainControl: isAutoGainControlEnabled,
-					echoCancellation: isEchoCancellationEnabled,
-					noiseSuppression: isNoiseSuppressionEnabled,
-					channelCount: 1,
-					sampleRate: 48000,
-					sampleSize: 16,
+					autoGainControl: micCaptureOptions.autoGainControl,
+					echoCancellation: micCaptureOptions.echoCancellation,
+					noiseSuppression: micCaptureOptions.noiseSuppression,
+					channelCount: micCaptureOptions.channelCount ?? 1,
+					sampleRate: micCaptureOptions.sampleRate ?? 48000,
+					sampleSize: micCaptureOptions.sampleSize ?? 16,
+					latency: micCaptureOptions.latency,
 				};
 
 				const supportedConstraints = navigator.mediaDevices.getSupportedConstraints() as {
@@ -167,6 +183,7 @@ export function VoiceVideoSetting() {
 		};
 	}, [
 		selectedMicrophoneId,
+		micQualitySetting,
 		isListening,
 		isNoiseSuppressionEnabled,
 		isEchoCancellationEnabled,
@@ -283,6 +300,22 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Microphone Quality</label>
+						<MicrophoneQualitySelector
+							value={micQualitySetting}
+							onChange={(value) => dispatch(deviceActions.setMicrophoneQuality(value))}
+						/>
+						<span className={styles["help-text"]}>
+							Requested values are best-effort and may be adjusted by browser/OS/audio driver.
+						</span>
+						{MICROPHONE_QUALITY_PRESETS[micQualitySetting].warning && (
+							<span className={styles["help-text"]}>
+								{MICROPHONE_QUALITY_PRESETS[micQualitySetting].warning}
+							</span>
+						)}
+					</div>
+
+					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Noise Suppression</label>
 						<label className={styles["toggle-row"]}>
 							<input
@@ -388,31 +421,13 @@ export function VoiceVideoSetting() {
 
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Screen Share Quality</label>
-						<select
-							className={styles["input"]}
+						<ScreenShareQualityGrid
 							value={screenShareQuality}
-							onChange={(e) =>
-								dispatch(deviceActions.setScreenShareQuality(e.target.value as ScreenShareQualitySetting))
-							}
-						>
-							<option value="auto">Auto</option>
-							<option value="low">Low (720p, 5 FPS)</option>
-							<option value="medium">Medium (1080p, 15 FPS)</option>
-							<option value="high">High (1080p, 30 FPS)</option>
-							<option value="game60">Gaming 1080p60</option>
-							<option value="game120">Gaming 1080p120 Experimental</option>
-						</select>
-						{screenShareQuality === "game120" && (
-							<span className={styles["help-text"]}>
-								Experimental. Requires strong upload and browser/source support. 120 FPS is best effort, not guaranteed.
-							</span>
-						)}
-						{screenShareRuntime.updatedAt && (
-							<div className={styles["summary-text"]}>
-								Requested FPS: {screenShareRuntime.requestedFps ?? "N/A"}, actual: {screenShareRuntime.actualFps ?? "N/A"}, applied mode: {screenShareRuntime.activePreset ?? "N/A"}.
-								{screenShareRuntime.fallbackReason ? ` ${screenShareRuntime.fallbackReason}` : ""}
-							</div>
-						)}
+							onChange={(value) => dispatch(deviceActions.setScreenShareQuality(value as ScreenShareQualitySetting))}
+							showExperimental={showExperimentalScreenModes}
+							onShowExperimentalChange={setShowExperimentalScreenModes}
+							runtimeInfo={screenShareRuntime}
+						/>
 					</div>
 
 					<div className={styles["form-group"]}>
