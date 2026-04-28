@@ -130,10 +130,10 @@ export function ActiveCallOverlay() {
 								onMouseDown={handleMouseDown}
 							/>
 						)}
-						<div
-							className={styles["room-container"]}
-							style={{ height: isCinemaMode ? "100vh" : `${callHeight}vh` }}
-						>
+							<div
+								className={styles["room-container"]}
+								style={{ height: isCinemaMode ? "100%" : `${callHeight}vh` }}
+							>
 							<CallUi
 								hasChat={Boolean(call.chatRoomId)}
 								isFocusMode={call.isCallFocusMode}
