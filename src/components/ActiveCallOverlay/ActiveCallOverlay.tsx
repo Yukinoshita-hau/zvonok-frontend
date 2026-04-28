@@ -25,17 +25,18 @@ export function ActiveCallOverlay() {
 	const isExpanded = call.presentationMode === "expanded";
 	const isMinimized = call.presentationMode === "minimized";
 	const isHidden = call.presentationMode === "hidden";
+	const isCinemaMode = call.isTheaterMode;
 
 	useEffect(() => {
 		if (!isExpanded) return;
 
-		if (call.isCallFocusMode) {
+		if (call.isCallFocusMode || isCinemaMode) {
 			setCallHeight((prev) => Math.max(prev, 90));
 			return;
 		}
 
 		setCallHeight(52);
-	}, [call.isCallFocusMode, isExpanded]);
+	}, [call.isCallFocusMode, isCinemaMode, isExpanded]);
 
 	const roomOptions: RoomOptions = useMemo(() => {
 		const cameraPreset = getQualityPreset("camera", "medium");
@@ -120,25 +121,28 @@ export function ActiveCallOverlay() {
 						className={[
 							styles["call-shell"],
 							call.isCallFocusMode ? styles["call-shell-focus"] : "",
+							isCinemaMode ? styles["call-shell-cinema"] : "",
 						].join(" ")}
 					>
-						{!call.isCallFocusMode && (
+						{!call.isCallFocusMode && !isCinemaMode && (
 							<div
 								className={styles["resize-handle"]}
 								onMouseDown={handleMouseDown}
 							/>
 						)}
-						<div
-							className={styles["room-container"]}
-							style={{ height: `${callHeight}vh` }}
-						>
+							<div
+								className={styles["room-container"]}
+								style={{ height: isCinemaMode ? "110%" : `${callHeight}vh` }}
+							>
 							<CallUi
 								hasChat={Boolean(call.chatRoomId)}
 								isFocusMode={call.isCallFocusMode}
+								isCinemaMode={call.isTheaterMode}
 								onHide={() => dispatch(callActions.setPresentationMode("hidden"))}
 								onOpenChat={handleOpenChat}
 								onMinimize={() => dispatch(callActions.setPresentationMode("minimized"))}
 								onToggleFocus={() => dispatch(callActions.setCallFocusMode(!call.isCallFocusMode))}
+									onToggleCinema={() => dispatch(callActions.setTheaterMode(!call.isTheaterMode))}
 							/>
 						</div>
 

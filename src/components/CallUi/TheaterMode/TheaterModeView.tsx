@@ -1,4 +1,5 @@
 import { VideoTrack, type TrackReference } from "@livekit/components-react";
+import { CinemaModeOverlayControls } from "../CinemaModeOverlayControls/CinemaModeOverlayControls";
 import styles from "./TheaterModeView.module.css";
 
 interface TheaterModeViewProps {
@@ -12,12 +13,7 @@ export function TheaterModeView({ trackRef, displayName, onExit }: TheaterModeVi
 
 	return (
 		<div className={styles["root"]}>
-			<div className={styles["overlayTop"]}>
-				<div className={styles["title"]}>Screen share by {displayName}</div>
-				<button type="button" className={styles["exitButton"]} onClick={onExit}>
-					Exit theater
-				</button>
-			</div>
+			<CinemaModeOverlayControls displayName={displayName} onExit={onExit} />
 			<div className={styles["media"]}>
 				{isReady ? (
 					<VideoTrack trackRef={trackRef} />
