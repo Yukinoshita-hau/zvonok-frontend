@@ -5,6 +5,7 @@ import type {
 	NetworkQualityMetrics,
 	ScreenShareQualitySetting,
 } from "../../utils/callQuality";
+import type { MicQualitySetting } from "../../utils/microphoneQuality";
 
 export type ParticipantAudioSource = "microphone" | "screenShareAudio";
 
@@ -17,6 +18,8 @@ export interface ParticipantVolumePreference {
 export interface ScreenShareRuntimeInfo {
 	requestedFps: number | null;
 	actualFps: number | null;
+	requestedResolution: string | null;
+	actualResolution: string | null;
 	activePreset: string | null;
 	fallbackReason: string | null;
 	updatedAt: string | null;
@@ -34,6 +37,7 @@ export interface ConnectionTestResult {
 export interface DeviceState {
 	selectedCameraId: string;
 	selectedMicrophoneId: string;
+	micQualitySetting: MicQualitySetting;
 	cameraQuality: CallQualitySetting;
 	screenShareQuality: ScreenShareQualitySetting;
 	isNoiseSuppressionEnabled: boolean;
@@ -66,6 +70,7 @@ function saveStoredPreferences(state: DeviceState) {
 			JSON.stringify({
 				selectedCameraId: state.selectedCameraId,
 				selectedMicrophoneId: state.selectedMicrophoneId,
+				micQualitySetting: state.micQualitySetting,
 				cameraQuality: state.cameraQuality,
 				screenShareQuality: state.screenShareQuality,
 				isNoiseSuppressionEnabled: state.isNoiseSuppressionEnabled,
@@ -86,6 +91,7 @@ const storedPrefs = loadStoredPreferences();
 const initialState: DeviceState = {
 	selectedCameraId: storedPrefs?.selectedCameraId ?? "default",
 	selectedMicrophoneId: storedPrefs?.selectedMicrophoneId ?? "default",
+	micQualitySetting: storedPrefs?.micQualitySetting ?? "balanced",
 	cameraQuality: storedPrefs?.cameraQuality ?? "high",
 	screenShareQuality: storedPrefs?.screenShareQuality ?? "medium",
 	isNoiseSuppressionEnabled: storedPrefs?.isNoiseSuppressionEnabled ?? true,
@@ -94,12 +100,14 @@ const initialState: DeviceState = {
 	voiceActivityThreshold: storedPrefs?.voiceActivityThreshold ?? 35,
 	isAutoInputSensitivity: storedPrefs?.isAutoInputSensitivity ?? true,
 	participantVolumes: storedPrefs?.participantVolumes ?? [],
-	screenShareRuntime: {
-		requestedFps: null,
-		actualFps: null,
-		activePreset: null,
-		fallbackReason: null,
-		updatedAt: null,
+		screenShareRuntime: {
+			requestedFps: null,
+			actualFps: null,
+			requestedResolution: null,
+			actualResolution: null,
+			activePreset: null,
+			fallbackReason: null,
+			updatedAt: null,
 	},
 	connectionTestResult: {
 		status: "idle",
@@ -122,6 +130,10 @@ export const deviceSlice = createSlice({
 		setMicrophone: (previousState, action: PayloadAction<string>) => {
 			previousState.selectedMicrophoneId = action.payload;
 			saveStoredPreferences(previousState);
+		},
+		setMicrophoneQuality: (state, action: PayloadAction<MicQualitySetting>) => {
+			state.micQualitySetting = action.payload;
+			saveStoredPreferences(state);
 		},
 		setCameraQuality: (previousState, action: PayloadAction<CallQualitySetting>) => {
 			previousState.cameraQuality = action.payload;
@@ -182,12 +194,14 @@ export const deviceSlice = createSlice({
 		},
 		setScreenShareRuntimeInfo: (
 			state,
-			action: PayloadAction<{
-				requestedFps: number | null;
-				actualFps: number | null;
-				activePreset: string | null;
-				fallbackReason: string | null;
-			}>
+				action: PayloadAction<{
+					requestedFps: number | null;
+					actualFps: number | null;
+					requestedResolution: string | null;
+					actualResolution: string | null;
+					activePreset: string | null;
+					fallbackReason: string | null;
+				}>
 		) => {
 			state.screenShareRuntime = {
 				...action.payload,

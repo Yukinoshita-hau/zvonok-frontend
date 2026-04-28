@@ -31,7 +31,7 @@ export function InboxLayout() {
 	const isFocusMode =
 		isCallActive &&
 		call.presentationMode === "expanded" &&
-		call.isCallFocusMode;
+		(call.isCallFocusMode || call.isTheaterMode);
 
 	const { rooms } = room;
 	const { friends } = friend

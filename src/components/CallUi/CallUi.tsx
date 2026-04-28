@@ -27,14 +27,17 @@ import {
 } from "../../utils/callQuality";
 import type { CallUiProps } from "./CallUi.props";
 import type { UserMini } from "../../entities/UserMini";
+import { TheaterModeView } from "./TheaterMode/TheaterModeView";
 
 export function CallUi({
 	hasChat,
 	isFocusMode,
+	isCinemaMode,
 	onHide,
 	onOpenChat,
 	onMinimize,
 	onToggleFocus,
+	onToggleCinema,
 }: CallUiProps) {
 	const [hadRemoteParticipant, setHadRemoteParticipant] = useState(false);
 	const [isAudioPanelOpen, setIsAudioPanelOpen] = useState(false);
@@ -328,6 +331,20 @@ export function CallUi({
 		!hasScreenShare && participantCards.length === 1;
 
 	useEffect(() => {
+		if (!isCinemaMode) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== "Escape") return;
+			onToggleCinema();
+		};
+
+		window.addEventListener("keydown", onKeyDown);
+		return () => {
+			window.removeEventListener("keydown", onKeyDown);
+		};
+	}, [isCinemaMode, onToggleCinema]);
+
+	useEffect(() => {
 		if (!availableScreenTracks.length) {
 			if (call.selectedScreenTrackSid !== null) {
 				dispatch(callActions.setSelectedScreenTrackSid(null));
@@ -396,9 +413,30 @@ export function CallUi({
 	const hasAnyRemoteAudioTracks =
 		remoteMicrophoneParticipants.size > 0 || remoteScreenAudioParticipants.size > 0;
 
+	useEffect(() => {
+		if (!isCinemaMode) return;
+		if (mainScreenTrack) return;
+		dispatch(callActions.setTheaterMode(false));
+	}, [dispatch, isCinemaMode, mainScreenTrack]);
+
 	return (
 		<div className={styles["call-root"]}>
-			{hasScreenShare && mainScreenTrack ? (
+			{isCinemaMode ? (
+				mainScreenTrack ? (
+					<div className={styles["cinema-layout"]}>
+						<TheaterModeView
+							trackRef={mainScreenTrack}
+							displayName={mainScreenTrack.participant.name || mainScreenTrack.participant.identity}
+							onExit={onToggleCinema}
+						/>
+					</div>
+				) : (
+					<div className={styles["empty-state"]}>
+						<div className={styles["empty-title"]}>Cinema mode is unavailable</div>
+						<div className={styles["empty-subtitle"]}>Select a screen share first.</div>
+					</div>
+				)
+			) : hasScreenShare && mainScreenTrack ? (
 				<div className={styles["screen-layout"]}>
 					<div className={styles["main-screen"]}>
 						{mainScreenTrack.participant.isLocal ||
@@ -490,7 +528,7 @@ export function CallUi({
 				</div>
 			)}
 
-			{isAudioPanelOpen && (
+			{isAudioPanelOpen && !isCinemaMode && (
 				<div className={styles["audio-panel"]}>
 					<div className={styles["audio-panel-title"]}>Participant volume</div>
 					{sortedParticipants.filter((participant) => !participant.isLocal).length === 0 ? (
@@ -614,7 +652,8 @@ export function CallUi({
 				</div>
 			)}
 
-			<div className={styles["controls-bar"]}>
+			{!isCinemaMode && (
+				<div className={styles["controls-bar"]}>
 				<MicrophoneToggleButton
 					className={styles["control-button"]}
 					enabledLabel="Mic"
@@ -669,6 +708,25 @@ export function CallUi({
 				<button
 					type="button"
 					className={styles["control-button"]}
+					onClick={() => {
+						if (!call.selectedScreenTrackSid) return;
+						onToggleCinema();
+					}}
+					title={
+						call.selectedScreenTrackSid
+							? isCinemaMode
+								? "Exit cinema mode"
+								: "Open cinema mode"
+							: "Select a screen share first"
+					}
+					disabled={!call.selectedScreenTrackSid}
+				>
+					{isCinemaMode ? "Exit Cinema" : "Cinema"}
+				</button>
+
+				<button
+					type="button"
+					className={styles["control-button"]}
 					onClick={onMinimize}
 					title="Minimize call"
 				>
@@ -687,7 +745,8 @@ export function CallUi({
 				<button className={styles["leave-button"]} onClick={onLeave}>
 					<img src="/leave-call-icon.svg" alt="Leave call" />
 				</button>
-			</div>
+				</div>
+			)}
 		</div>
 	);
 }

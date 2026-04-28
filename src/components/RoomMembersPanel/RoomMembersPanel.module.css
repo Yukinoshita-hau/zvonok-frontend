@@ -1,0 +1,15 @@
+.members-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	overflow-y: auto;
+	padding-right: 4px;
+}
+
+.empty-state {
+	padding: 12px;
+	border-radius: 10px;
+	background: var(--bg-primary);
+	color: var(--text-secondary);
+	font-size: 13px;
+}
