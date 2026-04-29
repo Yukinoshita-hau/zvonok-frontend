@@ -1,20 +1,28 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { type callStatus } from "../interfaces/call.types"
-import type { CallInviteEvent } from "../interfaces/callEvents.interface";
-import { livekitApi } from "../../api/livekitApi";
+import { callApi } from "../../api/callApi";
+import type { CallTokenDto } from "../../api/interfaces/CallTokenDto";
+import type { BaseCallEvent } from "../interfaces/callEvents.interface";
+import { type CallRoomType, type callStatus } from "../interfaces/call.types";
 
 export type CallPresentationMode = "expanded" | "minimized" | "hidden";
 
 export interface CallState {
-	status: callStatus
+	status: callStatus;
 	direction: "incoming" | "outgoing" | null;
+	callId: number | null;
 	chatRoomId: number | null;
+	roomType: CallRoomType | null;
 	callerUsername: string | null;
+	hostUsername: string | null;
+	peerUsernames: string[];
 	livekitRoomName: string | null;
 	serverUrl: string | null;
 	participantToken: string | null;
+	tokenExpiresAt: string | null;
+	lastEventId: string | null;
+	processedEventIds: string[];
+	lastAcceptedCallId: number | null;
 	error: string | null;
-
 	selectedScreenTrackSid: string | null;
 	presentationMode: CallPresentationMode;
 	isCallFocusMode: boolean;
@@ -24,136 +32,153 @@ export interface CallState {
 export const initialState: CallState = {
 	status: "idle",
 	direction: null,
+	callId: null,
 	chatRoomId: null,
+	roomType: null,
 	callerUsername: null,
+	hostUsername: null,
+	peerUsernames: [],
 	livekitRoomName: null,
 	serverUrl: null,
 	participantToken: null,
+	tokenExpiresAt: null,
+	lastEventId: null,
+	processedEventIds: [],
+	lastAcceptedCallId: null,
 	error: null,
-
-
 	selectedScreenTrackSid: null,
 	presentationMode: "expanded",
 	isCallFocusMode: false,
 	isTheaterMode: false,
-}
+};
 
-export const getToken = createAsyncThunk(
-	"call/getToken",
-	async (param: string, thunkAPI) => {
-		try {
-			const { data } = await livekitApi.getToken(param);
-			return data;
-		} catch (e: any) {
-			return thunkAPI.rejectWithValue(e?.message ?? "Failed to get livekit token");
-		}
+const keepUi = (state: CallState) => ({
+	selectedScreenTrackSid: state.selectedScreenTrackSid,
+	presentationMode: state.presentationMode,
+	isCallFocusMode: state.isCallFocusMode,
+	isTheaterMode: state.isTheaterMode,
+});
+
+export const getCallToken = createAsyncThunk("call/getCallToken", async (callId: number, thunkAPI) => {
+	try {
+		const { data } = await callApi.getCallToken(callId);
+		return data;
+	} catch (e: any) {
+		return thunkAPI.rejectWithValue(e?.message ?? "Failed to get livekit token");
 	}
-)
+});
 
 export const callSlice = createSlice({
 	name: "call",
-	initialState: initialState,
+	initialState,
 	reducers: {
-		startOutgoing: (previousState, action: PayloadAction<{
-			chatRoomId: number,
-			livekitRoomName: string,
-		}>) => {
-			previousState.status = "outgoing_ringing";
-			previousState.direction = "outgoing";
-			previousState.chatRoomId = action.payload.chatRoomId;
-			previousState.livekitRoomName = action.payload.livekitRoomName;
-			previousState.serverUrl = null;
-			previousState.participantToken = null;
-			previousState.error = null;
-			previousState.selectedScreenTrackSid = null;
-			previousState.presentationMode = "expanded";
-			previousState.isCallFocusMode = false;
-			previousState.isTheaterMode = false;
+		startOutgoing: (state, action: PayloadAction<{ chatRoomId: number }>) => {
+			state.status = "outgoing_ringing";
+			state.direction = "outgoing";
+			state.chatRoomId = action.payload.chatRoomId;
+			state.error = null;
+			state.serverUrl = null;
+			state.participantToken = null;
+			state.tokenExpiresAt = null;
+			state.lastAcceptedCallId = null;
 		},
-		incomingInvite: (previousState, action: PayloadAction<CallInviteEvent>) => {
-			previousState.status = "incoming_ringing";
-			previousState.direction = "incoming";
-			previousState.chatRoomId = action.payload.chatRoomId;
-			previousState.livekitRoomName = action.payload.liveKitRoomName;
-			previousState.callerUsername = action.payload.fromUser;
-			previousState.serverUrl = null;
-			previousState.participantToken = null;
-			previousState.error = null;
-			previousState.selectedScreenTrackSid = null;
-			previousState.presentationMode = "expanded";
-			previousState.isCallFocusMode = false;
-			previousState.isTheaterMode = false;
+		applyCallEvent: (state, action: PayloadAction<BaseCallEvent>) => {
+			const e = action.payload;
+			if (e.eventId && state.processedEventIds.includes(e.eventId)) return;
+			if (e.eventId) {
+				state.processedEventIds.push(e.eventId);
+				if (state.processedEventIds.length > 200) state.processedEventIds.shift();
+				state.lastEventId = e.eventId;
+			}
+			const roomId = e.roomId ?? e.chatRoomId ?? null;
+			const lkName = e.livekitRoomName ?? e.liveKitRoomName ?? null;
+			if (e.callId) state.callId = e.callId;
+			if (roomId) state.chatRoomId = roomId;
+			if (e.roomType) state.roomType = e.roomType;
+			if (lkName) state.livekitRoomName = lkName;
+			if (e.callerUsername || e.fromUser) state.callerUsername = e.callerUsername ?? e.fromUser ?? null;
+			if (e.hostUsername) state.hostUsername = e.hostUsername;
+
+			switch (e.type) {
+				case "CALL_STARTED":
+					state.direction = "outgoing";
+					if (state.status === "outgoing_ringing") state.status = "connecting";
+					break;
+				case "CALL_INVITE":
+					if (state.direction !== "outgoing") {
+						state.status = "incoming_ringing";
+						state.direction = "incoming";
+					}
+					break;
+				case "CALL_ACCEPT":
+				case "CALL_ACCEPTED":
+					state.status = "connecting";
+					break;
+				case "CALL_DECLINE":
+				case "CALL_DECLINED":
+				case "CALL_END":
+				case "CALL_ENDED":
+				case "CALL_CANCELLED": {
+					const ui = keepUi(state);
+					Object.assign(state, initialState, ui, { status: "ended" as const });
+					break;
+				}
+			}
 		},
-		setConnecting: (previousState) => {
-			previousState.status = "connecting";
-			previousState.presentationMode = "expanded";
+		markAcceptedHandled: (state, action: PayloadAction<number>) => {
+			state.lastAcceptedCallId = action.payload;
 		},
-		setLivekitCredentials: (previousState, action: PayloadAction<{
-			serverUrl: string,
-			participantToken: string,
-		}>) => {
-			previousState.serverUrl = action.payload.serverUrl;
-			previousState.participantToken = action.payload.participantToken;
+		endCall: (state) => {
+			const ui = keepUi(state);
+			Object.assign(state, initialState, ui, { status: "ended" as const });
 		},
-		setConnected: (previousState) => {
-			previousState.status = "in_call";
+		setSelectedScreenTrackSid: (state, action: PayloadAction<string | null>) => {
+			state.selectedScreenTrackSid = action.payload;
 		},
-		declineCall: (previousState) => {
-			previousState.status = "ended";
-		},
-		endCall: () => {
-			return initialState;
-		},
-		setSelectedScreenTrackSid: (previousState, action: PayloadAction<string | null>) => {
-			previousState.selectedScreenTrackSid = action.payload;
-		},
-		setPresentationMode: (previousState, action: PayloadAction<CallPresentationMode>) => {
-			previousState.presentationMode = action.payload;
+		setPresentationMode: (state, action: PayloadAction<CallPresentationMode>) => {
+			state.presentationMode = action.payload;
 			if (action.payload !== "expanded") {
-				previousState.isCallFocusMode = false;
-				previousState.isTheaterMode = false;
+				state.isCallFocusMode = false;
+				state.isTheaterMode = false;
 			}
 		},
-
-		toggleCallFocusMode: (previousState) => {
-			previousState.presentationMode = "expanded";
-			previousState.isCallFocusMode = !previousState.isCallFocusMode;
+		toggleCallFocusMode: (state) => {
+			state.presentationMode = "expanded";
+			state.isCallFocusMode = !state.isCallFocusMode;
 		},
-
-		setCallFocusMode: (previousState, action: PayloadAction<boolean>) => {
+		setCallFocusMode: (state, action: PayloadAction<boolean>) => {
 			if (action.payload) {
-				previousState.presentationMode = "expanded";
-				previousState.isTheaterMode = false;
+				state.presentationMode = "expanded";
+				state.isTheaterMode = false;
 			}
-			previousState.isCallFocusMode = action.payload;
+			state.isCallFocusMode = action.payload;
 		},
-		setTheaterMode: (previousState, action: PayloadAction<boolean>) => {
+		setTheaterMode: (state, action: PayloadAction<boolean>) => {
 			if (action.payload) {
-				previousState.presentationMode = "expanded";
-				previousState.isCallFocusMode = false;
+				state.presentationMode = "expanded";
+				state.isCallFocusMode = false;
 			}
-			previousState.isTheaterMode = action.payload;
-		}
+			state.isTheaterMode = action.payload;
+		},
 	},
-	extraReducers: builder => {
+	extraReducers: (builder) => {
 		builder
-			.addCase(getToken.pending, currentState => {
-				currentState.status = "connecting";
-				currentState.presentationMode = "expanded";
+			.addCase(getCallToken.pending, (state) => {
+				state.status = "connecting";
 			})
-			.addCase(getToken.fulfilled, (currentState, action) => {
-				currentState.serverUrl = action.payload.serverUrl;
-				currentState.participantToken = action.payload.participantToken;
-				currentState.status = "in_call";
-				currentState.presentationMode = "expanded";
+			.addCase(getCallToken.fulfilled, (state, action: PayloadAction<CallTokenDto>) => {
+				state.serverUrl = action.payload.serverUrl;
+				state.participantToken = action.payload.participantToken;
+				state.callId = action.payload.callId;
+				state.tokenExpiresAt = action.payload.expiresAt ?? null;
+				state.status = "in_call";
 			})
-
-			.addCase(getToken.rejected, (currentState, action) => {
-				currentState.status = "error"
-				currentState.error = typeof action.payload === "string" ? action.payload : "Failed to get livekit token";
-			})
-	}
-})
+			.addCase(getCallToken.rejected, (state, action) => {
+				state.status = "error";
+				state.error = typeof action.payload === "string" ? action.payload : "Failed to get livekit token";
+			});
+	},
+});
 
 export default callSlice.reducer;
 export const callActions = callSlice.actions;

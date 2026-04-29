@@ -69,6 +69,9 @@ export function CallUi({
 	]);
 
 	const onLeave = () => {
+		if (call.callId) {
+			dispatch({ type: "call/sendEnd", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+		}
 		dispatch(callActions.endCall());
 	};
 

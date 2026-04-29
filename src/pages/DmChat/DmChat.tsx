@@ -123,13 +123,9 @@ export function DmChat() {
 	const handleStartCall = () => {
 		if (!currentRoom) return;
 
-		const prefix = currentRoom.type === "GROUP" ? "group-" : "dm-";
-		const livekitRoomName = `${prefix}${currentRoom.id}`;
-
 		dispatch(
 			callActions.startOutgoing({
 				chatRoomId: currentRoom.id,
-				livekitRoomName,
 			})
 		);
 
