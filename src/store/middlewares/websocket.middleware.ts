@@ -268,7 +268,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				break;
 			}
 			case "message/sendMessage": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
@@ -280,7 +280,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				break;
 			}
 			case "message/sendPrivateMessage": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
@@ -313,7 +313,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 					subscriptions[path] = sub;
 
-					if (!client?.active) {
+					if (!client?.connected) {
 						console.log("WS: Already active or connecting");
 						return;
 					}
@@ -326,7 +326,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				break;
 			}
 			case "message/editMessage": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
@@ -338,7 +338,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			case "message/deleteMessage": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
@@ -363,7 +363,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			case "call/sendInvite": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
@@ -378,7 +378,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			case "call/sendAccept": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
@@ -394,7 +394,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 			
 			case "call/sendDecline": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
@@ -409,7 +409,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			case "call/sendEnd": {
-				if (!client?.active) {
+				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;
 				}
