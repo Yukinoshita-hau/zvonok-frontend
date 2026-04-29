@@ -409,6 +409,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			case "call/sendLeave": {
+				console.debug("[call] publish requested: call/sendLeave", myAction.payload);
 				if (!client?.connected) {
 					console.warn("WS not connected: call/sendLeave skipped");
 					return;
@@ -424,6 +425,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			case "call/sendEnd": {
+				console.debug("[call] publish requested: call/sendEnd", myAction.payload);
 				if (!client?.connected) {
 					console.log("WS: Already active or connecting");
 					return;

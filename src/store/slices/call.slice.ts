@@ -136,6 +136,10 @@ export const callSlice = createSlice({
 			const ui = keepUi(state);
 			Object.assign(state, initialState, ui, { status: "ended" as const });
 		},
+		liveKitDisconnectedLocally: (state) => {
+			const ui = keepUi(state);
+			Object.assign(state, initialState, ui, { status: "ended" as const });
+		},
 		endCall: (state) => {
 			const ui = keepUi(state);
 			Object.assign(state, initialState, ui, { status: "ended" as const });

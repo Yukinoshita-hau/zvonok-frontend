@@ -69,6 +69,7 @@ export function CallUi({
 	]);
 
 	const onLeave = () => {
+		console.debug("[call] user hangup clicked", { callId: call.callId, roomType: call.roomType });
 		if (!call.callId) {
 			dispatch(callActions.leaveCallLocally());
 			return;
@@ -330,19 +331,7 @@ export function CallUi({
 		}
 	}, [remoteParticipantsCount]);
 
-	useEffect(() => {
-		if (call.status !== "in_call") return;
-		if (!hadRemoteParticipant) return;
-		if (remoteParticipantsCount > 0) return;
 
-		const timeout = window.setTimeout(() => {
-			dispatch(callActions.endCall());
-		}, 3500);
-
-		return () => {
-			window.clearTimeout(timeout);
-		};
-	}, [call.status, hadRemoteParticipant, remoteParticipantsCount, dispatch]);
 
 	const hasScreenShare = availableScreenTracks.length > 0;
 
