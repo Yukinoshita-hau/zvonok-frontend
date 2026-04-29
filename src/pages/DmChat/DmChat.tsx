@@ -11,6 +11,7 @@ import type { Room } from "../../entities/room";
 import { Phone, Send, SettingsIcon, X } from "lucide-react";
 import { RoomSettingModal } from "../../components/RoomSettingModal/RoomSettingModal";
 import { StringToColor } from "../../utils/stringHelpers";
+import { toastActions } from "../../store/slices/toast.slice";
 
 export function DmChat() {
 	const navigate = useNavigate();
@@ -21,6 +22,7 @@ export function DmChat() {
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const usersById = useSelector((s: RootState) => s.users.byId);
 	const { replyTarget } = useSelector((s: RootState) => s.message);
+	const wsStatus = useSelector((s: RootState) => s.websocket.status);
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
@@ -123,6 +125,17 @@ export function DmChat() {
 	const handleStartCall = () => {
 		if (!currentRoom) return;
 
+		if (wsStatus !== "connected") {
+			console.warn("Call start blocked: websocket is not connected", { wsStatus });
+			dispatch(toastActions.showToast({
+				id: crypto.randomUUID(),
+				type: "warning",
+				title: "Соединение не готово",
+				message: "Подождите подключение к серверу и попробуйте снова"
+			}));
+			return;
+		}
+
 		dispatch(
 			callActions.startOutgoing({
 				chatRoomId: currentRoom.id,
@@ -163,7 +176,7 @@ export function DmChat() {
 				</div>
 
 				<div className={styles["header-right"]}>
-					<button className={styles["btn"]} onClick={handleStartCall}>
+					<button className={styles["btn"]} onClick={handleStartCall} disabled={wsStatus !== "connected"}>
 						<Phone color="white" size={20} />
 					</button>
 					<button className={styles["btn"]} onClick={handleOpenChatSetting}>
