@@ -60,6 +60,11 @@ interface CallEndAction {
 	payload: { callId: number; chatRoomId?: number }
 }
 
+interface CallLeaveAction {
+	type: "call/sendLeave";
+	payload: { callId?: number; chatRoomId?: number }
+}
+
 interface SendFriendRequestAction {
 	type: "friend/sendFriendRequest";
 	payload: { username: string }
@@ -96,6 +101,7 @@ export type Actions =
 	| CallAcceptAction
 	| CallDeclineAction
 	| CallEndAction
+	| CallLeaveAction
 	| SendFriendRequestAction
 	| AcceptFriendRequestAction
 	| RejectFriendRequestAction

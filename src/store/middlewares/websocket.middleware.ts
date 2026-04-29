@@ -4,7 +4,7 @@ import type { Actions } from "../interfaces/actions.interface";
 import { websocketActions } from "../slices/websocket.slice";
 import { createWebSocketClient } from "../../services/websocket.service";
 import { fetchRoomMessages, messageActions } from "../slices/message.slice";
-import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGE_READ_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_ROOM_EVENTS_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_CHANNEL_MESSAGE_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH, WS_UPDATE_READ_MESSAGE_PATH, WS_USER_EVENTS_PATH, WS_SEND_DECLINE_PATH, WS_SEND_END_PATH } from "../interfaces/wsPathes";
+import { WS_ACCEPT_FRIEND_REQUEST_PATH, WS_CALL_PATH, WS_CANCEL_FRIEND_REQUEST_PATH, WS_DELETE_MESSAGE_PATH, WS_EDIT_MESSAGE_PATH, WS_ERROR_PATH, WS_FRIEND_REQUESTS_PATH, WS_MESSAGE_READ_PATH, WS_MESSAGES_PATH, WS_REJECT_FRIEND_REQUEST_PATH, WS_REMOVE_FRIEND_REQUEST_PATH, WS_ROOM_EVENTS_PATH, WS_SEND_ACCEPT_PATH, WS_SEND_CHANNEL_MESSAGE_PATH, WS_SEND_FRIEND_REQUEST_PATH, WS_SEND_INVITE_PATH, WS_SEND_MESSAGE_PATH, WS_SEND_PRIVATE_MESSAGE_PATH, WS_UPDATE_READ_MESSAGE_PATH, WS_USER_EVENTS_PATH, WS_SEND_DECLINE_PATH, WS_SEND_END_PATH, WS_SEND_LEAVE_PATH } from "../interfaces/wsPathes";
 import { fetchMyRooms } from "../slices/room.slice";
 import type { BaseCallEvent } from "../interfaces/callEvents.interface";
 import { callActions, getCallToken } from "../slices/call.slice";
@@ -400,6 +400,21 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 				}
 				client?.publish({
 					destination: WS_SEND_DECLINE_PATH,
+					body: JSON.stringify({
+						callId: myAction.payload.callId,
+						chatRoomId: myAction.payload.chatRoomId,
+					})
+				})
+				break;
+			}
+
+			case "call/sendLeave": {
+				if (!client?.connected) {
+					console.warn("WS not connected: call/sendLeave skipped");
+					return;
+				}
+				client?.publish({
+					destination: WS_SEND_LEAVE_PATH,
 					body: JSON.stringify({
 						callId: myAction.payload.callId,
 						chatRoomId: myAction.payload.chatRoomId,

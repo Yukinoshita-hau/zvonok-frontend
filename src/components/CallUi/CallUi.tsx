@@ -69,10 +69,26 @@ export function CallUi({
 	]);
 
 	const onLeave = () => {
-		if (call.callId) {
-			dispatch({ type: "call/sendEnd", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+		if (!call.callId) {
+			dispatch(callActions.leaveCallLocally());
+			return;
 		}
-		dispatch(callActions.endCall());
+
+		if (call.roomType === "GROUP") {
+			const isHost = Boolean(myUser?.username && call.hostUsername && myUser.username === call.hostUsername);
+			if (isHost) {
+				dispatch({ type: "call/sendEnd", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+				dispatch(callActions.endCallLocally());
+				return;
+			}
+
+			dispatch({ type: "call/sendLeave", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+			dispatch(callActions.leaveCallLocally());
+			return;
+		}
+
+		dispatch({ type: "call/sendEnd", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+		dispatch(callActions.endCallLocally());
 	};
 
 	const currentRoom = useMemo(

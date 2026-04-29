@@ -128,6 +128,14 @@ export const callSlice = createSlice({
 		markAcceptedHandled: (state, action: PayloadAction<number>) => {
 			state.lastAcceptedCallId = action.payload;
 		},
+		leaveCallLocally: (state) => {
+			const ui = keepUi(state);
+			Object.assign(state, initialState, ui, { status: "ended" as const });
+		},
+		endCallLocally: (state) => {
+			const ui = keepUi(state);
+			Object.assign(state, initialState, ui, { status: "ended" as const });
+		},
 		endCall: (state) => {
 			const ui = keepUi(state);
 			Object.assign(state, initialState, ui, { status: "ended" as const });
