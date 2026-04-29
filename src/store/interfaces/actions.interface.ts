@@ -47,7 +47,22 @@ interface CallInviteAction {
 
 interface CallAcceptAction {
 	type: "call/sendAccept";
-	payload: { chatRoomId: number; callerUsername: string }
+	payload: { callId: number; chatRoomId?: number }
+}
+
+interface CallDeclineAction {
+	type: "call/sendDecline";
+	payload: { callId: number; chatRoomId?: number }
+}
+
+interface CallEndAction {
+	type: "call/sendEnd";
+	payload: { callId: number; chatRoomId?: number }
+}
+
+interface CallLeaveAction {
+	type: "call/sendLeave";
+	payload: { callId?: number; chatRoomId?: number }
 }
 
 interface SendFriendRequestAction {
@@ -84,6 +99,9 @@ export type Actions =
 	| MarkMessageReadAction
 	| CallInviteAction
 	| CallAcceptAction
+	| CallDeclineAction
+	| CallEndAction
+	| CallLeaveAction
 	| SendFriendRequestAction
 	| AcceptFriendRequestAction
 	| RejectFriendRequestAction

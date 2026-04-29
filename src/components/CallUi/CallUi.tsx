@@ -69,7 +69,27 @@ export function CallUi({
 	]);
 
 	const onLeave = () => {
-		dispatch(callActions.endCall());
+		console.debug("[call] user hangup clicked", { callId: call.callId, roomType: call.roomType });
+		if (!call.callId) {
+			dispatch(callActions.leaveCallLocally());
+			return;
+		}
+
+		if (call.roomType === "GROUP") {
+			const isHost = Boolean(myUser?.username && call.hostUsername && myUser.username === call.hostUsername);
+			if (isHost) {
+				dispatch({ type: "call/sendEnd", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+				dispatch(callActions.endCallLocally());
+				return;
+			}
+
+			dispatch({ type: "call/sendLeave", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+			dispatch(callActions.leaveCallLocally());
+			return;
+		}
+
+		dispatch({ type: "call/sendEnd", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
+		dispatch(callActions.endCallLocally());
 	};
 
 	const currentRoom = useMemo(
@@ -311,19 +331,7 @@ export function CallUi({
 		}
 	}, [remoteParticipantsCount]);
 
-	useEffect(() => {
-		if (call.status !== "in_call") return;
-		if (!hadRemoteParticipant) return;
-		if (remoteParticipantsCount > 0) return;
 
-		const timeout = window.setTimeout(() => {
-			dispatch(callActions.endCall());
-		}, 3500);
-
-		return () => {
-			window.clearTimeout(timeout);
-		};
-	}, [call.status, hadRemoteParticipant, remoteParticipantsCount, dispatch]);
 
 	const hasScreenShare = availableScreenTracks.length > 0;
 

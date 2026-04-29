@@ -109,7 +109,10 @@ export function ActiveCallOverlay() {
 				connect={true}
 				options={roomOptions}
 				className={styles["host-room"]}
-				onDisconnected={() => dispatch(callActions.endCall())}
+				onDisconnected={() => {
+					console.debug("[call] LiveKit disconnected locally");
+					dispatch(callActions.liveKitDisconnectedLocally());
+				}}
 			>
 				<CallAudioLayer />
 				<CallQualityController />

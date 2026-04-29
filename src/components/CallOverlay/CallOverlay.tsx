@@ -5,7 +5,7 @@ import cn from "classnames";
 import { Phone } from "lucide-react";
 import styles from "./CallOverlay.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
-import { callActions, getToken } from "../../store/slices/call.slice";
+import { callActions, getCallToken } from "../../store/slices/call.slice";
 import { soundPlayer } from "../../utils/soundPlayer";
 
 export function CallOverlay() {
@@ -31,21 +31,28 @@ export function CallOverlay() {
 	if (!isIncoming && !isOutgoing) return null;
 
 	const handleAccept = () => {
-		if (!call.chatRoomId || !call.callerUsername || !call.livekitRoomName) return;
+		if (!call.callId) return;
 
 		dispatch({
 			type: "call/sendAccept",
 			payload: {
-				chatRoomId: call.chatRoomId,
-				callerUsername: call.callerUsername,
+				callId: call.callId,
+				chatRoomId: call.chatRoomId ?? undefined,
 			},
 		});
 
 		navigate(`/dm?roomId=${call.chatRoomId}`);
-		dispatch(getToken(call.livekitRoomName));
+		dispatch(getCallToken(call.callId));
+		dispatch(callActions.markAcceptedHandled(call.callId));
 	};
 
 	const handleDecline = () => {
+		if (call.callId) {
+			dispatch({
+				type: "call/sendDecline",
+				payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined },
+			});
+		}
 		dispatch(callActions.endCall());
 	};
 

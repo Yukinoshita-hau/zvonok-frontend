@@ -20,6 +20,9 @@ export const WS_UPDATE_READ_MESSAGE_PATH = `${APP_CHAT_PREFIX}/read`;
 
 export const WS_SEND_INVITE_PATH = `${APP_CALL_PREFIX}/invite`;
 export const WS_SEND_ACCEPT_PATH = `${APP_CALL_PREFIX}/accept`;
+export const WS_SEND_DECLINE_PATH = `${APP_CALL_PREFIX}/decline`;
+export const WS_SEND_LEAVE_PATH = `${APP_CALL_PREFIX}/leave`;
+export const WS_SEND_END_PATH = `${APP_CALL_PREFIX}/end`;
 
 export const WS_SEND_FRIEND_REQUEST_PATH = `${APP_FRIEND_REQUESTS_PREFIX}/send`;
 export const WS_ACCEPT_FRIEND_REQUEST_PATH = `${APP_FRIEND_REQUESTS_PREFIX}/accept`;

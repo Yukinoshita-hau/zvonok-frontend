@@ -1,24 +1,29 @@
-import type { callType } from "./call.types";
+import type { CallEventType, CallRoomType } from "./call.types";
 
 export interface BaseCallEvent {
-	type: callType;
-	chatRoomId: number;
-	timestamp: string;
+	type: CallEventType;
+	eventId?: string;
+	callId?: number;
+	chatRoomId?: number;
+	roomId?: number;
+	roomType?: CallRoomType;
+	livekitRoomName?: string;
+	liveKitRoomName?: string;
+	callerUsername?: string;
+	hostUsername?: string;
+	participantUsername?: string;
+	callType?: "audio" | "video" | string;
+	occurredAt?: string;
+	timestamp?: string;
+	callStatus?: string;
+	participantStatus?: string;
+	fromUser?: string;
 }
 
 export interface CallInviteEvent extends BaseCallEvent {
-	callType: "audio" | "video";
-	fromUser: string;
-	liveKitRoomName: string;
-}
-export interface CallAcceptEvent extends BaseCallEvent {
-	toUsers: string;
-	liveKitRoomName: string;
+	type: "CALL_INVITE";
 }
 
-export interface CallDeclineEvent extends BaseCallEvent {
-	fromUser: string;
+export interface CallStartedEvent extends BaseCallEvent {
+	type: "CALL_STARTED";
 }
-
-export interface CallBusyEvent extends BaseCallEvent { }
-export interface CallEndEvent extends BaseCallEvent { }	
