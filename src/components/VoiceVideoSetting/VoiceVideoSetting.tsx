@@ -110,7 +110,6 @@ export function VoiceVideoSetting() {
 					channelCount: micCaptureOptions.channelCount ?? 1,
 					sampleRate: micCaptureOptions.sampleRate ?? 48000,
 					sampleSize: micCaptureOptions.sampleSize ?? 16,
-					latency: micCaptureOptions.latency,
 				};
 
 				const supportedConstraints = navigator.mediaDevices.getSupportedConstraints() as {
@@ -148,8 +147,9 @@ export function VoiceVideoSetting() {
 				audioContextRef.current = audioContext;
 
 				const analyser = audioContext.createAnalyser();
-				analyser.fftSize = 256;
+				analyser.fftSize = 2048;
 				const source = audioContext.createMediaStreamSource(stream);
+				console.log(stream.getAudioTracks()[0].getSettings())
 				source.connect(analyser);
 
 				const dataArray = new Uint8Array(analyser.frequencyBinCount);

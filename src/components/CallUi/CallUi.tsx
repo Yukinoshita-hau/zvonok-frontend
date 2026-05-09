@@ -331,8 +331,6 @@ export function CallUi({
 		}
 	}, [remoteParticipantsCount]);
 
-
-
 	const hasScreenShare = availableScreenTracks.length > 0;
 
 	const isSingleParticipantView =
