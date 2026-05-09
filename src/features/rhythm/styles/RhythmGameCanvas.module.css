@@ -1,0 +1,8 @@
+.canvas {
+  width: 100%;
+  min-height: 600px;
+  height: 70vh;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #141821;
+}

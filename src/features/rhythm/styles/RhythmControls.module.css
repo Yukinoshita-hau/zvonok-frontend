@@ -1,0 +1,30 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #1b2230;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.filePicker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.error {
+  color: #ff8b9f;
+}

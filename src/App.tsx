@@ -12,6 +12,7 @@ import { NotificationsPage } from './components/NotificationsPage/NotificationPa
 import { ServerLayout } from './pages/ServerLayout/ServerLayout'
 import { ChannelChat } from './components/ChannelChat/ChannelChat'
 import { MyServers } from './pages/MyServers/MyServers'
+import { RhythmGamePage } from './features/rhythm'
 
 export function App() {
 
@@ -78,6 +79,14 @@ export function App() {
 						}
 					]
 				},
+
+				{
+					path: "rhythm",
+					element: (
+						<RhythmGamePage/>
+					)
+				},
+
 				{
 					path: "my-servers",
 					element: (

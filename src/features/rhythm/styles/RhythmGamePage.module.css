@@ -1,0 +1,26 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  color: #e6ebf7;
+}
+
+.gameArea {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) 280px;
+  gap: 16px;
+}
+
+.errors {
+  background: #3a1d25;
+  border: 1px solid #7b2d3f;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+@media (max-width: 960px) {
+  .gameArea {
+    grid-template-columns: 1fr;
+  }
+}
