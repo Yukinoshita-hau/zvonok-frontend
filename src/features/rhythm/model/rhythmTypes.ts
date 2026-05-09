@@ -48,6 +48,11 @@ export interface JudgmentWindow {
 export interface RhythmSettings {
   approachTimeMs: number;
   inputOffsetMs: number;
+  noteSize: number;
+  effectIntensity: number;
+  backgroundDim: number;
+  showBarlines: boolean;
+  backgroundPreset: "nebula" | "grid" | "aurora";
   keyBindings: Record<string, RhythmLane>;
 }
 

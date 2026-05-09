@@ -1,26 +1,7 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  color: #e6ebf7;
-}
-
-.gameArea {
-  display: grid;
-  grid-template-columns: minmax(320px, 1fr) 280px;
-  gap: 16px;
-}
-
-.errors {
-  background: #3a1d25;
-  border: 1px solid #7b2d3f;
-  padding: 12px;
-  border-radius: 10px;
-}
-
-@media (max-width: 960px) {
-  .gameArea {
-    grid-template-columns: 1fr;
-  }
-}
+.page {display:flex;flex-direction:column;gap:16px;padding:20px;color:#ecf3ff;border-radius:16px;background:radial-gradient(circle at 20% 20%, rgba(116,92,255,.2), transparent 35%), radial-gradient(circle at 80% 10%, rgba(80,203,255,.17), transparent 30%), #090c14;}
+.page.nebula {}
+.page.grid {background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px), radial-gradient(circle at 20% 20%, rgba(116,92,255,.2), transparent 35%), #090c14;background-size:30px 30px,30px 30px,auto;}
+.page.aurora {background:radial-gradient(circle at 10% 10%, rgba(126,243,255,.18), transparent 30%),radial-gradient(circle at 90% 30%, rgba(255,105,208,.15), transparent 35%),radial-gradient(circle at 40% 80%, rgba(181,255,120,.1), transparent 32%),#090c14;}
+.gameArea {display:grid;grid-template-columns:minmax(320px,1fr) 300px;gap:16px;align-items:start;}
+.errors {background:#3a1d25;border:1px solid #7b2d3f;padding:12px;border-radius:10px;}
+@media (max-width:960px){.gameArea{grid-template-columns:1fr;}}

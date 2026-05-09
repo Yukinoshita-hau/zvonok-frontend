@@ -14,3 +14,5 @@
 - [ ] Multiplayer challenge mode.
 - [ ] Backend API integration.
 - [ ] Optional S3/audio upload pipeline (later stage).
+- [ ] Noteskin/theme pack loader and per-user skin profiles.
+- [ ] Expanded receptor and hit-FX presets.

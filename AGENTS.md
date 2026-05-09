@@ -1,9 +1,8 @@
 # AGENTS.md - Zvonok Frontend
 
 ## Project overview
-- React 19 + TypeScript + Vite frontend.
-- Main app routing is in `src/App.tsx` with auth bootstrap via `AuthInitializator` and protected app content via `RequireAuth`.
-- Rhythm game module is located in `src/features/rhythm`.
+- React + TypeScript + Vite frontend.
+- Rhythm game module: `src/features/rhythm`.
 
 ## Build/check commands
 - `npm run dev`
@@ -12,29 +11,19 @@
 - `npm run preview`
 
 ## Frontend conventions
-- Use TypeScript and React function components.
-- Use CSS Modules for component/page styles.
-- Keep feature logic separated from rendering.
-- Reuse existing app patterns and avoid global style regressions.
+- Keep existing routing/auth/layout/navigation intact (`src/App.tsx`, `RequireAuth`, `AppLayout`).
+- Use CSS Modules and typed TS modules.
 
 ## Rhythm module conventions
-- Rendering must use Canvas 2D.
-- Timing source must be `audio.currentTime` (converted to ms).
-- `requestAnimationFrame` is used for rendering and time-based MISS detection.
-- Note position is computed from current song time each frame (not incremental per-frame movement).
-- Scoring and judgment logic must remain pure functions in `src/features/rhythm/engine`.
-- Rhythm docs are in `docs/rhythm`.
-- Before large rhythm-module changes, read:
+- Gameplay rendering is Canvas 2D based.
+- Timing source is `audio.currentTime` (ms conversion).
+- `requestAnimationFrame` drives render and miss checks.
+- Note position is always recomputed from song time.
+- `engine/scoring` and `engine/judgment` remain pure.
+- Visual tokens live in `src/features/rhythm/theme/rhythmTheme.ts`.
+
+## Docs
+- Rhythm docs are under `docs/rhythm`.
+- Read before major rhythm changes:
   - `docs/rhythm/MSD.md`
   - `docs/rhythm/MAP_FORMAT.md`
-
-## Do not break
-- Do not break existing routing/auth/layout/navigation flows in `src/App.tsx` and related layouts.
-- Do not remove or bypass existing Redux/auth/bootstrap behavior.
-
-## Future extension points
-- Backend map API integration.
-- Leaderboard and score upload.
-- Beatmap editor.
-- Replay format and playback.
-- Multiplayer challenge via WebSocket/STOMP.

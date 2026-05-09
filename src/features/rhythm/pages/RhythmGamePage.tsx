@@ -25,10 +25,11 @@ export function RhythmGamePage() {
     resume,
     restart,
     updateSettings,
+    hitEffects,
   } = useRhythmGame(demoRhythmMap);
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles[settings.backgroundPreset]}`}>
       <h1>Rhythm Game</h1>
       <p>Basic 4K vertical rhythm MVP. Select an audio file and press Start.</p>
 
@@ -65,6 +66,7 @@ export function RhythmGamePage() {
           pressedLanes={pressedLanes}
           status={status}
           audioRef={audioRef}
+          hitEffects={hitEffects}
         />
         <RhythmHud scoreState={scoreState} />
       </div>

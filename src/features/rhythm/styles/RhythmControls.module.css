@@ -1,30 +1,8 @@
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  background: #1b2230;
-  padding: 12px;
-  border-radius: 10px;
-}
-
-.filePicker {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.buttons {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.error {
-  color: #ff8b9f;
-}
+.controls{display:flex;flex-wrap:wrap;gap:14px;background:rgba(17,22,37,.78);border:1px solid rgba(129,164,255,.25);padding:14px;border-radius:12px;backdrop-filter: blur(8px)}
+.filePicker{display:flex;flex-direction:column;gap:6px;font-weight:600}
+.filePicker input{color:#dce8ff}
+.buttons{display:flex;gap:8px;align-items:flex-end}
+.buttons button{background:linear-gradient(180deg,#2b3f6a,#182641);border:1px solid rgba(173,203,255,.35);color:#e9f2ff;border-radius:10px;padding:8px 14px;cursor:pointer}
+.buttons button:disabled{opacity:.5;cursor:not-allowed}
+.meta{display:flex;flex-direction:column;gap:4px;color:#c9d6f4;font-size:13px}
+.error{color:#ff8b9f}

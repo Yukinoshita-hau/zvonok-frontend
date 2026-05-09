@@ -83,3 +83,24 @@ Planned API surface (not implemented):
 
 ## Notes
 - Web Audio API can be added later for tighter scheduling/calibration if required.
+
+## Visual System
+- Dark arcade/neon style with strong lane readability.
+- Circular notes, receptor circles, hit flashes, and subdued guide lines.
+
+## Theme Tokens
+- Centralized in `src/features/rhythm/theme/rhythmTheme.ts`.
+- Includes lane colors, pressed overlays, panel colors, and judgment colors.
+
+## Stage Rendering Layers
+1. Background layer (gradient + dim overlay)
+2. Stage/lane layer (lane fills, separators, frame feel)
+3. Guides layer (barlines from BPM)
+4. Receptor + hit line layer
+5. Notes layer (circular gradient notes)
+6. FX layer (hit ring pulses)
+7. HUD/UI layer (React panels)
+
+## Planned Skin/Theming Support
+- Background preset switching (`nebula`, `grid`, `aurora`) already exposed.
+- Next step: configurable full noteskin packs (colors/shapes/effects) from JSON tokens.

@@ -3,11 +3,16 @@ import { MISS_WINDOW_MS, getJudgmentByDiff, isMissedByTime } from "../engine/jud
 import { applyJudgment, createInitialScoreState } from "../engine/scoring";
 import { getAudioTimeMs, getEffectiveNoteTimeMs } from "../engine/timing";
 import { validateRhythmMap } from "../engine/mapValidation";
-import type { GameStatus, RhythmLane, RhythmMap, RhythmSettings, RhythmScoreState, RuntimeNote } from "../model/rhythmTypes";
+import type { GameStatus, JudgmentName, RhythmLane, RhythmMap, RhythmSettings, RhythmScoreState, RuntimeNote } from "../model/rhythmTypes";
 
 const DEFAULT_SETTINGS: RhythmSettings = {
   approachTimeMs: 1800,
   inputOffsetMs: 0,
+  noteSize: 1,
+  effectIntensity: 1,
+  backgroundDim: 0.5,
+  showBarlines: true,
+  backgroundPreset: "nebula",
   keyBindings: {
     KeyD: 0,
     KeyF: 1,
@@ -39,6 +44,7 @@ export function useRhythmGame(map: RhythmMap) {
   const [pressedLanes, setPressedLanes] = useState<Record<RhythmLane, boolean>>({ 0: false, 1: false, 2: false, 3: false });
   const [audioUrl, setAudioUrl] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [hitEffects, setHitEffects] = useState<Array<{ lane: RhythmLane; atMs: number; judgment: JudgmentName }>>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -211,6 +217,7 @@ export function useRhythmGame(map: RhythmMap) {
       );
 
       const nextScore = applyJudgment(scoreRef.current, judgment, bestDiff);
+      setHitEffects((prev) => [...prev.slice(-18), { lane, atMs: performance.now(), judgment }]);
       notesRef.current = nextNotes;
       scoreRef.current = nextScore;
       setNotes(nextNotes);
@@ -241,7 +248,12 @@ export function useRhythmGame(map: RhythmMap) {
   }, [finishGame]);
 
   useEffect(() => {
+    const t = window.setInterval(() => {
+      setHitEffects((prev) => prev.filter((fx) => performance.now() - fx.atMs < 260));
+    }, 80);
+
     return () => {
+      window.clearInterval(t);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
     };
@@ -264,5 +276,6 @@ export function useRhythmGame(map: RhythmMap) {
     resume,
     restart,
     updateSettings,
+    hitEffects,
   };
 }

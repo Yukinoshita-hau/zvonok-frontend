@@ -1,11 +1,9 @@
-.hud {
-  background: #1b2230;
-  border-radius: 10px;
-  padding: 12px;
-  height: fit-content;
-}
-
-.hud ul {
-  margin: 8px 0 0;
-  padding-left: 18px;
-}
+.hud{background:rgba(15,19,33,.78);border:1px solid rgba(137,162,255,.26);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;backdrop-filter: blur(8px)}
+.score{font-size:34px;font-weight:800;letter-spacing:1px}
+.acc{color:#8edbff;font-weight:700}
+.comboWrap{background:rgba(255,255,255,.04);padding:10px;border-radius:10px}
+.comboWrap strong{display:block;font-size:30px}
+.judgment{font-size:24px;font-weight:800;text-align:center;min-height:30px;text-shadow:0 0 14px currentColor}
+.diff{text-align:center;color:#cfdaf5}
+.counts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.counts div{display:flex;justify-content:space-between;background:rgba(255,255,255,.03);padding:6px 8px;border-radius:8px}
