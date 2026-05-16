@@ -25,13 +25,6 @@ export function CallAudioLayer() {
 		onlySubscribed: false,
 	});
 
-	console.log("microphoneTracks")		
-	console.log(microphoneTracks)
-	console.log("screenTracks")		
-	console.log(screenTracks)
-	console.log("screenAudioTracks")		
-	console.log(screenAudioTracks)
-
 	const selectedScreenParticipantIdentity = useMemo(() => {
 		if (!selectedScreenTrackSid) return null;
 
