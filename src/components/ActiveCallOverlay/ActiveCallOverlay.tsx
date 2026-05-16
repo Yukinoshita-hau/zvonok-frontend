@@ -2,17 +2,18 @@ import { LiveKitRoom } from "@livekit/components-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { RoomOptions } from "livekit-client";
+import { BackupCodecPolicy, isBackupVideoCodec, type RoomOptions } from "livekit-client";
 import styles from "./ActiveCallOverlay.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
 import { CallUi } from "../CallUi/CallUi";
 import { callActions } from "../../store/slices/call.slice";
 import { CallAudioLayer } from "./CallAudioLayer";
-import { getQualityPreset, getVideoEncoding } from "../../utils/callQuality";
+import { getQualityPreset, getVideoEncoding, type ManualCallQuality, type ScreenShareManualQuality } from "../../utils/callQuality";
 import { CallQualityController } from "../CallUi/CallQualityController";
 import { CallHotkeys } from "./CallHotkeys";
 import { MiniCallDock } from "./MiniCallDock";
 import { MicrophoneSettingsSync } from "../CallUi/MicrophoneSettingsSync";
+import { getActiveCall } from "../../store/slices/activeCall.slice";
 
 export function ActiveCallOverlay() {
 	const [callHeight, setCallHeight] = useState(52);
@@ -20,12 +21,19 @@ export function ActiveCallOverlay() {
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
 	const call = useSelector((s: RootState) => s.call);
+	const device = useSelector((s: RootState) => s.device);
 
 	const isCallActive = call.status === "connecting" || call.status === "in_call";
 	const isExpanded = call.presentationMode === "expanded";
 	const isMinimized = call.presentationMode === "minimized";
 	const isHidden = call.presentationMode === "hidden";
 	const isCinemaMode = call.isTheaterMode;
+
+	useEffect(() => {
+		if (call.chatRoomId !== null) {
+			dispatch(getActiveCall(call.chatRoomId))
+		}
+	}, [dispatch, call.chatRoomId])
 
 	useEffect(() => {
 		if (!isExpanded) return;
@@ -39,8 +47,8 @@ export function ActiveCallOverlay() {
 	}, [call.isCallFocusMode, isCinemaMode, isExpanded]);
 
 	const roomOptions: RoomOptions = useMemo(() => {
-		const cameraPreset = getQualityPreset("camera", "medium");
-		const screenSharePreset = getQualityPreset("screenShare", "medium");
+		const cameraPreset = getQualityPreset("camera", device.cameraQuality as ManualCallQuality);
+		const screenSharePreset = getQualityPreset("screenShare", device.screenShareQuality as ScreenShareManualQuality);
 
 		return {
 			videoCaptureDefaults: {
@@ -63,8 +71,13 @@ export function ActiveCallOverlay() {
 			adaptiveStream: true,
 			dynacast: true,
 			publishDefaults: {
+				videoCodec: "av1",
+				scalabilityMode: "L3T3_KEY",
+				backupCodec: { codec: "vp8" },
+				backupCodecPolicy: BackupCodecPolicy.SIMULCAST,
 				dtx: true,
 				red: true,
+				simulcast: true,
 				videoEncoding: getVideoEncoding(cameraPreset),
 				screenShareEncoding: getVideoEncoding(screenSharePreset),
 			},
@@ -111,12 +124,10 @@ export function ActiveCallOverlay() {
 				className={styles["host-room"]}
 				onDisconnected={() => {
 					console.debug("[call] LiveKit disconnected locally");
-					dispatch(callActions.liveKitDisconnectedLocally());
+					// dispatch(callActions.liveKitDisconnectedLocally());
 				}}
 			>
 				<CallAudioLayer />
-				<CallQualityController />
-				<CallHotkeys />
 				<MicrophoneSettingsSync />
 
 				{isExpanded && (

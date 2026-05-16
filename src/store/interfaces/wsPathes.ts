@@ -5,6 +5,7 @@ const APP_FRIEND_REQUESTS_PREFIX = "/app/friend";
 
 export const WS_MESSAGES_PATH = `${USER_QUEUE_PREFIX}/messages`;
 export const WS_CALL_PATH = `${USER_QUEUE_PREFIX}/call`;
+export const WS_CALL_RECORDING_PATH = `${USER_QUEUE_PREFIX}/call-recording`;
 export const WS_FRIEND_REQUESTS_PATH = `${USER_QUEUE_PREFIX}/friend-requests`;
 export const WS_ERROR_PATH = `${USER_QUEUE_PREFIX}/errors`;
 export const WS_MESSAGE_READ_PATH = `${USER_QUEUE_PREFIX}/message-read`;

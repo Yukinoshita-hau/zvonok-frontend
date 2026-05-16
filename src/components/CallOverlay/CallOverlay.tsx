@@ -5,8 +5,9 @@ import cn from "classnames";
 import { Phone } from "lucide-react";
 import styles from "./CallOverlay.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
-import { callActions, getCallToken } from "../../store/slices/call.slice";
+import { callActions } from "../../store/slices/call.slice";
 import { soundPlayer } from "../../utils/soundPlayer";
+import { getActiveCall } from "../../store/slices/activeCall.slice";
 
 export function CallOverlay() {
 	const call = useSelector((s: RootState) => s.call);
@@ -25,6 +26,7 @@ export function CallOverlay() {
 		};
 	}, [call.status]);
 
+
 	const isIncoming = call.status === "incoming_ringing";
 	const isOutgoing = call.status === "outgoing_ringing";
 
@@ -42,8 +44,6 @@ export function CallOverlay() {
 		});
 
 		navigate(`/dm?roomId=${call.chatRoomId}`);
-		dispatch(getCallToken(call.callId));
-		dispatch(callActions.markAcceptedHandled(call.callId));
 	};
 
 	const handleDecline = () => {

@@ -340,7 +340,7 @@ export function getQualityPreset(
 export function getQualityPreset(
 	kind: CallMediaKind,
 	quality: ManualCallQuality | ScreenShareManualQuality
-) {
+){
 	return kind === "camera"
 		? CAMERA_QUALITY_PRESETS[quality as ManualCallQuality]
 		: SCREEN_SHARE_QUALITY_PRESETS[quality as ScreenShareManualQuality];

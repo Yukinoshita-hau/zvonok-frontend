@@ -20,9 +20,17 @@ export function CallAudioLayer() {
 	const screenTracks = useTracks([Track.Source.ScreenShare], {
 		onlySubscribed: false,
 	});
+
 	const screenAudioTracks = useTracks([Track.Source.ScreenShareAudio], {
 		onlySubscribed: false,
 	});
+
+	console.log("microphoneTracks")		
+	console.log(microphoneTracks)
+	console.log("screenTracks")		
+	console.log(screenTracks)
+	console.log("screenAudioTracks")		
+	console.log(screenAudioTracks)
 
 	const selectedScreenParticipantIdentity = useMemo(() => {
 		if (!selectedScreenTrackSid) return null;

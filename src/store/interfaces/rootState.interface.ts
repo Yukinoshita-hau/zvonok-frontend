@@ -1,4 +1,4 @@
-import type callSlice from "../slices/call.clice";
+import type callSlice from "../slices/call.slice";
 import type friendSlice from "../slices/friend.slice";
 import type messageSlice from "../slices/message.slice";
 import type roomSlice from "../slices/room.slice";

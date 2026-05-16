@@ -3,6 +3,7 @@ import { callApi } from "../../api/callApi";
 import type { CallTokenDto } from "../../api/interfaces/CallTokenDto";
 import type { BaseCallEvent } from "../interfaces/callEvents.interface";
 import { type CallRoomType, type callStatus } from "../interfaces/call.types";
+import type { RestoreCallSessionResponse } from "../../api/interfaces/RestoreCallSessionResponse";
 
 export type CallPresentationMode = "expanded" | "minimized" | "hidden";
 
@@ -67,6 +68,18 @@ export const getCallToken = createAsyncThunk("call/getCallToken", async (callId:
 		return thunkAPI.rejectWithValue(e?.message ?? "Failed to get livekit token");
 	}
 });
+
+export const restoreCallSession = createAsyncThunk(
+	"call/restoreCallSession",
+	async (_, thunkAPI) => {
+		try {
+			const { data } = await callApi.restoreCallSession();
+			return data;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue(e?.message ?? "Failed to restore call");
+		}
+	}
+);
 
 export const callSlice = createSlice({
 	name: "call",
@@ -188,6 +201,38 @@ export const callSlice = createSlice({
 			.addCase(getCallToken.rejected, (state, action) => {
 				state.status = "error";
 				state.error = typeof action.payload === "string" ? action.payload : "Failed to get livekit token";
+			})
+
+
+			.addCase(restoreCallSession.pending, (state) => {
+				if (state.status === "idle" || state.status === "ended") {
+					state.status = "connecting";
+				}
+			})
+			.addCase(restoreCallSession.fulfilled, (state, action: PayloadAction<RestoreCallSessionResponse>) => {
+				const data = action.payload;
+
+				if (!data.restorable || !data.serverUrl || !data.participantToken || !data.callId) {
+					const ui = keepUi(state);
+					Object.assign(state, initialState, ui);
+					return;
+				}
+
+				state.status = "in_call";
+				state.direction = null;
+				state.callId = data.callId;
+				state.chatRoomId = data.chatRoomId ?? data.roomId ?? null;
+				state.roomType = data.roomType;
+				state.livekitRoomName = data.liveKitRoomName;
+				state.serverUrl = data.serverUrl;
+				state.participantToken = data.participantToken;
+				state.tokenExpiresAt = data.expiresAt;
+				state.error = null;
+				state.presentationMode = "expanded";
+			})
+			.addCase(restoreCallSession.rejected, (state, action) => {
+				state.status = "idle";
+				state.error = typeof action.payload === "string" ? action.payload: "Failed to restore call";
 			});
 	},
 });

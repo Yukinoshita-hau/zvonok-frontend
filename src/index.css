@@ -25,6 +25,7 @@
 
 	--border: rgba(30, 45, 56, 0.6);
 	--online: #00c896;
+	--offline: #c80032;
 	--danger: rgba(207, 44, 56, 1);
 	--danger-hover: rgba(148, 30, 39, 1);
 }

@@ -23,6 +23,8 @@ export function DmChat() {
 	const usersById = useSelector((s: RootState) => s.users.byId);
 	const { replyTarget } = useSelector((s: RootState) => s.message);
 	const wsStatus = useSelector((s: RootState) => s.websocket.status);
+	const activeCall = useSelector((s: RootState) => s.activeCall.activeCall)
+	const callStatus = useSelector((s: RootState) => s.call.status);
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
@@ -124,6 +126,8 @@ export function DmChat() {
 
 	const handleStartCall = () => {
 		if (!currentRoom) return;
+		if (callStatus !== "ended" && callStatus !== "idle" && callStatus !== "error") return;
+		if (activeCall !== null) return;
 
 		if (wsStatus !== "connected") {
 			console.warn("Call start blocked: websocket is not connected", { wsStatus });

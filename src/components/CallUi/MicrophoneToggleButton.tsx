@@ -1,6 +1,6 @@
 import { useTrackToggle } from "@livekit/components-react";
 import { Mic, MicOff } from "lucide-react";
-import { Track } from "livekit-client";
+import { AudioPresets, Track } from "livekit-client";
 import { useMicrophoneCaptureOptions } from "./useMicrophoneCaptureOptions";
 
 interface MicrophoneToggleButtonProps {
@@ -24,6 +24,11 @@ export function MicrophoneToggleButton({
 		className,
 		captureOptions,
 		type: "button",
+		publishOptions: {
+			audioPreset: AudioPresets.musicHighQualityStereo,
+			dtx: true,
+			red: true,	
+		}
 	});
 
 	const title = enabled

@@ -9,6 +9,7 @@ import { CallOverlay } from "../../components/CallOverlay/CallOverlay";
 import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCallOverlay";
 import { websocketActions } from "../../store/slices/websocket.slice";
 import { ToastContainer } from "../../components/ToastContainer/ToastContainer";
+import { CallRestoreBootstrap } from "../../components/CallRestoreBootstrap/CallRestoreBootstrap";
 
 export function AppLayout() {
 	const dispatch = useDispatch<AppDispatch>();
@@ -31,6 +32,7 @@ export function AppLayout() {
 		<NavigateBar servers={servers ? servers : []} />
 		<div className={styles["content"]}>
 			<Outlet />
+			<CallRestoreBootstrap />
 			<CallOverlay />
 			<ActiveCallOverlay />
 			<ToastContainer />

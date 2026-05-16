@@ -14,6 +14,7 @@ import deviceSlice from "./slices/device.slice";
 import uiSlice from "./slices/ui.slice";
 import channelMessageSlice from "./slices/channelMessage.slice";
 import usersSlice from "./slices/users.slice";
+import activeCallSlice from "./slices/activeCall.slice";
 
 
 const appReducer = combineReducers({
@@ -26,6 +27,7 @@ const appReducer = combineReducers({
 	friend: friendSlice,
 	websocket: websocketSlice,
 	call: callSlice,
+	activeCall: activeCallSlice,
 	notification: notificationSlice,
 	toast: toastSlice,
 	device: deviceSlice,

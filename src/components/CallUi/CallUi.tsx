@@ -446,7 +446,7 @@ export function CallUi({
 				<div className={styles["screen-layout"]}>
 					<div className={styles["main-screen"]}>
 						{mainScreenTrack.participant.isLocal ||
-						mainScreenTrack.publication?.isSubscribed ? (
+							mainScreenTrack.publication?.isSubscribed ? (
 							<VideoTrack trackRef={mainScreenTrack} />
 						) : (
 							<div className={styles["screen-loading"]}>
@@ -660,97 +660,97 @@ export function CallUi({
 
 			{!isCinemaMode && (
 				<div className={styles["controls-bar"]}>
-				<MicrophoneToggleButton
-					className={styles["control-button"]}
-					enabledLabel="Mic"
-					disabledLabel="Muted"
-					showIcon
-				/>
+					<MicrophoneToggleButton
+						className={styles["control-button"]}
+						enabledLabel="Mic"
+						disabledLabel="Muted"
+						showIcon
+					/>
 
-				<TrackToggle
-					source={Track.Source.Camera}
-					className={styles["control-button"]}
-					captureOptions={cameraCaptureOptions}
-					publishOptions={cameraPublishOptions}
-				/>
+					<TrackToggle
+						source={Track.Source.Camera}
+						className={styles["control-button"]}
+						captureOptions={cameraCaptureOptions}
+						publishOptions={cameraPublishOptions}
+					/>
 
-				<TrackToggle
-					source={Track.Source.ScreenShare}
-					className={styles["control-button"]}
-					captureOptions={screenShareCaptureOptions}
-					publishOptions={screenSharePublishOptions}
-					title="Share screen. Audio is included only when your browser and selected source support it. 1080p120 is experimental and best effort."
-				/>
+					<TrackToggle
+						source={Track.Source.ScreenShare}
+						className={styles["control-button"]}
+						captureOptions={screenShareCaptureOptions}
+						publishOptions={screenSharePublishOptions}
+						title="Share screen. Audio is included only when your browser and selected source support it. 1080p120 is experimental and best effort."
+					/>
 
-				{hasChat && (
+					{hasChat && (
+						<button
+							type="button"
+							className={styles["control-button"]}
+							onClick={onOpenChat}
+							title="Open call chat"
+						>
+							Chat
+						</button>
+					)}
+
 					<button
 						type="button"
 						className={styles["control-button"]}
-						onClick={onOpenChat}
-						title="Open call chat"
+						onClick={() => setIsAudioPanelOpen((prev) => !prev)}
+						title="Per-user audio volume controls"
 					>
-						Chat
+						{isAudioPanelOpen ? "Close Mix" : "Audio Mix"}
 					</button>
-				)}
 
-				<button
-					type="button"
-					className={styles["control-button"]}
-					onClick={() => setIsAudioPanelOpen((prev) => !prev)}
-					title="Per-user audio volume controls"
-				>
-					{isAudioPanelOpen ? "Close Mix" : "Audio Mix"}
-				</button>
+					<button
+						type="button"
+						className={styles["control-button"]}
+						onClick={onToggleFocus}
+						title={isFocusMode ? "Exit call focus mode" : "Focus call"}
+					>
+						{isFocusMode ? "Unfocus" : "Focus"}
+					</button>
 
-				<button
-					type="button"
-					className={styles["control-button"]}
-					onClick={onToggleFocus}
-					title={isFocusMode ? "Exit call focus mode" : "Focus call"}
-				>
-					{isFocusMode ? "Unfocus" : "Focus"}
-				</button>
+					<button
+						type="button"
+						className={styles["control-button"]}
+						onClick={() => {
+							if (!call.selectedScreenTrackSid) return;
+							onToggleCinema();
+						}}
+						title={
+							call.selectedScreenTrackSid
+								? isCinemaMode
+									? "Exit cinema mode"
+									: "Open cinema mode"
+								: "Select a screen share first"
+						}
+						disabled={!call.selectedScreenTrackSid}
+					>
+						{isCinemaMode ? "Exit Cinema" : "Cinema"}
+					</button>
 
-				<button
-					type="button"
-					className={styles["control-button"]}
-					onClick={() => {
-						if (!call.selectedScreenTrackSid) return;
-						onToggleCinema();
-					}}
-					title={
-						call.selectedScreenTrackSid
-							? isCinemaMode
-								? "Exit cinema mode"
-								: "Open cinema mode"
-							: "Select a screen share first"
-					}
-					disabled={!call.selectedScreenTrackSid}
-				>
-					{isCinemaMode ? "Exit Cinema" : "Cinema"}
-				</button>
+					<button
+						type="button"
+						className={styles["control-button"]}
+						onClick={onMinimize}
+						title="Minimize call"
+					>
+						Mini
+					</button>
 
-				<button
-					type="button"
-					className={styles["control-button"]}
-					onClick={onMinimize}
-					title="Minimize call"
-				>
-					Mini
-				</button>
+					<button
+						type="button"
+						className={styles["control-button"]}
+						onClick={onHide}
+						title="Hide call"
+					>
+						Hide
+					</button>
 
-				<button
-					type="button"
-					className={styles["control-button"]}
-					onClick={onHide}
-					title="Hide call"
-				>
-					Hide
-				</button>
-
-				<button className={styles["leave-button"]} onClick={onLeave}>
-					<img src="/leave-call-icon.svg" alt="Leave call" />
-				</button>
+					<button className={styles["leave-button"]} onClick={onLeave}>
+						<img src="/leave-call-icon.svg" alt="Leave call" />
+					</button>
 				</div>
 			)}
 		</div>
