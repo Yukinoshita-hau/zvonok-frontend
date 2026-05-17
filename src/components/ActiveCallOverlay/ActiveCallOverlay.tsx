@@ -116,8 +116,6 @@ export function ActiveCallOverlay() {
 					// dispatch(callActions.liveKitDisconnectedLocally());
 				}}
 			>
-	
-				console.log(import.meta.env.VITE_LIVEKIT_DEBUG)
 				{import.meta.env.VITE_LIVEKIT_DEBUG === "true" && <CodecDebugLayer />}
 				<CallAudioLayer />
 				<MicrophoneSettingsSync />
