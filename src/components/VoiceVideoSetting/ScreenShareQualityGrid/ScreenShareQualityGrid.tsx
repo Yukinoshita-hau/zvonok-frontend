@@ -7,7 +7,7 @@ import type { QualityGroupSection, ScreenShareQualityGridProps } from "./ScreenS
 import styles from "./ScreenShareQualityGrid.module.css";
 
 const ORDER: QualityGroupSection[] = [
-	{ group: "base", label: SCREEN_SHARE_PRESET_GROUPS.base.label, description: SCREEN_SHARE_PRESET_GROUPS.base.description, items: ["low", "medium", "high"] },
+	{ group: "base", label: SCREEN_SHARE_PRESET_GROUPS.base.label, description: SCREEN_SHARE_PRESET_GROUPS.base.description, items: ["low", "medium", "mediumPlus", "high", "highPlus"] },
 	{ group: "gaming", label: SCREEN_SHARE_PRESET_GROUPS.gaming.label, description: SCREEN_SHARE_PRESET_GROUPS.gaming.description, items: ["game60", "game120", "g1080p144", "g1080p180", "g1080p200", "g1080p220", "g1080p300"] },
 	{ group: "crystal", label: SCREEN_SHARE_PRESET_GROUPS.crystal.label, description: SCREEN_SHARE_PRESET_GROUPS.crystal.description, items: ["c1440p30", "c4k30", "c4k60", "c4k120"] },
 	{ group: "godlike", label: SCREEN_SHARE_PRESET_GROUPS.godlike.label, description: SCREEN_SHARE_PRESET_GROUPS.godlike.description, items: ["g8k30", "g8k60"] },
@@ -28,7 +28,9 @@ export function ScreenShareQualityGrid({
 					<option value="auto">Auto</option>
 					<option value="low">Low</option>
 					<option value="medium">Medium</option>
+					<option value="mediumPlus">Medium+</option>
 					<option value="high">High</option>
+					<option value="highPlus">High+</option>
 				</select>
 			</label>
 

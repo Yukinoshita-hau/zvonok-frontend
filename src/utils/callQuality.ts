@@ -7,10 +7,11 @@ import type {
 
 export type ManualCallQuality = "low" | "medium" | "high";
 export type CallQualitySetting = "auto" | ManualCallQuality;
+export type BaseScreenShareQuality = "low" | "medium" | "mediumPlus" | "high" | "highPlus";
 export type ScreenSharePresetGroup = "base" | "gaming" | "crystal" | "godlike";
 
 export type ScreenShareManualQuality =
-	| ManualCallQuality
+	| BaseScreenShareQuality
 	| "game60"
 	| "game120"
 	| "g1080p144"
@@ -119,6 +120,19 @@ export const SCREEN_SHARE_QUALITY_PRESETS: Record<ScreenShareManualQuality, Scre
 		contentHint: "detail",
 		bandwidthMbps: 3,
 	},
+	mediumPlus: {
+		value: "mediumPlus",
+		group: "base",
+		label: "Medium+",
+		width: 1280,
+		height: 720,
+		frameRate: 30,
+		maxBitrate: 2_500_000,
+		description: "720p30, smoother screen sharing on balanced upload",
+		contentHint: "detail",
+		bandwidthHint: "Needs stable upload around 2.5+ Mbps",
+		bandwidthMbps: 2.5,
+	},
 	high: {
 		value: "high",
 		group: "base",
@@ -129,6 +143,19 @@ export const SCREEN_SHARE_QUALITY_PRESETS: Record<ScreenShareManualQuality, Scre
 		maxBitrate: 5_000_000,
 		description: "1080p, smoother screen motion",
 		contentHint: "detail",
+		bandwidthMbps: 5,
+	},
+	highPlus: {
+		value: "highPlus",
+		group: "base",
+		label: "High+",
+		width: 1280,
+		height: 720,
+		frameRate: 60,
+		maxBitrate: 5_000_000,
+		description: "720p60, smooth motion-focused screen sharing",
+		contentHint: "motion",
+		bandwidthHint: "Needs stable upload around 5+ Mbps",
 		bandwidthMbps: 5,
 	},
 	game60: {
@@ -340,7 +367,7 @@ export function getQualityPreset(
 export function getQualityPreset(
 	kind: CallMediaKind,
 	quality: ManualCallQuality | ScreenShareManualQuality
-){
+) {
 	return kind === "camera"
 		? CAMERA_QUALITY_PRESETS[quality as ManualCallQuality]
 		: SCREEN_SHARE_QUALITY_PRESETS[quality as ScreenShareManualQuality];
