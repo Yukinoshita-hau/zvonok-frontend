@@ -14,6 +14,7 @@ import { CallHotkeys } from "./CallHotkeys";
 import { MiniCallDock } from "./MiniCallDock";
 import { MicrophoneSettingsSync } from "../CallUi/MicrophoneSettingsSync";
 import { getActiveCall } from "../../store/slices/activeCall.slice";
+import { CodecDebugLayer } from "../CodecDebugLayer/CodecDebugLayer";
 
 export function ActiveCallOverlay() {
 	const [callHeight, setCallHeight] = useState(52);
@@ -47,18 +48,7 @@ export function ActiveCallOverlay() {
 	}, [call.isCallFocusMode, isCinemaMode, isExpanded]);
 
 	const roomOptions: RoomOptions = useMemo(() => {
-		const cameraPreset = getQualityPreset("camera", device.cameraQuality as ManualCallQuality);
-		const screenSharePreset = getQualityPreset("screenShare", device.screenShareQuality as ScreenShareManualQuality);
-
 		return {
-			videoCaptureDefaults: {
-				facingMode: "user",
-				resolution: {
-					width: cameraPreset.width,
-					height: cameraPreset.height,
-					frameRate: cameraPreset.frameRate,
-				},
-			},
 			audioCaptureDefaults: {
 				autoGainControl: true,
 				echoCancellation: true,
@@ -73,13 +63,11 @@ export function ActiveCallOverlay() {
 			publishDefaults: {
 				videoCodec: "av1",
 				scalabilityMode: "L3T3_KEY",
-				backupCodec: { codec: "vp8" },
-				backupCodecPolicy: BackupCodecPolicy.SIMULCAST,
+				backupCodec: { codec: "vp8", },
+				backupCodecPolicy: BackupCodecPolicy.PREFER_REGRESSION,
 				dtx: true,
 				red: true,
 				simulcast: true,
-				videoEncoding: getVideoEncoding(cameraPreset),
-				screenShareEncoding: getVideoEncoding(screenSharePreset),
 			},
 		};
 	}, []);
@@ -127,6 +115,7 @@ export function ActiveCallOverlay() {
 					// dispatch(callActions.liveKitDisconnectedLocally());
 				}}
 			>
+				<CodecDebugLayer />
 				<CallAudioLayer />
 				<MicrophoneSettingsSync />
 
@@ -144,10 +133,10 @@ export function ActiveCallOverlay() {
 								onMouseDown={handleMouseDown}
 							/>
 						)}
-							<div
-								className={styles["room-container"]}
-								style={{ height: isCinemaMode ? "110%" : `${callHeight}vh` }}
-							>
+						<div
+							className={styles["room-container"]}
+							style={{ height: isCinemaMode ? "110%" : `${callHeight}vh` }}
+						>
 							<CallUi
 								hasChat={Boolean(call.chatRoomId)}
 								isFocusMode={call.isCallFocusMode}
@@ -156,7 +145,7 @@ export function ActiveCallOverlay() {
 								onOpenChat={handleOpenChat}
 								onMinimize={() => dispatch(callActions.setPresentationMode("minimized"))}
 								onToggleFocus={() => dispatch(callActions.setCallFocusMode(!call.isCallFocusMode))}
-									onToggleCinema={() => dispatch(callActions.setTheaterMode(!call.isTheaterMode))}
+								onToggleCinema={() => dispatch(callActions.setTheaterMode(!call.isTheaterMode))}
 							/>
 						</div>
 
