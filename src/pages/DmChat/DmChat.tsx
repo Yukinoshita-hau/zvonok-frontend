@@ -127,7 +127,6 @@ export function DmChat() {
 	const handleStartCall = () => {
 		if (!currentRoom) return;
 		if (callStatus !== "ended" && callStatus !== "idle" && callStatus !== "error") return;
-		if (activeCall !== null) return;
 
 		if (wsStatus !== "connected") {
 			console.warn("Call start blocked: websocket is not connected", { wsStatus });
