@@ -2,7 +2,6 @@ import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "../../store/store"
 import { useEffect } from "react";
 import { restoreCallSession } from "../../store/slices/call.slice";
-import { getActiveCall } from "../../store/slices/activeCall.slice";
 
 
 export function CallRestoreBootstrap() {

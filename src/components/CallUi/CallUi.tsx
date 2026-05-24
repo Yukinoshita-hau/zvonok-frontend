@@ -705,6 +705,21 @@ export function CallUi({
 					<button
 						type="button"
 						className={styles["control-button"]}
+						onClick={() =>
+							dispatch(deviceActions.setRnnoise(!device.isRnnoiseEnabled))
+						}
+						title={
+							device.isRnnoiseEnabled
+								? "Disable RNNoise noise suppression"
+								: "Enable RNNoise noise suppression"
+						}
+					>
+						{device.isRnnoiseEnabled ? "RNNoise On" : "RNNoise Off"}
+					</button>
+
+					<button
+						type="button"
+						className={styles["control-button"]}
 						onClick={onToggleFocus}
 						title={isFocusMode ? "Exit call focus mode" : "Focus call"}
 					>

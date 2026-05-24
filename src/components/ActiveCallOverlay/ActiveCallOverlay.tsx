@@ -15,6 +15,7 @@ import { MiniCallDock } from "./MiniCallDock";
 import { MicrophoneSettingsSync } from "../CallUi/MicrophoneSettingsSync";
 import { getActiveCall } from "../../store/slices/activeCall.slice";
 import { CodecDebugLayer } from "../CodecDebugLayer/CodecDebugLayer";
+import { MicrophoneProcessorSync } from "../CallUi/MicrophoneProcessorSync";
 
 export function ActiveCallOverlay() {
 	const [callHeight, setCallHeight] = useState(52);
@@ -119,6 +120,7 @@ export function ActiveCallOverlay() {
 				{import.meta.env.VITE_LIVEKIT_DEBUG === "true" && <CodecDebugLayer />}
 				<CallAudioLayer />
 				<MicrophoneSettingsSync />
+				<MicrophoneProcessorSync />
 
 				{isExpanded && (
 					<div

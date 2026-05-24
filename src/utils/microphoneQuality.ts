@@ -76,10 +76,12 @@ export function getMicrophoneCaptureOptions(
 		isAutoGainControlEnabled: boolean;
 		isEchoCancellationEnabled: boolean;
 		isNoiseSuppressionEnabled: boolean;
+		isRnnoiseEnabled: boolean;
 	}
 ): AudioCaptureOptions {
 	const preset = MICROPHONE_QUALITY_PRESETS[params.micQualitySetting];
 
+	const shouldUseRnnoise = params.isRnnoiseEnabled;
 	return {
 		deviceId:
 			params.selectedMicrophoneId !== "default"
@@ -87,10 +89,10 @@ export function getMicrophoneCaptureOptions(
 				: undefined,
 		autoGainControl: params.isAutoGainControlEnabled && preset.autoGainControl,
 		echoCancellation: params.isEchoCancellationEnabled && preset.echoCancellation,
-		noiseSuppression: params.isNoiseSuppressionEnabled && preset.noiseSuppression,
-		voiceIsolation: params.isNoiseSuppressionEnabled && (preset.voiceIsolation ?? false),
-		channelCount: preset.channelCount,
-		sampleRate: preset.sampleRate,
+		noiseSuppression: shouldUseRnnoise ? false: params.isNoiseSuppressionEnabled && preset.noiseSuppression,
+		voiceIsolation: shouldUseRnnoise ? false: params.isNoiseSuppressionEnabled && (preset.voiceIsolation ?? false),
+		channelCount: shouldUseRnnoise ? 1: preset.channelCount,
+		sampleRate:  shouldUseRnnoise ? 48000: preset.sampleRate,
 		sampleSize: 16,
 		latency: preset.latency,
 	};

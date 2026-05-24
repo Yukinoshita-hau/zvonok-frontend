@@ -1,6 +1,6 @@
-import { useTrackToggle } from "@livekit/components-react";
+import {  useTrackToggle } from "@livekit/components-react";
 import { Mic, MicOff } from "lucide-react";
-import { AudioPresets, Track } from "livekit-client";
+import { AudioPresets, LocalAudioTrack, Track } from "livekit-client";
 import { useMicrophoneCaptureOptions } from "./useMicrophoneCaptureOptions";
 
 interface MicrophoneToggleButtonProps {
@@ -30,7 +30,6 @@ export function MicrophoneToggleButton({
 			red: true,	
 		}
 	});
-
 	const title = enabled
 		? `${titlePrefix}: on. Ctrl+Alt+M to mute.`
 		: `${titlePrefix}: muted. Ctrl+Alt+M to unmute.`;

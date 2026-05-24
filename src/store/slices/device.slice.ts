@@ -43,6 +43,7 @@ export interface DeviceState {
 	isNoiseSuppressionEnabled: boolean;
 	isEchoCancellationEnabled: boolean;
 	isAutoGainControlEnabled: boolean;
+	isRnnoiseEnabled: boolean;
 	voiceActivityThreshold: number;
 	isAutoInputSensitivity: boolean;
 	participantVolumes: ParticipantVolumePreference[];
@@ -74,6 +75,7 @@ function saveStoredPreferences(state: DeviceState) {
 				cameraQuality: state.cameraQuality,
 				screenShareQuality: state.screenShareQuality,
 				isNoiseSuppressionEnabled: state.isNoiseSuppressionEnabled,
+				isRnnoiseEnabled: state.isRnnoiseEnabled,
 				isEchoCancellationEnabled: state.isEchoCancellationEnabled,
 				isAutoGainControlEnabled: state.isAutoGainControlEnabled,
 				voiceActivityThreshold: state.voiceActivityThreshold,
@@ -95,19 +97,20 @@ const initialState: DeviceState = {
 	cameraQuality: storedPrefs?.cameraQuality ?? "high",
 	screenShareQuality: storedPrefs?.screenShareQuality ?? "medium",
 	isNoiseSuppressionEnabled: storedPrefs?.isNoiseSuppressionEnabled ?? true,
+	isRnnoiseEnabled: storedPrefs?.isRnnoiseEnabled ?? false,
 	isEchoCancellationEnabled: storedPrefs?.isEchoCancellationEnabled ?? true,
 	isAutoGainControlEnabled: storedPrefs?.isAutoGainControlEnabled ?? true,
 	voiceActivityThreshold: storedPrefs?.voiceActivityThreshold ?? 35,
 	isAutoInputSensitivity: storedPrefs?.isAutoInputSensitivity ?? true,
 	participantVolumes: storedPrefs?.participantVolumes ?? [],
-		screenShareRuntime: {
-			requestedFps: null,
-			actualFps: null,
-			requestedResolution: null,
-			actualResolution: null,
-			activePreset: null,
-			fallbackReason: null,
-			updatedAt: null,
+	screenShareRuntime: {
+		requestedFps: null,
+		actualFps: null,
+		requestedResolution: null,
+		actualResolution: null,
+		activePreset: null,
+		fallbackReason: null,
+		updatedAt: null,
 	},
 	connectionTestResult: {
 		status: "idle",
@@ -145,6 +148,10 @@ export const deviceSlice = createSlice({
 		},
 		setNoiseSuppression: (state, action: PayloadAction<boolean>) => {
 			state.isNoiseSuppressionEnabled = action.payload;
+			saveStoredPreferences(state);
+		},
+		setRnnoise: (state, action: PayloadAction<boolean>) => {
+			state.isRnnoiseEnabled = action.payload;
 			saveStoredPreferences(state);
 		},
 		setEchoCancellation: (state, action: PayloadAction<boolean>) => {
@@ -194,14 +201,14 @@ export const deviceSlice = createSlice({
 		},
 		setScreenShareRuntimeInfo: (
 			state,
-				action: PayloadAction<{
-					requestedFps: number | null;
-					actualFps: number | null;
-					requestedResolution: string | null;
-					actualResolution: string | null;
-					activePreset: string | null;
-					fallbackReason: string | null;
-				}>
+			action: PayloadAction<{
+				requestedFps: number | null;
+				actualFps: number | null;
+				requestedResolution: string | null;
+				actualResolution: string | null;
+				activePreset: string | null;
+				fallbackReason: string | null;
+			}>
 		) => {
 			state.screenShareRuntime = {
 				...action.payload,
