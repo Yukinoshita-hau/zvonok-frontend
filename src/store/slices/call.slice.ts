@@ -136,6 +136,8 @@ export const callSlice = createSlice({
 					Object.assign(state, initialState, ui, { status: "ended" as const });
 					break;
 				}
+				case "CALL_PARTICIPANT_JOINED":
+					break;
 			}
 		},
 		markAcceptedHandled: (state, action: PayloadAction<number>) => {
@@ -232,7 +234,7 @@ export const callSlice = createSlice({
 			})
 			.addCase(restoreCallSession.rejected, (state, action) => {
 				state.status = "idle";
-				state.error = typeof action.payload === "string" ? action.payload: "Failed to restore call";
+				state.error = typeof action.payload === "string" ? action.payload : "Failed to restore call";
 			});
 	},
 });

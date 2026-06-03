@@ -15,6 +15,7 @@ export function useMicrophoneCaptureOptions(): AudioCaptureOptions {
 				isAutoGainControlEnabled: device.isAutoGainControlEnabled,
 				isEchoCancellationEnabled: device.isEchoCancellationEnabled,
 				isNoiseSuppressionEnabled: device.isNoiseSuppressionEnabled,
+				isRnnoiseEnabled: device.isRnnoiseEnabled,
 			}),
 		[
 			device.selectedMicrophoneId,
@@ -22,6 +23,7 @@ export function useMicrophoneCaptureOptions(): AudioCaptureOptions {
 			device.isNoiseSuppressionEnabled,
 			device.isEchoCancellationEnabled,
 			device.isAutoGainControlEnabled,
+			device.isRnnoiseEnabled
 		]
 	);
 }

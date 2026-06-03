@@ -64,7 +64,7 @@ export function ActiveCallOverlay() {
 			publishDefaults: {
 				videoCodec: "av1",
 				scalabilityMode: "L3T3_KEY",
-				backupCodec: { codec: "vp8",},
+				backupCodec: { codec: "vp8", },
 				backupCodecPolicy: BackupCodecPolicy.PREFER_REGRESSION,
 				dtx: true,
 				red: true,
@@ -103,7 +103,7 @@ export function ActiveCallOverlay() {
 		navigate(`/dm?roomId=${call.chatRoomId}`);
 	};
 
-				console.log(import.meta.env.VITE_LIVEKIT_DEBUG)
+	console.log(import.meta.env.VITE_LIVEKIT_DEBUG)
 	return (
 		<>
 			<LiveKitRoom

@@ -37,6 +37,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			case "websocket/connectStart": {
 
 				const token = storeApi.getState().user.accessToken;
+				const user = storeApi.getState().user.myUser?.username;
 
 				if (!token) {
 					storeApi.dispatch(websocketActions.connectError("No token available"));
@@ -95,9 +96,10 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 					const personalCallSub = client?.subscribe(WS_CALL_PATH, (message) => {
 						const data = JSON.parse(message.body) as BaseCallEvent;
+						console.log(data)
 
 						storeApi.dispatch(callActions.applyCallEvent(data));
-
+						
 						const callId = data.callId;
 						if (!callId) return;
 
@@ -111,6 +113,8 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 						}
 
 						if (data.type === "CALL_ACCEPT" || data.type === "CALL_ACCEPTED") {
+							console.log("it is accepted")
+							console.log(data)
 							const state = storeApi.getState().call;
 
 							if (state.lastAcceptedCallId === callId) return;
@@ -124,6 +128,28 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 						if (data.type === "CALL_ENDED") {
 							storeApi.dispatch(activeCallActions.clearCall());	
 						}
+
+						if (data.type === "CALL_PARTICIPANT_JOINED") {
+							const state = storeApi.getState();
+							const myUsername = state.user.myUser?.username;
+
+							const isMe = data.participantUsername === myUsername;
+
+							if (!isMe) return;
+
+
+							const callState = state.call;
+
+							if (callState.lastAcceptedCallId === callId) return;
+							if (callState.callId && callState.callId !== callId) return;
+							if (callState.participantToken && callState.callId === callId) return;
+
+							storeApi.dispatch(callActions.markAcceptedHandled(callId));
+							storeApi.dispatch(getCallToken(callId));
+
+							return;
+						}
+
 					})
 
 					if (personalCallSub) subscriptions[WS_CALL_PATH] = personalCallSub;
