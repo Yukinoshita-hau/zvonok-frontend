@@ -64,7 +64,7 @@ export function RoomListItem({ room }: RoomListItemProps) {
 					)}
 				</div>
 
-				{isPrivateRoom && <span className={interlocutor?.status === "ONLINE" ? styles["status-online"]: styles["status-ofline"]} />}
+				{isPrivateRoom && <span className={interlocutor?.status === "ONLINE" ? styles["status-online"]: styles["status-offline"]} />}
 			</div>
 
 			<div className={styles["content"]}>

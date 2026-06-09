@@ -7,7 +7,6 @@ import styles from "./CallOverlay.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
 import { soundPlayer } from "../../utils/soundPlayer";
-import { getActiveCall } from "../../store/slices/activeCall.slice";
 
 export function CallOverlay() {
 	const call = useSelector((s: RootState) => s.call);

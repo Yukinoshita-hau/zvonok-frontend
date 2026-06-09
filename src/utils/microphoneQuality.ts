@@ -52,7 +52,7 @@ export const MICROPHONE_QUALITY_PRESETS: Record<MicQualitySetting, MicQualityPre
 		echoCancellation: false,
 		noiseSuppression: false,
 		voiceIsolation: false,
-		warning: "May increase CPU usage and end-to-end latency.",
+		warning: "Может увеличить использование процессора и задержку от вас до слушателя",
 	},
 	gaming: {
 		value: "gaming",
@@ -65,7 +65,7 @@ export const MICROPHONE_QUALITY_PRESETS: Record<MicQualitySetting, MicQualityPre
 		echoCancellation: true,
 		noiseSuppression: false,
 		voiceIsolation: false,
-		warning: "Background noise suppression may be weaker.",
+		warning: "Подавление фонового шума может стать слабее.",
 	},
 };
 

@@ -1,16 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { LocalVideoTrack, Room, Track } from "livekit-client";
 import styles from "./VoiceVideoSetting.module.css";
 import { deviceActions } from "../../store/slices/device.slice";
 import type { AppDispatch, RootState } from "../../store/store";
-import { livekitApi } from "../../api/livekitApi";
 import {
-	formatBitrate,
-	formatMilliseconds,
-	formatPercent,
-	recommendQualityFromMetrics,
-	type NetworkQualityMetrics,
 	type CallQualitySetting,
 	type ScreenShareQualitySetting,
 } from "../../utils/callQuality";
@@ -20,21 +13,8 @@ import {
 } from "../../utils/microphoneQuality";
 import { ScreenShareQualityGrid } from "./ScreenShareQualityGrid/ScreenShareQualityGrid";
 import { MicrophoneQualitySelector } from "./MicrophoneQualitySelector/MicrophoneQualitySelector";
-
-interface PublishStats {
-	packetsLost: number;
-	packetsSent: number;
-	rttTotal: number;
-	jitterTotal: number;
-	bitrateTotal: number;
-	count: number;
-}
-
-interface BrowserNetworkInfo {
-	downlink?: number;
-	effectiveType?: string;
-	rtt?: number;
-}
+import CameraView from "./CameraPreview/CameraView";
+import { processTrackWithRnnoise } from "../../livekit/audio/ProcessTrackWithRnnoise";
 
 export function VoiceVideoSetting() {
 	const dispatch = useDispatch<AppDispatch>();
@@ -45,17 +25,13 @@ export function VoiceVideoSetting() {
 		cameraQuality,
 		screenShareQuality,
 		isNoiseSuppressionEnabled,
+		isRnnoiseEnabled,
 		isEchoCancellationEnabled,
 		isAutoGainControlEnabled,
 		voiceActivityThreshold,
 		isAutoInputSensitivity,
 		screenShareRuntime,
-		connectionTestResult,
 	} = useSelector((s: RootState) => s.device);
-	const myUser = useSelector((s: RootState) => s.user.myUser);
-	const recommendation = connectionTestResult.recommendation;
-	const metrics = connectionTestResult.metrics;
-
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
 	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
 	const [mediaDevicesReady, setMediaDevicesReady] = useState(false);
@@ -129,8 +105,35 @@ export function VoiceVideoSetting() {
 
 				streamRef.current = stream;
 
+				let previewStream = stream;
+
 				if (audioPreviewRef.current) {
-					audioPreviewRef.current.srcObject = isListening ? stream : null;
+					audioPreviewRef.current.muted = true;
+					if (isRnnoiseEnabled) {
+						const processTrack = await processTrackWithRnnoise(stream.getAudioTracks()[0]);
+
+						previewStream = new MediaStream([processTrack]);
+
+
+						const ctx = new AudioContext();
+
+						const sourse = ctx.createMediaStreamSource(new MediaStream([processTrack]));
+
+						const splitter = ctx.createChannelSplitter(1);
+						const merger = ctx.createChannelMerger(2);
+
+						sourse.connect(splitter);
+						splitter.connect(merger, 0, 0);
+						splitter.connect(merger, 0, 1);
+
+						const destination = ctx.createMediaStreamDestination();
+						merger.connect(destination);
+
+						previewStream = destination.stream;
+					}
+
+
+					audioPreviewRef.current.srcObject = previewStream;
 
 					if (isListening) {
 						audioPreviewRef.current.muted = false;
@@ -148,7 +151,7 @@ export function VoiceVideoSetting() {
 
 				const analyser = audioContext.createAnalyser();
 				analyser.fftSize = 2048;
-				const source = audioContext.createMediaStreamSource(stream);
+				const source = audioContext.createMediaStreamSource(previewStream);
 				console.log(stream.getAudioTracks()[0].getSettings())
 				source.connect(analyser);
 
@@ -188,83 +191,15 @@ export function VoiceVideoSetting() {
 		isNoiseSuppressionEnabled,
 		isEchoCancellationEnabled,
 		isAutoGainControlEnabled,
+		isRnnoiseEnabled
 	]);
-
-	const runConnectionTest = async () => {
-		dispatch(deviceActions.setConnectionTestRunning());
-
-		try {
-			const credentials = (
-				await livekitApi.getToken(`quality-test-${myUser?.id ?? "anonymous"}`)
-			).data;
-
-			const stats = await runPublishStatsTest(
-				credentials.serverUrl,
-				credentials.participantToken
-			);
-			const metrics = getNetworkMetrics(stats);
-			const recommendation = recommendQualityFromMetrics(metrics);
-
-			dispatch(
-				deviceActions.setConnectionTestResult({
-					summary: "Connection test completed with LiveKit WebRTC publish stats.",
-					metrics,
-					recommendation,
-					updatedAt: new Date().toISOString(),
-				})
-			);
-		} catch (error) {
-			dispatch(
-				deviceActions.setConnectionTestError({
-					message: error instanceof Error ? error.message : "Connection test failed.",
-					updatedAt: new Date().toISOString(),
-				})
-			);
-		}
-	};
-
-	function getNetworkMetrics(stats: PublishStats | null): NetworkQualityMetrics {
-		const browserNetwork = getBrowserNetworkInfo();
-		const sampleCount = stats?.count ?? 0;
-
-		return {
-			upstreamKbps:
-				stats && sampleCount > 0
-					? stats.bitrateTotal / sampleCount / 1000
-					: null,
-			rttMs:
-				stats && sampleCount > 0
-					? (stats.rttTotal / sampleCount) * 1000
-					: browserNetwork.rtt ?? null,
-			jitterMs:
-				stats && sampleCount > 0
-					? (stats.jitterTotal / sampleCount) * 1000
-					: null,
-			packetLossPercent:
-				stats && stats.packetsSent > 0
-					? (stats.packetsLost / stats.packetsSent) * 100
-					: null,
-			downlinkMbps: browserNetwork.downlink ?? null,
-			effectiveType: browserNetwork.effectiveType ?? null,
-		};
-	}
-
-	function getBrowserNetworkInfo(): BrowserNetworkInfo {
-		const nav = navigator as Navigator & {
-			connection?: BrowserNetworkInfo;
-			mozConnection?: BrowserNetworkInfo;
-			webkitConnection?: BrowserNetworkInfo;
-		};
-
-		return nav.connection ?? nav.mozConnection ?? nav.webkitConnection ?? {};
-	}
 
 	return (
 		<div className={styles["container"]}>
 			<div className={styles["content"]}>
 				<div className={styles["edit-section"]}>
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Camera</label>
+						<label className={styles["label"]}>Камера</label>
 						<select
 							className={styles["input"]}
 							value={selectedCameraId}
@@ -280,11 +215,12 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Camera Preview</label>
+						<label className={styles["label"]}>Предпросмотр выбранной камеры</label>
+						<CameraView />
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Microphone</label>
+						<label className={styles["label"]}>Микрофон</label>
 						<select
 							className={styles["input"]}
 							value={selectedMicrophoneId}
@@ -300,13 +236,13 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Microphone Quality</label>
+						<label className={styles["label"]}>Качество микрофона</label>
 						<MicrophoneQualitySelector
 							value={micQualitySetting}
 							onChange={(value) => dispatch(deviceActions.setMicrophoneQuality(value))}
 						/>
 						<span className={styles["help-text"]}>
-							Requested values are best-effort and may be adjusted by browser/OS/audio driver.
+							Запрошенные значения - это максимальные настройки которые могут быть изменены посредством браузера/ОС/аудиодрайвера.
 						</span>
 						{MICROPHONE_QUALITY_PRESETS[micQualitySetting].warning && (
 							<span className={styles["help-text"]}>
@@ -316,46 +252,50 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Noise Suppression</label>
+						<label className={styles["label"]}>Браузерное шумоподавление</label>
 						<label className={styles["toggle-row"]}>
 							<input
 								type="checkbox"
 								checked={isNoiseSuppressionEnabled}
 								onChange={(e) => dispatch(deviceActions.setNoiseSuppression(e.target.checked))}
 							/>
-							<span>{isNoiseSuppressionEnabled ? "Enabled" : "Disabled"}</span>
+							<span>{isNoiseSuppressionEnabled || !isRnnoiseEnabled ? "Включено" : "Выключено"}</span>
 						</label>
 						<span className={styles["help-text"]}>
-							Uses browser noise suppression and voice isolation when supported.
+							Используеться браузерное шумоподавление и изоляция звука если подурживаеться.
 						</span>
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Echo Cancellation</label>
+						<label className={styles["label"]}>Подавление шума с помощью Rnnoise</label>
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={isRnnoiseEnabled}
+								onChange={(e) => dispatch(deviceActions.setRnnoise(e.target.checked))}
+							/>
+							<span>{isRnnoiseEnabled ? "Включено" : "Выключено"}</span>
+						</label>
+						<span className={styles["help-text"]}>
+							Использует нейросетевой алгоритм RNNoise для дополнительного подавления фонового шума с сохранением естественного звучания голоса.
+							Если включено, используется вместо стандартного шумоподавления браузера.
+						</span>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Эхоподавление</label>
 						<label className={styles["toggle-row"]}>
 							<input
 								type="checkbox"
 								checked={isEchoCancellationEnabled}
 								onChange={(e) => dispatch(deviceActions.setEchoCancellation(e.target.checked))}
 							/>
-							<span>{isEchoCancellationEnabled ? "Enabled" : "Disabled"}</span>
+							<span>{isEchoCancellationEnabled ? "Включено" : "Выключено"}</span>
 						</label>
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Auto Gain Control</label>
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={isAutoGainControlEnabled}
-								onChange={(e) => dispatch(deviceActions.setAutoGainControl(e.target.checked))}
-							/>
-							<span>{isAutoGainControlEnabled ? "Enabled" : "Disabled"}</span>
-						</label>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Microphone Test</label>
+						<label className={styles["label"]}>Проверка микрофона</label>
 						<div className={styles["volume-bar-bg"]}>
 							<div
 								className={styles["volume-bar-fill"]}
@@ -366,7 +306,7 @@ export function VoiceVideoSetting() {
 							className={isListening ? styles["btn-secondary"] : styles["btn-primary"]}
 							onClick={() => setIsListening(!isListening)}
 						>
-							{isListening ? "Stop monitoring" : "Monitor myself"}
+							{isListening ? "Закончить прослушивание" : "Послушать себя"}
 						</button>
 						<div className={styles["help-text"]}>
 							Voice activity:{" "}
@@ -378,33 +318,7 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Input sensitivity / Voice activity threshold</label>
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={isAutoInputSensitivity}
-								onChange={(e) => dispatch(deviceActions.setAutoInputSensitivity(e.target.checked))}
-							/>
-							<span>{isAutoInputSensitivity ? "Auto sensitivity" : "Manual threshold"}</span>
-						</label>
-						<input
-							type="range"
-							min={5}
-							max={90}
-							step={1}
-							disabled={isAutoInputSensitivity}
-							value={voiceActivityThreshold}
-							onChange={(e) =>
-								dispatch(deviceActions.setVoiceActivityThreshold(Number(e.target.value)))
-							}
-						/>
-						<span className={styles["help-text"]}>
-							Lower sensitivity may cut background noise but can also cut quiet speech.
-						</span>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Camera Quality</label>
+						<label className={styles["label"]}>Качество камеры</label>
 						<select
 							className={styles["input"]}
 							value={cameraQuality}
@@ -420,7 +334,7 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Screen Share Quality</label>
+						<label className={styles["label"]}>Качество трансляции экрана</label>
 						<ScreenShareQualityGrid
 							value={screenShareQuality}
 							onChange={(value) => dispatch(deviceActions.setScreenShareQuality(value as ScreenShareQualitySetting))}
@@ -428,85 +342,6 @@ export function VoiceVideoSetting() {
 							onShowExperimentalChange={setShowExperimentalScreenModes}
 							runtimeInfo={screenShareRuntime}
 						/>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Connection Test</label>
-						<button
-							type="button"
-							className={styles["btn-primary"]}
-							disabled={connectionTestResult.status === "running"}
-							onClick={runConnectionTest}
-						>
-							{connectionTestResult.status === "running" ? "Testing..." : "Run internet test"}
-						</button>
-						<span className={styles["help-text"]}>
-							Uses LiveKit WebRTC publish stats. Download speed is shown only when
-							the browser exposes a network hint.
-						</span>
-
-						{connectionTestResult.error && (
-							<div className={styles["error-text"]}>
-								{connectionTestResult.error}
-							</div>
-						)}
-
-						{connectionTestResult.summary && !connectionTestResult.error && (
-							<div className={styles["summary-text"]}>
-								{connectionTestResult.summary}
-							</div>
-						)}
-
-						{metrics && (
-							<div className={styles["metrics-grid"]}>
-								<div>Upload</div>
-								<strong>{formatBitrate(metrics.upstreamKbps)}</strong>
-								<div>RTT</div>
-								<strong>{formatMilliseconds(metrics.rttMs)}</strong>
-								<div>Jitter</div>
-								<strong>{formatMilliseconds(metrics.jitterMs)}</strong>
-								<div>Packet loss</div>
-								<strong>{formatPercent(metrics.packetLossPercent)}</strong>
-								<div>Download hint</div>
-								<strong>
-									{metrics.downlinkMbps !== null
-										? `${metrics.downlinkMbps.toFixed(1)} Mbps`
-										: "Unavailable"}
-								</strong>
-								<div>Network type</div>
-								<strong>{metrics.effectiveType ?? "Unavailable"}</strong>
-							</div>
-						)}
-
-						{recommendation && (
-							<div className={styles["recommendation-box"]}>
-								Recommended: camera {recommendation.cameraQuality}, screen share {recommendation.screenShareQuality}.
-							</div>
-						)}
-
-						<div className={styles["test-actions"]}>
-							<button
-								type="button"
-								className={styles["btn-primary"]}
-								disabled={!recommendation}
-								onClick={() => dispatch(deviceActions.applyConnectionTestRecommendation())}
-							>
-								Apply recommendation
-							</button>
-							<button
-								type="button"
-								className={styles["btn-primary"]}
-								onClick={() => dispatch(deviceActions.useAutoQuality())}
-							>
-								Use Auto
-							</button>
-							<button
-								type="button"
-								className={styles["btn-secondary-neutral"]}
-							>
-								Keep manual
-							</button>
-						</div>
 					</div>
 				</div>
 			</div>
@@ -522,103 +357,4 @@ function getDeviceLabel(
 	const trimmed = device.label?.trim();
 	if (trimmed) return trimmed;
 	return `${fallbackType} ${index + 1}`;
-}
-
-async function runPublishStatsTest(
-	serverUrl: string,
-	participantToken: string
-): Promise<PublishStats> {
-	const room = new Room({
-		adaptiveStream: false,
-		dynacast: false,
-	});
-	const canvas = document.createElement("canvas");
-	canvas.width = 1280;
-	canvas.height = 720;
-	const context = canvas.getContext("2d");
-
-	if (!context) {
-		throw new Error("Could not create a canvas for the connection test.");
-	}
-
-	let animationFrame = 0;
-	const drawFrame = () => {
-		const time = Date.now() / 1000;
-		context.fillStyle = `hsl(${Math.floor(time * 70) % 360}, 80%, 46%)`;
-		context.fillRect(0, 0, canvas.width, canvas.height);
-		context.fillStyle = "#ffffff";
-		context.font = "32px sans-serif";
-		context.fillText("Zvonok connection test", 36, 72);
-		context.fillText(new Date().toLocaleTimeString(), 36, 120);
-		animationFrame = window.requestAnimationFrame(drawFrame);
-	};
-	drawFrame();
-
-	const stream = canvas.captureStream(30);
-	const mediaTrack = stream.getVideoTracks()[0];
-	if (!mediaTrack) {
-		throw new Error("Could not create a test video track.");
-	}
-
-	const stats: PublishStats = {
-		packetsLost: 0,
-		packetsSent: 0,
-		rttTotal: 0,
-		jitterTotal: 0,
-		bitrateTotal: 0,
-		count: 0,
-	};
-
-	let intervalId: number | null = null;
-
-	try {
-		await room.connect(serverUrl, participantToken, {
-			autoSubscribe: false,
-		});
-
-		const publication = await room.localParticipant.publishTrack(mediaTrack, {
-			source: Track.Source.Camera,
-			simulcast: false,
-			degradationPreference: "maintain-resolution",
-			videoEncoding: {
-				maxBitrate: 2_000_000,
-				maxFramerate: 30,
-				priority: "high",
-			},
-		});
-		const publishedTrack = publication.track;
-
-		if (!(publishedTrack instanceof LocalVideoTrack)) {
-			throw new Error("Could not publish a test video track.");
-		}
-
-		await new Promise<void>((resolve) => {
-			intervalId = window.setInterval(async () => {
-				const senderStats = await publishedTrack.getSenderStats();
-				const primaryStats = senderStats[0];
-				if (!primaryStats) return;
-
-				stats.packetsSent = Math.max(stats.packetsSent, primaryStats.packetsSent ?? 0);
-				stats.packetsLost = Math.max(stats.packetsLost, primaryStats.packetsLost ?? 0);
-				stats.bitrateTotal += primaryStats.targetBitrate ?? 0;
-				stats.rttTotal += primaryStats.roundTripTime ?? 0;
-				stats.jitterTotal += primaryStats.jitter ?? 0;
-				stats.count += 1;
-			}, 1000);
-
-			window.setTimeout(resolve, 8000);
-		});
-
-		if (stats.count === 0 || stats.packetsSent === 0) {
-			throw new Error("Could not collect WebRTC publish stats.");
-		}
-
-		return stats;
-	} finally {
-		if (intervalId !== null) window.clearInterval(intervalId);
-		window.cancelAnimationFrame(animationFrame);
-		stream.getTracks().forEach((track) => track.stop());
-		canvas.remove();
-		await room.disconnect();
-	}
 }

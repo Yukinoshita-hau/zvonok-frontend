@@ -10,6 +10,7 @@ import { useState } from "react";
 import { SettingModal } from "../SettingModal/SettingModal";
 import { callActions } from "../../store/slices/call.slice";
 import { StringToColor } from "../../utils/stringHelpers";
+import { LucideSettings, Settings2Icon, SettingsIcon } from "lucide-react";
 
 export function NavigateBar({ servers }: NavigateBarProps) {
 	const navigate = useNavigate();
@@ -48,9 +49,6 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 		<div className={styles["divider"]} />
 
 		<div className={styles["middle"]}>
-			<NavigateBarButton onClick={() => navigate("/my-servers")}>
-				<img src="/server-all-list-icon.png" />
-			</NavigateBarButton>
 			{servers.map((server, index) => (
 				<ServerButton
 					key={server.id}
@@ -69,7 +67,12 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 					<span className={styles["messages-badge"]}/>
 				)}
 			</NavigateBarButton>
-			<div className={styles["user"]} onClick={() => setIsSettingModalOpen(true)} style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}>
+
+			<NavigateBarButton onClick={() => setIsSettingModalOpen(true)}>
+				<SettingsIcon color="white" size={28} />
+			</NavigateBarButton>
+
+			<div className={styles["user"]} onClick={() => null} style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}>
 				{!!avatarUrl ? (
 					<img src={avatarUrl} crossOrigin="anonymous" alt="avatar" />
 				) : (

@@ -214,23 +214,42 @@ export const callSlice = createSlice({
 			.addCase(restoreCallSession.fulfilled, (state, action: PayloadAction<RestoreCallSessionResponse>) => {
 				const data = action.payload;
 
-				if (!data.restorable || !data.serverUrl || !data.participantToken || !data.callId) {
+				console.log("-------------------------------------------------------------------------------------------------------------");
+				console.log(data);
+
+				if (data.callRestoreType === "NONE") {
 					const ui = keepUi(state);
 					Object.assign(state, initialState, ui);
 					return;
 				}
 
-				state.status = "in_call";
-				state.direction = null;
-				state.callId = data.callId;
-				state.chatRoomId = data.chatRoomId ?? data.roomId ?? null;
-				state.roomType = data.roomType;
-				state.livekitRoomName = data.liveKitRoomName;
-				state.serverUrl = data.serverUrl;
-				state.participantToken = data.participantToken;
-				state.tokenExpiresAt = data.expiresAt;
-				state.error = null;
-				state.presentationMode = "expanded";
+				if (data.callRestoreType === "ACTIVE_CALL") {
+					state.status = "in_call";
+					state.direction = null;
+					state.callId = data.callId;
+					state.chatRoomId = data.chatRoomId ?? data.roomId ?? null;
+					state.roomType = data.roomType;
+					state.hostUsername = data.hostUsername;
+					state.callerUsername = data.hostUsername;
+					state.livekitRoomName = data.liveKitRoomName;
+					state.serverUrl = data.serverUrl;
+					state.participantToken = data.participantToken;
+					state.tokenExpiresAt = data.expiresAt;
+					state.error = null;
+					state.presentationMode = "expanded";
+				}
+
+				if (data.callRestoreType === "INCOMING_CALL") {
+					state.status = "incoming_ringing";
+					state.direction = "incoming";
+					state.hostUsername = data.hostUsername;
+					state.callerUsername = data.hostUsername;
+					state.callId = data.callId;
+					state.chatRoomId = data.chatRoomId ?? data.roomId ?? null;
+					state.roomType = data.roomType;
+					state.error = null;
+				}
+
 			})
 			.addCase(restoreCallSession.rejected, (state, action) => {
 				state.status = "idle";

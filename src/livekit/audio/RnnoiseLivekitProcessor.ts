@@ -18,21 +18,15 @@ export class RnnoiseLiveKitProcessor implements TrackProcessor<Track.Kind.Audio,
 	private workletLoadedAudioContext?: AudioContext;
 
 	async init(options: AudioProcessorOptions): Promise<void> {
-		console.log("[rnnoise-debug] rnnoise processor restart");
-
 		await this.createAudioGraph(options);
 	}
 
 	async restart(options: AudioProcessorOptions): Promise<void> {
-		console.log("[rnnoise-debug] rnnoise processor restart");
-
 		await this.destroy();
 		await this.createAudioGraph(options);
 	}
 
 	async destroy(): Promise<void> {
-		console.log("[rnnoise-debug] rnnoise processor destroy");
-
 		this.source?.disconnect();
 		this.rnnoiseNode?.disconnect();
 		this.destination?.disconnect();
@@ -50,8 +44,6 @@ export class RnnoiseLiveKitProcessor implements TrackProcessor<Track.Kind.Audio,
 		const { track, audioContext } = options;
 
 		if (!this.wasmBinary) {
-			console.log("[rnnoise-debug] loading rnnoise wasm")
-
 			this.wasmBinary = await loadRnnoise({
 				url: rnnoiseWasmPath,
 				simdUrl: rnnoiseSimdWasmPath
@@ -59,7 +51,6 @@ export class RnnoiseLiveKitProcessor implements TrackProcessor<Track.Kind.Audio,
 		}
 
 		if (this.workletLoadedAudioContext !== audioContext) {
-			console.log("[rnnoise-debug] loading rnnoise worklet");
 
 			await audioContext.audioWorklet.addModule(rnnoiseWorkletPath);
 			this.workletLoadedAudioContext = audioContext;
@@ -86,8 +77,6 @@ export class RnnoiseLiveKitProcessor implements TrackProcessor<Track.Kind.Audio,
 		}
 
 		this.processedTrack = processedTrack;
-
-		console.log("[rnnoise-debug] rnnoise processed track created:", processedTrack);
 	}
 }
 

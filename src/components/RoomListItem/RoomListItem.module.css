@@ -50,7 +50,7 @@
 	border: 2px solid var(--bg-secondary);
 }
 
-.status-ofline {
+.status-offline {
 	position: absolute;
 	right: -1px;
 	bottom: -1px;
