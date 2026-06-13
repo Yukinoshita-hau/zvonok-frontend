@@ -60,6 +60,11 @@ const keepUi = (state: CallState) => ({
 	isTheaterMode: state.isTheaterMode,
 });
 
+const resetCallState = (state: CallState, status: callStatus = "idle") => {
+	const ui = keepUi(state);
+	Object.assign(state, initialState, ui, { status })
+}
+
 export const getCallToken = createAsyncThunk("call/getCallToken", async (callId: number, thunkAPI) => {
 	try {
 		const { data } = await callApi.getCallToken(callId);
@@ -144,20 +149,16 @@ export const callSlice = createSlice({
 			state.lastAcceptedCallId = action.payload;
 		},
 		leaveCallLocally: (state) => {
-			const ui = keepUi(state);
-			Object.assign(state, initialState, ui, { status: "ended" as const });
+			resetCallState(state, "ended");
 		},
 		endCallLocally: (state) => {
-			const ui = keepUi(state);
-			Object.assign(state, initialState, ui, { status: "ended" as const });
+			resetCallState(state, "ended");
 		},
 		liveKitDisconnectedLocally: (state) => {
-			const ui = keepUi(state);
-			Object.assign(state, initialState, ui, { status: "ended" as const });
+			resetCallState(state, "ended");
 		},
 		endCall: (state) => {
-			const ui = keepUi(state);
-			Object.assign(state, initialState, ui, { status: "ended" as const });
+			resetCallState(state, "ended");
 		},
 		setSelectedScreenTrackSid: (state, action: PayloadAction<string | null>) => {
 			state.selectedScreenTrackSid = action.payload;
@@ -214,12 +215,8 @@ export const callSlice = createSlice({
 			.addCase(restoreCallSession.fulfilled, (state, action: PayloadAction<RestoreCallSessionResponse>) => {
 				const data = action.payload;
 
-				console.log("-------------------------------------------------------------------------------------------------------------");
-				console.log(data);
-
 				if (data.callRestoreType === "NONE") {
-					const ui = keepUi(state);
-					Object.assign(state, initialState, ui);
+					resetCallState(state, "idle")
 					return;
 				}
 

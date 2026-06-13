@@ -31,8 +31,8 @@ export function MicrophoneToggleButton({
 		}
 	});
 	const title = enabled
-		? `${titlePrefix}: on. Ctrl+Alt+M to mute.`
-		: `${titlePrefix}: muted. Ctrl+Alt+M to unmute.`;
+		? `${titlePrefix}: on`
+		: `${titlePrefix}: muted`;
 
 	return (
 		<button {...buttonProps} title={title} aria-label={title}>

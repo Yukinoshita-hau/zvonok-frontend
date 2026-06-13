@@ -7,7 +7,6 @@ export interface BaseCallEvent {
 	chatRoomId?: number;
 	roomId?: number;
 	roomType?: CallRoomType;
-	livekitRoomName?: string;
 	liveKitRoomName?: string;
 	callerUsername?: string;
 	hostUsername?: string;

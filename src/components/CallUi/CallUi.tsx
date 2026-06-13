@@ -679,7 +679,7 @@ export function CallUi({
 						className={styles["control-button"]}
 						captureOptions={screenShareCaptureOptions}
 						publishOptions={screenSharePublishOptions}
-						title="Share screen. Audio is included only when your browser and selected source support it. 1080p120 is experimental and best effort."
+						title="Share screen. Audio is included only when your browser and selected source support it"
 					/>
 
 					{hasChat && (

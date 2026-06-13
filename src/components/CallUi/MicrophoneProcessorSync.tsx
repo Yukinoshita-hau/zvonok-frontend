@@ -1,14 +1,19 @@
 import { useRoomContext } from "@livekit/components-react";
 import { LocalAudioTrack, Track } from "livekit-client";
 import { useEffect, useRef } from "react";
-import { RnnoiseLiveKitProcessor } from "../../livekit/audio/RnnoiseLivekitProcessor";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store/store";
+import { ZvonokLiveKitAudioProcessor } from "../../livekit/audio/ZvonokLiveKitAudioProcessor";
 
 export function MicrophoneProcessorSync() {
 	const room = useRoomContext();
 
 	const processedTrackRef = useRef<LocalAudioTrack | null>(null);
+
+	const syncingRef = useRef(false);
+
+	const appliedProcessorKeyRef = useRef<string | null>(null);
+
 	const isRnnoiseEnabled = useSelector(
 		(s: RootState) => s.device.isRnnoiseEnabled
 	);
@@ -17,69 +22,87 @@ export function MicrophoneProcessorSync() {
 		let disposed = false;
 
 		async function syncProcessor() {
+			if (syncingRef.current) return;
+
+
 			const publication = room.localParticipant.getTrackPublication(
 				Track.Source.Microphone
 			);
 
 			const track = publication?.track;
 
-			console.log("[rnnoise-debug] rnnoise enabled:", isRnnoiseEnabled);
-			console.log("[rnnoise-debug] processor sync publication:", publication);
-			console.log("[rnnoise-debug] processor sync track:", track);
-
 			if (!(track instanceof LocalAudioTrack)) {
-				console.log("[rnnoise-debug] no local microphone track yet");
 				processedTrackRef.current = null;
+				appliedProcessorKeyRef.current = null;
 				return;
 			}
 
-			if (!isRnnoiseEnabled) {
-				if (processedTrackRef.current === track) {
-					console.log("[rnnoise-debug] stopping rnnoise processor");
-					await track.stopProcessor();
-					processedTrackRef.current = null;
-				}
+			const processKey = `${track.sid ?? "local"}:${isRnnoiseEnabled}`;
 
+			if (
+				processedTrackRef.current === track &&
+				appliedProcessorKeyRef.current === processKey
+			) {
 				return;
 			}
 
-			if (processedTrackRef.current === track) {
-				console.log("[rnnoise-debug] processor already appliend to current track");
-				return;
-			}
+			syncingRef.current = true;
 
 			try {
-				console.log("[rnnoise-debug] applying processor from sync component");
 
-				await track.setProcessor(new RnnoiseLiveKitProcessor());
+				await track.setProcessor(new ZvonokLiveKitAudioProcessor({
+					rnnoiseEnabled: isRnnoiseEnabled,
+					inputVolume: 1,
+					outputVolume: 1,
+					stereoOutput: false
+				}));
 
-				if (disposed) return;
+				if (disposed) {
+					await track.stopProcessor();
+					return;
+				}
 
 				processedTrackRef.current = track;
+				appliedProcessorKeyRef.current = processKey;
 
-				console.log("[rnnoise-debug] processor applied from sync component");
 			} catch (error) {
-				console.log("[rnnoise-debug] failed to apply processor", error);
+				console.log("[audio-processor] failed to apply processor", error);
+
+				if (processedTrackRef.current = track) {
+					processedTrackRef.current = null;
+					appliedProcessorKeyRef.current = null;
+				}
+			} finally {
+				syncingRef.current = false;
 			}
 		}
 
-		syncProcessor();
+		void syncProcessor();
 
 		const handleTrackPublished = () => {
-			console.log("[rnnoise-debug] local track published event");
-			syncProcessor();
+			void syncProcessor();
 		};
 
 		const handleTrackUnmuted = () => {
-			console.log("[rnnoise-debug] local track unmuted event");
-			syncProcessor();
+			void syncProcessor();
 		};
 
 		room.localParticipant.on("localTrackPublished", handleTrackPublished);
-		room.localParticipant.off("trackUnmuted", handleTrackUnmuted);
+		room.localParticipant.on("trackUnmuted", handleTrackUnmuted);
 
 		return () => {
 			disposed = true;
+
+			const currentTrack = processedTrackRef.current;
+			
+			processedTrackRef.current = null;
+			appliedProcessorKeyRef.current = null;
+
+			if (currentTrack) {
+				void currentTrack.stopProcessor().catch((error) => {
+					console.log("[audio-processor] failed to stop processor", error);
+				})
+			}
 
 			room.localParticipant.off("localTrackPublished", handleTrackPublished);
 			room.localParticipant.off("trackUnmuted", handleTrackUnmuted);

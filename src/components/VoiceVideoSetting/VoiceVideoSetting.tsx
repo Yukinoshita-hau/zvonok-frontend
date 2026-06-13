@@ -14,7 +14,7 @@ import {
 import { ScreenShareQualityGrid } from "./ScreenShareQualityGrid/ScreenShareQualityGrid";
 import { MicrophoneQualitySelector } from "./MicrophoneQualitySelector/MicrophoneQualitySelector";
 import CameraView from "./CameraPreview/CameraView";
-import { processTrackWithRnnoise } from "../../livekit/audio/ProcessTrackWithRnnoise";
+import { ZvonokAudioGraph } from "../../livekit/audio/GlobalAudioGraph";
 
 export function VoiceVideoSetting() {
 	const dispatch = useDispatch<AppDispatch>();
@@ -35,12 +35,13 @@ export function VoiceVideoSetting() {
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
 	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
 	const [mediaDevicesReady, setMediaDevicesReady] = useState(false);
+	const [cameraTestEnable, setCameraTestEnable] = useState(false);
 	const [volumeLevel, setVolumeLevel] = useState(0);
 	const [isListening, setIsListening] = useState(false);
 	const [showExperimentalScreenModes, setShowExperimentalScreenModes] = useState(false);
 
 	const streamRef = useRef<MediaStream | null>(null);
-	const audioContextRef = useRef<AudioContext | null>(null);
+	const audioGraphRef = useRef<ZvonokAudioGraph | null>(null);
 	const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 	const animationRef = useRef<number | null>(null);
 
@@ -61,12 +62,34 @@ export function VoiceVideoSetting() {
 		getDevices();
 	}, []);
 
+	const cleanupAudioPreview = async () => {
+		if (animationRef.current) {
+			cancelAnimationFrame(animationRef.current);
+			animationRef.current = null;
+		}
+
+		if (audioPreviewRef.current) {
+			audioPreviewRef.current.pause();
+			audioPreviewRef.current.srcObject = null;
+		}
+
+		if (audioGraphRef.current) {
+			await audioGraphRef.current.destroy();
+			audioGraphRef.current = null;
+		}
+
+		if (streamRef.current) {
+			streamRef.current.getTracks().forEach((track) => track.stop());
+			streamRef.current = null;
+		}
+	};
+
 	useEffect(() => {
-		const startAudio = async () => {
+		let canceled = false;
+
+		const startAudioPreview = async () => {
 			try {
-				if (streamRef.current) {
-					streamRef.current.getTracks().forEach((track) => track.stop());
-				}
+				await cleanupAudioPreview();
 
 				const micCaptureOptions = getMicrophoneCaptureOptions({
 					selectedMicrophoneId,
@@ -75,14 +98,18 @@ export function VoiceVideoSetting() {
 					isEchoCancellationEnabled,
 					isNoiseSuppressionEnabled,
 				});
+
 				const audioConstraints: MediaTrackConstraints = {
 					deviceId:
 						selectedMicrophoneId === "default"
 							? undefined
 							: { exact: selectedMicrophoneId },
-					autoGainControl: micCaptureOptions.autoGainControl,
+					// есл включён RNNoise, браузерное шумоподавление лучше вырубить,
+					// что бы двойной обработки небыло
+					noiseSuppression: isRnnoiseEnabled ? false: micCaptureOptions.noiseSuppression,
 					echoCancellation: micCaptureOptions.echoCancellation,
-					noiseSuppression: micCaptureOptions.noiseSuppression,
+					autoGainControl: micCaptureOptions.autoGainControl,
+
 					channelCount: micCaptureOptions.channelCount ?? 1,
 					sampleRate: micCaptureOptions.sampleRate ?? 48000,
 					sampleSize: micCaptureOptions.sampleSize ?? 16,
@@ -103,61 +130,55 @@ export function VoiceVideoSetting() {
 					audio: audioConstraints,
 				});
 
+				if (canceled) {
+					stream.getTracks().forEach((track) => track.stop());
+					return;
+				}
+
 				streamRef.current = stream;
 
-				let previewStream = stream;
+				const rawAudioTrack = stream.getAudioTracks()[0];
+
+				if (!rawAudioTrack) {
+					throw new Error("Microphone audio track was not found");
+				}
+
+				const audioGraph = new ZvonokAudioGraph({
+					rnnoiseEnabled: isRnnoiseEnabled,
+					inputVolume: 1,
+					outputVolume: 1,
+					stereoOutput: true,
+				});
+
+				audioGraphRef.current = audioGraph;
+
+				await audioGraph.attachTrack(rawAudioTrack);
+
+				if (canceled) {
+					await audioGraph.destroy();
+					stream.getTracks().forEach((track) => track.stop());
+					return;
+				}
+
+				const previewStream = audioGraph.getOutputStream();
 
 				if (audioPreviewRef.current) {
-					audioPreviewRef.current.muted = true;
-					if (isRnnoiseEnabled) {
-						const processTrack = await processTrackWithRnnoise(stream.getAudioTracks()[0]);
-
-						previewStream = new MediaStream([processTrack]);
-
-
-						const ctx = new AudioContext();
-
-						const sourse = ctx.createMediaStreamSource(new MediaStream([processTrack]));
-
-						const splitter = ctx.createChannelSplitter(1);
-						const merger = ctx.createChannelMerger(2);
-
-						sourse.connect(splitter);
-						splitter.connect(merger, 0, 0);
-						splitter.connect(merger, 0, 1);
-
-						const destination = ctx.createMediaStreamDestination();
-						merger.connect(destination);
-
-						previewStream = destination.stream;
-					}
-
-
 					audioPreviewRef.current.srcObject = previewStream;
+					audioPreviewRef.current.muted = !isListening;
 
 					if (isListening) {
-						audioPreviewRef.current.muted = false;
-						audioPreviewRef.current.play().catch((error) => {
+						await audioPreviewRef.current.play().catch((error) => {
 							console.error("Audio preview autoplay failed", error);
 						});
 					}
 				}
 
-				const audioContext = new (
-					window.AudioContext ||
-					(window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-				)();
-				audioContextRef.current = audioContext;
-
-				const analyser = audioContext.createAnalyser();
-				analyser.fftSize = 2048;
-				const source = audioContext.createMediaStreamSource(previewStream);
-				console.log(stream.getAudioTracks()[0].getSettings())
-				source.connect(analyser);
-
+				const analyser = audioGraph.getAnalyser();
 				const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
 				const checkVolume = () => {
 					analyser.getByteFrequencyData(dataArray);
+
 					let sum = 0;
 
 					for (let i = 0; i < dataArray.length; i++) {
@@ -165,34 +186,51 @@ export function VoiceVideoSetting() {
 					}
 
 					const average = sum / dataArray.length;
+
 					setVolumeLevel(Math.min(100, (average / 128) * 100));
+
 					animationRef.current = requestAnimationFrame(checkVolume);
 				};
 
 				checkVolume();
+
+				console.log("[audio-preview] raw track settings:", rawAudioTrack.getSettings());
+				console.log("[audio-preview] rnnoise enabled:", isRnnoiseEnabled);
 			} catch (error) {
 				console.log("Microphone preview error:", error);
 			}
 		};
 
-		startAudio();
+		void startAudioPreview();
 
 		return () => {
-			if (animationRef.current) cancelAnimationFrame(animationRef.current);
-			if (audioContextRef.current) void audioContextRef.current.close();
-			if (streamRef.current) {
-				streamRef.current.getTracks().forEach((track) => track.stop());
-			}
+			canceled = true;
+			void cleanupAudioPreview();
 		};
 	}, [
 		selectedMicrophoneId,
 		micQualitySetting,
-		isListening,
 		isNoiseSuppressionEnabled,
 		isEchoCancellationEnabled,
 		isAutoGainControlEnabled,
 		isRnnoiseEnabled
 	]);
+
+	useEffect(() => {
+		const audio = audioPreviewRef.current;
+
+		if (!audio) return;
+
+		audio.muted = !isListening;
+
+		if (isListening) {
+			void audio.play().catch((error) => {
+				console.error("Audio preview play failed", error);
+			})
+		} else {
+			audio.pause();
+		}
+	}, [isListening])
 
 	return (
 		<div className={styles["container"]}>
@@ -216,7 +254,15 @@ export function VoiceVideoSetting() {
 
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Предпросмотр выбранной камеры</label>
-						<CameraView />
+
+						{cameraTestEnable && <CameraView />}
+						<button
+							className={cameraTestEnable ? styles["btn-secondary"] : styles["btn-primary"]}
+							onClick={() => setCameraTestEnable(!cameraTestEnable)}
+						>
+							{cameraTestEnable ? "Закончить проверку" : "Проверить камеру"}
+						</button>
+
 					</div>
 
 					<div className={styles["form-group"]}>
@@ -314,7 +360,7 @@ export function VoiceVideoSetting() {
 								? "Detected"
 								: "Below threshold"}
 						</div>
-						<audio ref={audioPreviewRef} autoPlay style={{ display: "none" }} />
+						<audio ref={audioPreviewRef} style={{ display: "none" }} />
 					</div>
 
 					<div className={styles["form-group"]}>

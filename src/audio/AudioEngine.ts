@@ -1,16 +1,22 @@
+import { loadRnnoise } from "@sapphi-red/web-noise-suppressor";
+import { loadRnnoise, RnnoiseWorkletNode } from "@sapphi-red/web-noise-suppressor";
+import rnnoiseWorkletPath from "@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url";
+import rnnoiseWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise.wasm?url";
+import rnnoiseSimdWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise_simd.wasm?url";
+
 export class AudioEngine {
 	private ctx: AudioContext;
+	private wasmBinary?: ArrayBuffer;
+	private isInitialized = false;
 
 	private source?: MediaStreamAudioSourceNode;
 
-	private currentDeviceId: string | null = null;
 	private currentStream: MediaStream | null = null;
 
-	private inputGain!: GainNode;
+	private inputGain?: GainNode;
 	private outputGain!: GainNode;
 
-	private rnnoiseNode?: AudioNode;
-	private eqHighPass!: BiquadFilterNode;
+	private eqHighPass?: BiquadFilterNode;
 	private eqPresence!: BiquadFilterNode;
 	private compressor!: DynamicsCompressorNode;
 	private limiter!: DynamicsCompressorNode;
@@ -23,11 +29,30 @@ export class AudioEngine {
 	private analyser!: AnalyserNode;
 
 	constructor(ctx: AudioContext) {
-		this.ctx = ctx;
-		this.buildGraph();
 	}
 
-	private buildGraph() {
+	async init() {
+		if (this.isInitialized) return;
+
+		this.ctx = new AudioContext();
+
+		// Загружаем WASM один раз на всё приложение
+		this.wasmBinary = await loadRnnoise({
+			url: rnnoiseWasmPath,
+			simdUrl: rnnoiseSimdWasmPath
+		});
+
+		await this.ctx.audioWorklet.addModule(rnnoiseWorkletPath);
+
+		this.buildStaticNodes();
+
+		this.isInitialized = true;
+	}
+
+	private buildStaticNodes() {
+		if (!this.ctx) return;
+
+
 		this.inputGain = this.ctx.createGain();
 		this.outputGain = this.ctx.createGain();
 
