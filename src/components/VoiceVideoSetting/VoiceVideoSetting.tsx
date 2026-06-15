@@ -532,7 +532,6 @@ export function VoiceVideoSetting() {
 							}
 						/>
 					</div>
-
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Качество микрофона</label>
 						<MicrophoneQualitySelector
@@ -542,12 +541,12 @@ export function VoiceVideoSetting() {
 						<span className={styles["help-text"]}>
 							Запрошенные значения - это максимальные настройки которые могут быть изменены посредством браузера/ОС/аудиодрайвера.
 						</span>
-						{MICROPHONE_QUALITY_PRESETS[micQualitySetting].warning && (
-							<span className={styles["help-text"]}>
-								{MICROPHONE_QUALITY_PRESETS[micQualitySetting].warning}
-							</span>
-						)}
 					</div>
+					
+					<span className={styles["help-text"]}>
+						Bitrate применяется только в звонке при публикации микрофона.
+						В проверке микрофона слышны только захват, шумоподавление и Web Audio обработка.
+					</span>
 
 					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Браузерное шумоподавление</label>
