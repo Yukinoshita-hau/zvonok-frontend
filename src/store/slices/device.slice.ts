@@ -5,7 +5,7 @@ import type {
 	NetworkQualityMetrics,
 	ScreenShareQualitySetting,
 } from "../../utils/callQuality";
-import type { MicQualitySetting } from "../../utils/microphoneQuality";
+import { normalizeMicQualitySetting, type MicQualitySetting } from "../../utils/microphoneQuality";
 import type { ZvonokAudioGraphConfig, ZvonokVoicePresetId } from "../../livekit/audio/ZvonokAudioGraphConfig";
 import { getVoicePresetConfig } from "../../livekit/audio/ZvonokAudioPresets";
 
@@ -103,7 +103,7 @@ const storedPrefs = loadStoredPreferences();
 const initialState: DeviceState = {
 	selectedCameraId: storedPrefs?.selectedCameraId ?? "default",
 	selectedMicrophoneId: storedPrefs?.selectedMicrophoneId ?? "default",
-	micQualitySetting: storedPrefs?.micQualitySetting ?? "balanced",
+	micQualitySetting: normalizeMicQualitySetting(storedPrefs?.micQualitySetting),
 	cameraQuality: storedPrefs?.cameraQuality ?? "high",
 	screenShareQuality: storedPrefs?.screenShareQuality ?? "medium",
 

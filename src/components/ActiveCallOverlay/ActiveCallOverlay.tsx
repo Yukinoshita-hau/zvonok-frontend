@@ -51,10 +51,10 @@ export function ActiveCallOverlay() {
 	const roomOptions: RoomOptions = useMemo(() => {
 		return {
 			audioCaptureDefaults: {
-				autoGainControl: true,
-				echoCancellation: true,
-				noiseSuppression: true,
-				voiceIsolation: true,
+				autoGainControl: false,
+				echoCancellation: false,
+				noiseSuppression: false,
+				voiceIsolation: false,
 				channelCount: 1,
 				sampleRate: 48000,
 				sampleSize: 16,

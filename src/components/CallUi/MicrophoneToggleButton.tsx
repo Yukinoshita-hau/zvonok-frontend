@@ -1,6 +1,11 @@
-import {  useTrackToggle } from "@livekit/components-react";
+import { useTrackToggle } from "@livekit/components-react";
 import { Mic, MicOff } from "lucide-react";
-import { AudioPresets, Track } from "livekit-client";
+import { Track } from "livekit-client";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store/store";
+import {
+	getMicrophonePublishOptions,
+} from "../../utils/microphoneQuality";
 import { useMicrophoneCaptureOptions } from "./useMicrophoneCaptureOptions";
 
 interface MicrophoneToggleButtonProps {
@@ -19,18 +24,21 @@ export function MicrophoneToggleButton({
 	titlePrefix = "Microphone",
 }: MicrophoneToggleButtonProps) {
 	const captureOptions = useMicrophoneCaptureOptions();
+
+	const micQualitySetting = useSelector(
+		(s: RootState) => s.device.micQualitySetting
+	);
+
+	const publishOptions = getMicrophonePublishOptions(micQualitySetting);
+
 	const { buttonProps, enabled } = useTrackToggle({
 		source: Track.Source.Microphone,
 		className,
 		captureOptions,
 		type: "button",
-		publishOptions: {
-			audioPreset: AudioPresets.musicHighQuality,
-			dtx: true,
-			red: true,	
-			forceStereo: false
-		}
+		publishOptions,
 	});
+
 	const title = enabled
 		? `${titlePrefix}: on`
 		: `${titlePrefix}: muted`;
