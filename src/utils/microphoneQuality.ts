@@ -11,7 +11,8 @@ export type MicQualitySetting =
 	| "clear"
 	| "gaming"
 	| "studio"
-	| "boosted";
+	| "boosted"
+	| "insane"
 
 export interface MicQualityPreset {
 	value: MicQualitySetting;
@@ -161,6 +162,27 @@ export const MICROPHONE_QUALITY_PRESETS: Record<
 
 		warning: "Оверкилл для обычной речи, но звучит максимально жирно при хорошем микрофоне.",
 	},
+	insane: {
+		value: "insane",
+		label: "Insane Voice",
+		description: "Тестовый 510 kbps режим. Просто чтобы почекать максимум Opus.",
+		latency: 0.01,
+		sampleRate: 48000,
+		channelCount: 1,
+
+		autoGainControl: false,
+		echoCancellation: false,
+		noiseSuppression: true,
+		voiceIsolation: false,
+
+		maxBitrate: 510_000,
+		publishLabel: "510 kbps",
+		audioPreset: {
+			maxBitrate: 510_000,
+		},
+
+		warning: "Чистый оверкилл для голоса. Нужен только для теста и хорошего интернета.",
+	},
 };
 
 export function normalizeMicQualitySetting(value: unknown): MicQualitySetting {
@@ -171,6 +193,7 @@ export function normalizeMicQualitySetting(value: unknown): MicQualitySetting {
 		case "gaming":
 		case "studio":
 		case "boosted":
+		case "insane":
 			return value;
 
 		case "economy":

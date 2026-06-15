@@ -3,21 +3,18 @@ import { useDispatch, useSelector } from "react-redux";
 import styles from "./VoiceVideoSetting.module.css";
 import { deviceActions } from "../../store/slices/device.slice";
 import type { AppDispatch, RootState } from "../../store/store";
-import {
-	type CallQualitySetting,
-	type ScreenShareQualitySetting,
-} from "../../utils/callQuality";
-import {
-	getMicrophoneCaptureOptions,
-	MICROPHONE_QUALITY_PRESETS,
-} from "../../utils/microphoneQuality";
-import { ScreenShareQualityGrid } from "./ScreenShareQualityGrid/ScreenShareQualityGrid";
-import { MicrophoneQualitySelector } from "./MicrophoneQualitySelector/MicrophoneQualitySelector";
-import CameraView from "./CameraPreview/CameraView";
+import { getMicrophoneCaptureOptions } from "../../utils/microphoneQuality";
 import { ZvonokAudioGraph } from "../../livekit/audio/GlobalAudioGraph";
+
+import { CameraSettingsSection } from "./sections/CameraSettingsSection";
+import { MicrophoneSettingsSection } from "./sections/MicrophoneSettingsSection";
+import { VoiceProcessingSection } from "./sections/VoiceProcessingSection";
+import { EqualizerSettingsSection } from "./sections/EqualizerSettingsSection";
+import { ScreenShareSettingsSection } from "./sections/ScreenShareSettingsSection";
 
 export function VoiceVideoSetting() {
 	const dispatch = useDispatch<AppDispatch>();
+
 	const {
 		selectedCameraId,
 		selectedMicrophoneId,
@@ -31,21 +28,26 @@ export function VoiceVideoSetting() {
 		isAutoInputSensitivity,
 		screenShareRuntime,
 		voiceProcessingConfig,
-		voiceProcessingPreset
+		voiceProcessingPreset,
 	} = useSelector((s: RootState) => s.device);
+
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+	const [, setMediaDevicesReady] = useState(false);
+
 	const [inputVolumePercent, setInputVolumePercent] = useState(
 		Math.round(voiceProcessingConfig.inputVolume * 100)
 	);
+
 	const [outputVolumePercent, setOutputVolumePercent] = useState(
 		Math.round(voiceProcessingConfig.outputVolume * 100)
 	);
-	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
-	const [_, setMediaDevicesReady] = useState(false);
+
 	const [cameraTestEnable, setCameraTestEnable] = useState(false);
 	const [volumeLevel, setVolumeLevel] = useState(0);
 	const [isListening, setIsListening] = useState(false);
-	const [showExperimentalScreenModes, setShowExperimentalScreenModes] = useState(false);
+	const [showExperimentalScreenModes, setShowExperimentalScreenModes] =
+		useState(false);
 
 	const streamRef = useRef<MediaStream | null>(null);
 	const audioGraphRef = useRef<ZvonokAudioGraph | null>(null);
@@ -57,8 +59,13 @@ export function VoiceVideoSetting() {
 	useEffect(() => {
 		const getDevices = async () => {
 			try {
-				await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+				await navigator.mediaDevices.getUserMedia({
+					audio: true,
+					video: true,
+				});
+
 				const devices = await navigator.mediaDevices.enumerateDevices();
+
 				setCameras(devices.filter((device) => device.kind === "videoinput"));
 				setMicrophones(devices.filter((device) => device.kind === "audioinput"));
 			} catch (error) {
@@ -68,7 +75,7 @@ export function VoiceVideoSetting() {
 			}
 		};
 
-		getDevices();
+		void getDevices();
 	}, []);
 
 	const cleanupAudioPreview = async () => {
@@ -106,7 +113,7 @@ export function VoiceVideoSetting() {
 					isAutoGainControlEnabled,
 					isEchoCancellationEnabled,
 					isNoiseSuppressionEnabled,
-					isRnnoiseEnabled: effectiveRnnoiseEnabled
+					isRnnoiseEnabled: effectiveRnnoiseEnabled,
 				});
 
 				const audioConstraints: MediaTrackConstraints = {
@@ -114,9 +121,11 @@ export function VoiceVideoSetting() {
 						selectedMicrophoneId === "default"
 							? undefined
 							: { exact: selectedMicrophoneId },
-					// есл включён RNNoise, браузерное шумоподавление вырубаеться,
-					// что бы двойной обработки небыло
-					noiseSuppression: effectiveRnnoiseEnabled ? false : micCaptureOptions.noiseSuppression,
+
+					noiseSuppression: effectiveRnnoiseEnabled
+						? false
+						: micCaptureOptions.noiseSuppression,
+
 					echoCancellation: micCaptureOptions.echoCancellation,
 					autoGainControl: micCaptureOptions.autoGainControl,
 
@@ -125,17 +134,19 @@ export function VoiceVideoSetting() {
 					sampleSize: micCaptureOptions.sampleSize ?? 16,
 				};
 
-				const supportedConstraints = navigator.mediaDevices.getSupportedConstraints() as {
-					voiceIsolation?: boolean;
-				};
+				const supportedConstraints =
+					navigator.mediaDevices.getSupportedConstraints() as {
+						voiceIsolation?: boolean;
+					};
+
 				if (supportedConstraints.voiceIsolation) {
 					(
 						audioConstraints as MediaTrackConstraints & {
 							voiceIsolation?: boolean;
 						}
 					).voiceIsolation = effectiveRnnoiseEnabled
-							? false
-							: isNoiseSuppressionEnabled;
+						? false
+						: isNoiseSuppressionEnabled;
 				}
 
 				const stream = await navigator.mediaDevices.getUserMedia({
@@ -227,13 +238,15 @@ export function VoiceVideoSetting() {
 
 		if (!graph) return;
 
-		void graph.updateConfig({
-			...voiceProcessingConfig,
-			stereoOutput: true
-		}).catch((error) => {
-			console.log("[audio-processor] failed to update graph config", error)
-		});
-	}, [voiceProcessingConfig])
+		void graph
+			.updateConfig({
+				...voiceProcessingConfig,
+				stereoOutput: true,
+			})
+			.catch((error) => {
+				console.log("[audio-processor] failed to update graph config", error);
+			});
+	}, [voiceProcessingConfig]);
 
 	useEffect(() => {
 		const audio = audioPreviewRef.current;
@@ -245,397 +258,93 @@ export function VoiceVideoSetting() {
 		if (isListening) {
 			void audio.play().catch((error) => {
 				console.error("Audio preview play failed", error);
-			})
+			});
 		} else {
 			audio.pause();
 		}
-	}, [isListening])
+	}, [isListening]);
 
 	useEffect(() => {
-		setInputVolumePercent(Math.round(voiceProcessingConfig.inputVolume * 100))
-	}, [voiceProcessingConfig.inputVolume])
-
+		setInputVolumePercent(Math.round(voiceProcessingConfig.inputVolume * 100));
+	}, [voiceProcessingConfig.inputVolume]);
 
 	useEffect(() => {
 		const timeoutId = window.setTimeout(() => {
 			dispatch(deviceActions.setVoiceInputVolume(inputVolumePercent / 100));
-		})
+		}, 150);
 
 		return () => {
 			window.clearTimeout(timeoutId);
-		}
-	}, [dispatch, inputVolumePercent])
-
+		};
+	}, [dispatch, inputVolumePercent]);
 
 	useEffect(() => {
-		setOutputVolumePercent(Math.round(voiceProcessingConfig.outputVolume * 100))
-	}, [voiceProcessingConfig.outputVolume])
-
+		setOutputVolumePercent(Math.round(voiceProcessingConfig.outputVolume * 100));
+	}, [voiceProcessingConfig.outputVolume]);
 
 	useEffect(() => {
 		const timeoutId = window.setTimeout(() => {
 			dispatch(deviceActions.setVoiceOutputVolume(outputVolumePercent / 100));
-		})
+		}, 150);
 
 		return () => {
 			window.clearTimeout(timeoutId);
-		}
-	}, [dispatch, outputVolumePercent])
+		};
+	}, [dispatch, outputVolumePercent]);
 
 	return (
 		<div className={styles["container"]}>
 			<div className={styles["content"]}>
-				<div className={styles["edit-section"]}>
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Камера</label>
-						<select
-							className={styles["input"]}
-							value={selectedCameraId}
-							onChange={(e) => dispatch(deviceActions.setCamera(e.target.value))}
-						>
-							<option value="default">Default</option>
-							{cameras.map((camera, index) => (
-								<option key={camera.deviceId} value={camera.deviceId}>
-									{getDeviceLabel(camera, index, "Camera")}
-								</option>
-							))}
-						</select>
-					</div>
+				<CameraSettingsSection
+					dispatch={dispatch}
+					selectedCameraId={selectedCameraId}
+					cameras={cameras}
+					cameraQuality={cameraQuality}
+					cameraTestEnable={cameraTestEnable}
+					onCameraTestToggle={() =>
+						setCameraTestEnable((previous) => !previous)
+					}
+				/>
 
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Предпросмотр выбранной камеры</label>
+				<MicrophoneSettingsSection
+					dispatch={dispatch}
+					selectedMicrophoneId={selectedMicrophoneId}
+					microphones={microphones}
+					micQualitySetting={micQualitySetting}
+					isNoiseSuppressionEnabled={isNoiseSuppressionEnabled}
+					isEchoCancellationEnabled={isEchoCancellationEnabled}
+					effectiveRnnoiseEnabled={effectiveRnnoiseEnabled}
+					volumeLevel={volumeLevel}
+					isListening={isListening}
+					isAutoInputSensitivity={isAutoInputSensitivity}
+					voiceActivityThreshold={voiceActivityThreshold}
+					audioPreviewRef={audioPreviewRef}
+					onListeningToggle={() => setIsListening((previous) => !previous)}
+				/>
 
-						{cameraTestEnable && <CameraView />}
-						<button
-							className={cameraTestEnable ? styles["btn-secondary"] : styles["btn-primary"]}
-							onClick={() => setCameraTestEnable(!cameraTestEnable)}
-						>
-							{cameraTestEnable ? "Закончить проверку" : "Проверить камеру"}
-						</button>
+				<VoiceProcessingSection
+					dispatch={dispatch}
+					voiceProcessingPreset={voiceProcessingPreset}
+					voiceProcessingConfig={voiceProcessingConfig}
+					inputVolumePercent={inputVolumePercent}
+					outputVolumePercent={outputVolumePercent}
+					onInputVolumePercentChange={setInputVolumePercent}
+					onOutputVolumePercentChange={setOutputVolumePercent}
+				/>
 
-					</div>
+				<EqualizerSettingsSection
+					dispatch={dispatch}
+					voiceProcessingConfig={voiceProcessingConfig}
+				/>
 
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Микрофон</label>
-						<select
-							className={styles["input"]}
-							value={selectedMicrophoneId}
-							onChange={(e) => dispatch(deviceActions.setMicrophone(e.target.value))}
-						>
-							<option value="default">Default</option>
-							{microphones.map((microphone, index) => (
-								<option key={microphone.deviceId} value={microphone.deviceId}>
-									{getDeviceLabel(microphone, index, "Microphone")}
-								</option>
-							))}
-						</select>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Обработка голоса</label>
-
-						<select
-							className={styles["input"]}
-							value={voiceProcessingPreset}
-							onChange={(e) =>
-								dispatch(
-									deviceActions.setVoiceProcessingPreset(
-										e.target.value as "default" | "clearVoice" | "softVoice"
-									)
-								)
-							}
-						>
-							<option value="default">Default</option>
-							<option value="clearVoice">Clear Voice</option>
-							<option value="softVoice">Soft Voice</option>
-						</select>
-
-						<span className={styles["help-text"]}>
-							Пресет меняет Web Audio обработку: громкость, RNNoise, фильтры, компрессор и лимитер.
-						</span>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>
-							Громкость микрофона: {Math.round(voiceProcessingConfig.inputVolume * 100)}%
-						</label>
-
-						<input
-							type="range"
-							min={0}
-							max={300}
-							value={inputVolumePercent}
-							onChange={(e) => setInputVolumePercent(Number(e.target.value))}
-						/>
-
-						<span className={styles["help-text"]}>
-							Это усиление до обработки. 100% = без изменения, 200% = в 2 раза громче.
-						</span>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>
-							Итоговая громкость: {Math.round(voiceProcessingConfig.outputVolume * 100)}%
-						</label>
-
-						<input
-							type="range"
-							min={0}
-							max={200}
-							value={outputVolumePercent}
-							onChange={(e) => setOutputVolumePercent(Number(e.target.value))}
-						/>
-
-						<span className={styles["help-text"]}>
-							Это громкость после всех фильтров.
-						</span>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>RNNoise</label>
-
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={voiceProcessingConfig.rnnoise.enabled}
-								onChange={(e) =>
-									dispatch(deviceActions.setVoiceRnnoiseEnabled(e.target.checked))
-								}
-							/>
-							<span>{voiceProcessingConfig.rnnoise.enabled ? "Включено" : "Выключено"}</span>
-						</label>
-
-						<span className={styles["help-text"]}>
-							Если включено, браузерное шумоподавление и voice isolation лучше выключать, чтобы не было двойной обработки.
-						</span>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>High-pass filter</label>
-
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={voiceProcessingConfig.highPass.enabled}
-								onChange={(e) =>
-									dispatch(deviceActions.setVoiceHighPass({ enabled: e.target.checked }))
-								}
-							/>
-							<span>{voiceProcessingConfig.highPass.enabled ? "Включено" : "Выключено"}</span>
-						</label>
-
-						<label className={styles["help-text"]}>
-							Частота: {voiceProcessingConfig.highPass.frequency} Hz
-						</label>
-
-						<input
-							type="range"
-							min={60}
-							max={160}
-							value={voiceProcessingConfig.highPass.frequency}
-							disabled={!voiceProcessingConfig.highPass.enabled}
-							onChange={(e) =>
-								dispatch(deviceActions.setVoiceHighPass({ frequency: Number(e.target.value) }))
-							}
-						/>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Presence boost</label>
-
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={voiceProcessingConfig.presence.enabled}
-								onChange={(e) =>
-									dispatch(deviceActions.setVoicePresence({ enabled: e.target.checked }))
-								}
-							/>
-							<span>{voiceProcessingConfig.presence.enabled ? "Включено" : "Выключено"}</span>
-						</label>
-
-						<label className={styles["help-text"]}>
-							Усиление: {voiceProcessingConfig.presence.gain.toFixed(1)} dB
-						</label>
-
-						<input
-							type="range"
-							min={0}
-							max={6}
-							step={0.5}
-							value={voiceProcessingConfig.presence.gain}
-							disabled={!voiceProcessingConfig.presence.enabled}
-							onChange={(e) =>
-								dispatch(deviceActions.setVoicePresence({ gain: Number(e.target.value) }))
-							}
-						/>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Compressor</label>
-
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={voiceProcessingConfig.compressor.enabled}
-								onChange={(e) =>
-									dispatch(deviceActions.setVoiceCompressor({ enabled: e.target.checked }))
-								}
-							/>
-							<span>{voiceProcessingConfig.compressor.enabled ? "Включено" : "Выключено"}</span>
-						</label>
-
-						<label className={styles["help-text"]}>
-							Сила: ratio {voiceProcessingConfig.compressor.ratio}
-						</label>
-
-						<input
-							type="range"
-							min={2}
-							max={12}
-							step={1}
-							value={voiceProcessingConfig.compressor.ratio}
-							disabled={!voiceProcessingConfig.compressor.enabled}
-							onChange={(e) =>
-								dispatch(deviceActions.setVoiceCompressor({ ratio: Number(e.target.value) }))
-							}
-						/>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Limiter</label>
-
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={voiceProcessingConfig.limiter.enabled}
-								onChange={(e) =>
-									dispatch(deviceActions.setVoiceLimiter({ enabled: e.target.checked }))
-								}
-							/>
-							<span>{voiceProcessingConfig.limiter.enabled ? "Включено" : "Выключено"}</span>
-						</label>
-
-						<label className={styles["help-text"]}>
-							Порог: {voiceProcessingConfig.limiter.threshold} dB
-						</label>
-
-						<input
-							type="range"
-							min={-20}
-							max={-2}
-							step={1}
-							value={voiceProcessingConfig.limiter.threshold}
-							disabled={!voiceProcessingConfig.limiter.enabled}
-							onChange={(e) =>
-								dispatch(deviceActions.setVoiceLimiter({ threshold: Number(e.target.value) }))
-							}
-						/>
-					</div>
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Качество микрофона</label>
-						<MicrophoneQualitySelector
-							value={micQualitySetting}
-							onChange={(value) => dispatch(deviceActions.setMicrophoneQuality(value))}
-						/>
-						<span className={styles["help-text"]}>
-							Запрошенные значения - это максимальные настройки которые могут быть изменены посредством браузера/ОС/аудиодрайвера.
-						</span>
-					</div>
-					
-					<span className={styles["help-text"]}>
-						Bitrate применяется только в звонке при публикации микрофона.
-						В проверке микрофона слышны только захват, шумоподавление и Web Audio обработка.
-					</span>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Браузерное шумоподавление</label>
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={isNoiseSuppressionEnabled}
-								onChange={(e) => dispatch(deviceActions.setNoiseSuppression(e.target.checked))}
-							/>
-							<span>{isNoiseSuppressionEnabled || !effectiveRnnoiseEnabled ? "Включено" : "Выключено"}</span>
-						</label>
-						<span className={styles["help-text"]}>
-							Используеться браузерное шумоподавление и изоляцию звука если поддерживается.
-						</span>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Эхоподавление</label>
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={isEchoCancellationEnabled}
-								onChange={(e) => dispatch(deviceActions.setEchoCancellation(e.target.checked))}
-							/>
-							<span>{isEchoCancellationEnabled ? "Включено" : "Выключено"}</span>
-						</label>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Проверка микрофона</label>
-						<div className={styles["volume-bar-bg"]}>
-							<div
-								className={styles["volume-bar-fill"]}
-								style={{ width: `${volumeLevel}%` }}
-							/>
-						</div>
-						<button
-							className={isListening ? styles["btn-secondary"] : styles["btn-primary"]}
-							onClick={() => setIsListening(!isListening)}
-						>
-							{isListening ? "Закончить прослушивание" : "Послушать себя"}
-						</button>
-						<div className={styles["help-text"]}>
-							Voice activity:{" "}
-							{volumeLevel >= (isAutoInputSensitivity ? 30 : voiceActivityThreshold)
-								? "Detected"
-								: "Below threshold"}
-						</div>
-						<audio ref={audioPreviewRef} style={{ display: "none" }} />
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Качество камеры</label>
-						<select
-							className={styles["input"]}
-							value={cameraQuality}
-							onChange={(e) =>
-								dispatch(deviceActions.setCameraQuality(e.target.value as CallQualitySetting))
-							}
-						>
-							<option value="auto">Auto</option>
-							<option value="high">High (1080p, 30 FPS)</option>
-							<option value="medium">Medium (720p, 24 FPS)</option>
-							<option value="low">Low (360p, 15 FPS)</option>
-						</select>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Качество трансляции экрана</label>
-						<ScreenShareQualityGrid
-							value={screenShareQuality}
-							onChange={(value) => dispatch(deviceActions.setScreenShareQuality(value as ScreenShareQualitySetting))}
-							showExperimental={showExperimentalScreenModes}
-							onShowExperimentalChange={setShowExperimentalScreenModes}
-							runtimeInfo={screenShareRuntime}
-						/>
-					</div>
-				</div>
+				<ScreenShareSettingsSection
+					dispatch={dispatch}
+					screenShareQuality={screenShareQuality}
+					showExperimentalScreenModes={showExperimentalScreenModes}
+					onShowExperimentalScreenModesChange={setShowExperimentalScreenModes}
+					screenShareRuntime={screenShareRuntime}
+				/>
 			</div>
 		</div>
 	);
-}
-
-function getDeviceLabel(
-	device: MediaDeviceInfo,
-	index: number,
-	fallbackType: "Camera" | "Microphone"
-) {
-	const trimmed = device.label?.trim();
-	if (trimmed) return trimmed;
-	return `${fallbackType} ${index + 1}`;
 }

@@ -9,6 +9,7 @@ const ORDER: MicQualitySetting[] = [
 	"studio",
 	"boosted",
 	"potato",
+	"insane"
 ];
 
 export function MicrophoneQualitySelector({
