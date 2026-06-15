@@ -25,16 +25,23 @@ export function VoiceVideoSetting() {
 		cameraQuality,
 		screenShareQuality,
 		isNoiseSuppressionEnabled,
-		isRnnoiseEnabled,
 		isEchoCancellationEnabled,
 		isAutoGainControlEnabled,
 		voiceActivityThreshold,
 		isAutoInputSensitivity,
 		screenShareRuntime,
+		voiceProcessingConfig,
+		voiceProcessingPreset
 	} = useSelector((s: RootState) => s.device);
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+	const [inputVolumePercent, setInputVolumePercent] = useState(
+		Math.round(voiceProcessingConfig.inputVolume * 100)
+	);
+	const [outputVolumePercent, setOutputVolumePercent] = useState(
+		Math.round(voiceProcessingConfig.outputVolume * 100)
+	);
 	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
-	const [mediaDevicesReady, setMediaDevicesReady] = useState(false);
+	const [_, setMediaDevicesReady] = useState(false);
 	const [cameraTestEnable, setCameraTestEnable] = useState(false);
 	const [volumeLevel, setVolumeLevel] = useState(0);
 	const [isListening, setIsListening] = useState(false);
@@ -44,6 +51,8 @@ export function VoiceVideoSetting() {
 	const audioGraphRef = useRef<ZvonokAudioGraph | null>(null);
 	const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 	const animationRef = useRef<number | null>(null);
+
+	const effectiveRnnoiseEnabled = voiceProcessingConfig.rnnoise.enabled;
 
 	useEffect(() => {
 		const getDevices = async () => {
@@ -97,6 +106,7 @@ export function VoiceVideoSetting() {
 					isAutoGainControlEnabled,
 					isEchoCancellationEnabled,
 					isNoiseSuppressionEnabled,
+					isRnnoiseEnabled: effectiveRnnoiseEnabled
 				});
 
 				const audioConstraints: MediaTrackConstraints = {
@@ -104,9 +114,9 @@ export function VoiceVideoSetting() {
 						selectedMicrophoneId === "default"
 							? undefined
 							: { exact: selectedMicrophoneId },
-					// есл включён RNNoise, браузерное шумоподавление лучше вырубить,
+					// есл включён RNNoise, браузерное шумоподавление вырубаеться,
 					// что бы двойной обработки небыло
-					noiseSuppression: isRnnoiseEnabled ? false: micCaptureOptions.noiseSuppression,
+					noiseSuppression: effectiveRnnoiseEnabled ? false : micCaptureOptions.noiseSuppression,
 					echoCancellation: micCaptureOptions.echoCancellation,
 					autoGainControl: micCaptureOptions.autoGainControl,
 
@@ -123,7 +133,9 @@ export function VoiceVideoSetting() {
 						audioConstraints as MediaTrackConstraints & {
 							voiceIsolation?: boolean;
 						}
-					).voiceIsolation = isNoiseSuppressionEnabled;
+					).voiceIsolation = effectiveRnnoiseEnabled
+							? false
+							: isNoiseSuppressionEnabled;
 				}
 
 				const stream = await navigator.mediaDevices.getUserMedia({
@@ -144,9 +156,7 @@ export function VoiceVideoSetting() {
 				}
 
 				const audioGraph = new ZvonokAudioGraph({
-					rnnoiseEnabled: isRnnoiseEnabled,
-					inputVolume: 1,
-					outputVolume: 1,
+					...voiceProcessingConfig,
 					stereoOutput: true,
 				});
 
@@ -193,9 +203,6 @@ export function VoiceVideoSetting() {
 				};
 
 				checkVolume();
-
-				console.log("[audio-preview] raw track settings:", rawAudioTrack.getSettings());
-				console.log("[audio-preview] rnnoise enabled:", isRnnoiseEnabled);
 			} catch (error) {
 				console.log("Microphone preview error:", error);
 			}
@@ -213,8 +220,20 @@ export function VoiceVideoSetting() {
 		isNoiseSuppressionEnabled,
 		isEchoCancellationEnabled,
 		isAutoGainControlEnabled,
-		isRnnoiseEnabled
 	]);
+
+	useEffect(() => {
+		const graph = audioGraphRef.current;
+
+		if (!graph) return;
+
+		void graph.updateConfig({
+			...voiceProcessingConfig,
+			stereoOutput: true
+		}).catch((error) => {
+			console.log("[audio-processor] failed to update graph config", error)
+		});
+	}, [voiceProcessingConfig])
 
 	useEffect(() => {
 		const audio = audioPreviewRef.current;
@@ -231,6 +250,37 @@ export function VoiceVideoSetting() {
 			audio.pause();
 		}
 	}, [isListening])
+
+	useEffect(() => {
+		setInputVolumePercent(Math.round(voiceProcessingConfig.inputVolume * 100))
+	}, [voiceProcessingConfig.inputVolume])
+
+
+	useEffect(() => {
+		const timeoutId = window.setTimeout(() => {
+			dispatch(deviceActions.setVoiceInputVolume(inputVolumePercent / 100));
+		})
+
+		return () => {
+			window.clearTimeout(timeoutId);
+		}
+	}, [dispatch, inputVolumePercent])
+
+
+	useEffect(() => {
+		setOutputVolumePercent(Math.round(voiceProcessingConfig.outputVolume * 100))
+	}, [voiceProcessingConfig.outputVolume])
+
+
+	useEffect(() => {
+		const timeoutId = window.setTimeout(() => {
+			dispatch(deviceActions.setVoiceOutputVolume(outputVolumePercent / 100));
+		})
+
+		return () => {
+			window.clearTimeout(timeoutId);
+		}
+	}, [dispatch, outputVolumePercent])
 
 	return (
 		<div className={styles["container"]}>
@@ -282,6 +332,208 @@ export function VoiceVideoSetting() {
 					</div>
 
 					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Обработка голоса</label>
+
+						<select
+							className={styles["input"]}
+							value={voiceProcessingPreset}
+							onChange={(e) =>
+								dispatch(
+									deviceActions.setVoiceProcessingPreset(
+										e.target.value as "default" | "clearVoice" | "softVoice"
+									)
+								)
+							}
+						>
+							<option value="default">Default</option>
+							<option value="clearVoice">Clear Voice</option>
+							<option value="softVoice">Soft Voice</option>
+						</select>
+
+						<span className={styles["help-text"]}>
+							Пресет меняет Web Audio обработку: громкость, RNNoise, фильтры, компрессор и лимитер.
+						</span>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>
+							Громкость микрофона: {Math.round(voiceProcessingConfig.inputVolume * 100)}%
+						</label>
+
+						<input
+							type="range"
+							min={0}
+							max={300}
+							value={inputVolumePercent}
+							onChange={(e) => setInputVolumePercent(Number(e.target.value))}
+						/>
+
+						<span className={styles["help-text"]}>
+							Это усиление до обработки. 100% = без изменения, 200% = в 2 раза громче.
+						</span>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>
+							Итоговая громкость: {Math.round(voiceProcessingConfig.outputVolume * 100)}%
+						</label>
+
+						<input
+							type="range"
+							min={0}
+							max={200}
+							value={outputVolumePercent}
+							onChange={(e) => setOutputVolumePercent(Number(e.target.value))}
+						/>
+
+						<span className={styles["help-text"]}>
+							Это громкость после всех фильтров.
+						</span>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>RNNoise</label>
+
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={voiceProcessingConfig.rnnoise.enabled}
+								onChange={(e) =>
+									dispatch(deviceActions.setVoiceRnnoiseEnabled(e.target.checked))
+								}
+							/>
+							<span>{voiceProcessingConfig.rnnoise.enabled ? "Включено" : "Выключено"}</span>
+						</label>
+
+						<span className={styles["help-text"]}>
+							Если включено, браузерное шумоподавление и voice isolation лучше выключать, чтобы не было двойной обработки.
+						</span>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>High-pass filter</label>
+
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={voiceProcessingConfig.highPass.enabled}
+								onChange={(e) =>
+									dispatch(deviceActions.setVoiceHighPass({ enabled: e.target.checked }))
+								}
+							/>
+							<span>{voiceProcessingConfig.highPass.enabled ? "Включено" : "Выключено"}</span>
+						</label>
+
+						<label className={styles["help-text"]}>
+							Частота: {voiceProcessingConfig.highPass.frequency} Hz
+						</label>
+
+						<input
+							type="range"
+							min={60}
+							max={160}
+							value={voiceProcessingConfig.highPass.frequency}
+							disabled={!voiceProcessingConfig.highPass.enabled}
+							onChange={(e) =>
+								dispatch(deviceActions.setVoiceHighPass({ frequency: Number(e.target.value) }))
+							}
+						/>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Presence boost</label>
+
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={voiceProcessingConfig.presence.enabled}
+								onChange={(e) =>
+									dispatch(deviceActions.setVoicePresence({ enabled: e.target.checked }))
+								}
+							/>
+							<span>{voiceProcessingConfig.presence.enabled ? "Включено" : "Выключено"}</span>
+						</label>
+
+						<label className={styles["help-text"]}>
+							Усиление: {voiceProcessingConfig.presence.gain.toFixed(1)} dB
+						</label>
+
+						<input
+							type="range"
+							min={0}
+							max={6}
+							step={0.5}
+							value={voiceProcessingConfig.presence.gain}
+							disabled={!voiceProcessingConfig.presence.enabled}
+							onChange={(e) =>
+								dispatch(deviceActions.setVoicePresence({ gain: Number(e.target.value) }))
+							}
+						/>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Compressor</label>
+
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={voiceProcessingConfig.compressor.enabled}
+								onChange={(e) =>
+									dispatch(deviceActions.setVoiceCompressor({ enabled: e.target.checked }))
+								}
+							/>
+							<span>{voiceProcessingConfig.compressor.enabled ? "Включено" : "Выключено"}</span>
+						</label>
+
+						<label className={styles["help-text"]}>
+							Сила: ratio {voiceProcessingConfig.compressor.ratio}
+						</label>
+
+						<input
+							type="range"
+							min={2}
+							max={12}
+							step={1}
+							value={voiceProcessingConfig.compressor.ratio}
+							disabled={!voiceProcessingConfig.compressor.enabled}
+							onChange={(e) =>
+								dispatch(deviceActions.setVoiceCompressor({ ratio: Number(e.target.value) }))
+							}
+						/>
+					</div>
+
+					<div className={styles["form-group"]}>
+						<label className={styles["label"]}>Limiter</label>
+
+						<label className={styles["toggle-row"]}>
+							<input
+								type="checkbox"
+								checked={voiceProcessingConfig.limiter.enabled}
+								onChange={(e) =>
+									dispatch(deviceActions.setVoiceLimiter({ enabled: e.target.checked }))
+								}
+							/>
+							<span>{voiceProcessingConfig.limiter.enabled ? "Включено" : "Выключено"}</span>
+						</label>
+
+						<label className={styles["help-text"]}>
+							Порог: {voiceProcessingConfig.limiter.threshold} dB
+						</label>
+
+						<input
+							type="range"
+							min={-20}
+							max={-2}
+							step={1}
+							value={voiceProcessingConfig.limiter.threshold}
+							disabled={!voiceProcessingConfig.limiter.enabled}
+							onChange={(e) =>
+								dispatch(deviceActions.setVoiceLimiter({ threshold: Number(e.target.value) }))
+							}
+						/>
+					</div>
+
+					<div className={styles["form-group"]}>
 						<label className={styles["label"]}>Качество микрофона</label>
 						<MicrophoneQualitySelector
 							value={micQualitySetting}
@@ -305,26 +557,10 @@ export function VoiceVideoSetting() {
 								checked={isNoiseSuppressionEnabled}
 								onChange={(e) => dispatch(deviceActions.setNoiseSuppression(e.target.checked))}
 							/>
-							<span>{isNoiseSuppressionEnabled || !isRnnoiseEnabled ? "Включено" : "Выключено"}</span>
+							<span>{isNoiseSuppressionEnabled || !effectiveRnnoiseEnabled ? "Включено" : "Выключено"}</span>
 						</label>
 						<span className={styles["help-text"]}>
-							Используеться браузерное шумоподавление и изоляция звука если подурживаеться.
-						</span>
-					</div>
-
-					<div className={styles["form-group"]}>
-						<label className={styles["label"]}>Подавление шума с помощью Rnnoise</label>
-						<label className={styles["toggle-row"]}>
-							<input
-								type="checkbox"
-								checked={isRnnoiseEnabled}
-								onChange={(e) => dispatch(deviceActions.setRnnoise(e.target.checked))}
-							/>
-							<span>{isRnnoiseEnabled ? "Включено" : "Выключено"}</span>
-						</label>
-						<span className={styles["help-text"]}>
-							Использует нейросетевой алгоритм RNNoise для дополнительного подавления фонового шума с сохранением естественного звучания голоса.
-							Если включено, используется вместо стандартного шумоподавления браузера.
+							Используеться браузерное шумоподавление и изоляцию звука если поддерживается.
 						</span>
 					</div>
 

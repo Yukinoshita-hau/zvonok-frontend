@@ -1,12 +1,6 @@
 import type { RnnoiseWorkletNode } from "@sapphi-red/web-noise-suppressor";
 import { rnnoiseResources } from "./RnnoiseResources";
-
-export interface ZvonokAudioGraphConfig {
-	rnnoiseEnabled: boolean;
-	inputVolume?: number;
-	outputVolume?: number;
-	stereoOutput?: boolean;
-}
+import type { ZvonokAudioGraphConfig } from "./ZvonokAudioGraphConfig";
 
 export class ZvonokAudioGraph {
 	private readonly audioContext: AudioContext;
@@ -35,46 +29,17 @@ export class ZvonokAudioGraph {
 	private destroyed = false;
 
 	constructor(config: ZvonokAudioGraphConfig) {
-		this.config = {
-			inputVolume: 1,
-			outputVolume: 1,
-			stereoOutput: true,
-			...config,
-		};
+		this.config = config;
 
 		this.audioContext = new AudioContext();
 
 		this.inputGain = this.audioContext.createGain();
 		this.outputGain = this.audioContext.createGain();
 
-		this.inputGain.gain.value = this.config.inputVolume ?? 1;
-		this.outputGain.gain.value = this.config.outputVolume ?? 1;
-
 		this.highPass = this.audioContext.createBiquadFilter();
-		this.highPass.type = "highpass";
-		this.highPass.frequency.value = 90;
-
 		this.presence = this.audioContext.createBiquadFilter();
-		this.presence.type = "peaking";
-		this.presence.frequency.value = 3000;
-		this.presence.Q.value = 1;
-		this.presence.gain.value = 3;
-
 		this.compressor = this.audioContext.createDynamicsCompressor();
-
-		this.compressor.threshold.value = -30;
-		this.compressor.ratio.value = 8;
-		this.compressor.knee.value = 10;
-		this.compressor.attack.value = 0.003;
-		this.compressor.release.value = 0.18;
-
 		this.limiter = this.audioContext.createDynamicsCompressor();
-
-		this.limiter.threshold.value = -8;
-		this.limiter.ratio.value = 20;
-		this.limiter.knee.value = 0;
-		this.limiter.attack.value = 0.001;
-		this.limiter.release.value = 0.06;
 
 		this.splitter = this.audioContext.createChannelSplitter(1);
 		this.merger = this.audioContext.createChannelMerger(2);
@@ -83,6 +48,8 @@ export class ZvonokAudioGraph {
 		this.analyser.fftSize = 2048;
 
 		this.destination = this.audioContext.createMediaStreamDestination();
+
+		this.applyConfigToNodes();
 	}
 
 	async attachTrack(track: MediaStreamTrack): Promise<void> {
@@ -93,17 +60,6 @@ export class ZvonokAudioGraph {
 		}
 
 		this.sourceStream = new MediaStream([track]);
-
-		await this.rebuildGraph();
-	}
-
-	async setRnnoiseEnabled(enabled: boolean): Promise<void> {
-		if (this.config.rnnoiseEnabled === enabled) return;
-
-		this.config = {
-			...this.config,
-			rnnoiseEnabled: enabled
-		};
 
 		await this.rebuildGraph();
 	}
@@ -141,10 +97,13 @@ export class ZvonokAudioGraph {
 		if (!this.sourceStream) return;
 
 		this.disconnectGraph();
+		this.applyConfigToNodes();
 
 		this.source = this.audioContext.createMediaStreamSource(this.sourceStream);
 
-		if (this.config.rnnoiseEnabled) {
+		let currentNode: AudioNode = this.source.connect(this.inputGain);
+
+		if (this.config.rnnoise.enabled) {
 			const rnnoiseNode = await rnnoiseResources.createNode(this.audioContext);
 
 			if (this.destroyed) {
@@ -154,27 +113,28 @@ export class ZvonokAudioGraph {
 
 			this.rnnoiseNode = rnnoiseNode;
 
-			this.source
-				.connect(this.inputGain)
-				.connect(rnnoiseNode)
-				.connect(this.highPass)
-				.connect(this.presence)
-				.connect(this.compressor)
-				.connect(this.limiter)
-
-			this.connectTail(this.limiter);
+			currentNode = currentNode.connect(rnnoiseNode);
 		} else {
 			this.rnnoiseNode = undefined;
-
-			this.source
-				.connect(this.inputGain)
-				.connect(this.highPass)
-				.connect(this.presence)
-				.connect(this.compressor)
-				.connect(this.limiter)
-
-			this.connectTail(this.limiter);
 		}
+
+		if (this.config.highPass.enabled) {
+			currentNode = currentNode.connect(this.highPass);
+		}
+
+		if (this.config.presence.enabled) {
+			currentNode = currentNode.connect(this.presence);
+		}
+
+		if (this.config.compressor.enabled) {
+			currentNode = currentNode.connect(this.compressor);
+		}
+
+		if (this.config.limiter.enabled) {
+			currentNode = currentNode.connect(this.limiter);
+		}
+
+		this.connectTail(currentNode);
 	}
 
 	// Mono -> stereo.
@@ -222,31 +182,60 @@ export class ZvonokAudioGraph {
 		await this.audioContext.close();
 	}
 
-	async updateConfig(nextConfig: Partial<ZvonokAudioGraphConfig>): Promise<void> {
+	async updateConfig(nextConfig: ZvonokAudioGraphConfig): Promise<void> {
 		if (this.destroyed) return;
 
 		const shouldRebuild =
-			(nextConfig.rnnoiseEnabled !== undefined &&
-			nextConfig.rnnoiseEnabled !== this.config.rnnoiseEnabled) ||
-			(nextConfig.stereoOutput !== undefined &&
-			nextConfig.stereoOutput !== this.config.stereoOutput);
+			nextConfig.rnnoise.enabled !== this.config.rnnoise.enabled ||
+			nextConfig.highPass.enabled !== this.config.highPass.enabled ||
+			nextConfig.presence.enabled !== this.config.presence.enabled ||
+			nextConfig.compressor.enabled !== this.config.compressor.enabled ||
+			nextConfig.limiter.enabled !== this.config.limiter.enabled ||
+			nextConfig.stereoOutput !== this.config.stereoOutput;
 
-		this.config = {
-			...this.config,
-			...nextConfig,
-		};
-
-		if (nextConfig.inputVolume !== undefined) {
-			this.inputGain.gain.value = nextConfig.inputVolume;
-		}
-
-		if (nextConfig.outputVolume !== undefined) {
-			this.outputGain.gain.value = nextConfig.outputVolume;
-		}
+		this.config = nextConfig;
+		this.applyConfigToNodes();
 
 		if (shouldRebuild) {
 			await this.rebuildGraph();
 		}
 	}
 
+	private applyConfigToNodes(): void {
+		this.setAudioParamValue(this.inputGain.gain, this.config.inputVolume);
+		this.setAudioParamValue(this.outputGain.gain, this.config.outputVolume);
+
+		this.highPass.type = "highpass";
+		this.highPass.frequency.value = this.config.highPass.frequency;
+
+		this.presence.type = "peaking";
+		this.presence.frequency.value = this.config.presence.frequency;
+		this.presence.gain.value = this.config.presence.gain;
+		this.presence.Q.value = this.config.presence.q;
+
+		this.compressor.threshold.value = this.config.compressor.threshold;
+		this.compressor.ratio.value = this.config.compressor.ratio;
+		this.compressor.knee.value = this.config.compressor.knee;
+		this.compressor.attack.value = this.config.compressor.attack;
+		this.compressor.release.value = this.config.compressor.release;
+
+		this.limiter.threshold.value = this.config.limiter.threshold;
+		this.limiter.ratio.value = this.config.limiter.ratio;
+		this.limiter.knee.value = this.config.limiter.knee;
+		this.limiter.attack.value = this.config.limiter.attack;
+		this.limiter.release.value = this.config.limiter.release;
+	}
+
+	private setAudioParamValue(param: AudioParam, value: number): void {
+		const now = this.audioContext.currentTime;
+
+		param.cancelScheduledValues(now);
+
+		if (value === 0) {
+			param.setValueAtTime(0, now);
+			return;
+		}
+
+		param.setTargetAtTime(value, now, 0.015);
+	}
 }

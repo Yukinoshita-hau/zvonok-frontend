@@ -6,6 +6,8 @@ import type {
 	ScreenShareQualitySetting,
 } from "../../utils/callQuality";
 import type { MicQualitySetting } from "../../utils/microphoneQuality";
+import type { ZvonokAudioGraphConfig, ZvonokVoicePresetId } from "../../livekit/audio/ZvonokAudioGraphConfig";
+import { getVoicePresetConfig } from "../../livekit/audio/ZvonokAudioPresets";
 
 export type ParticipantAudioSource = "microphone" | "screenShareAudio";
 
@@ -40,10 +42,15 @@ export interface DeviceState {
 	micQualitySetting: MicQualitySetting;
 	cameraQuality: CallQualitySetting;
 	screenShareQuality: ScreenShareQualitySetting;
+
 	isNoiseSuppressionEnabled: boolean;
 	isEchoCancellationEnabled: boolean;
 	isAutoGainControlEnabled: boolean;
 	isRnnoiseEnabled: boolean;
+
+	voiceProcessingPreset: ZvonokVoicePresetId;
+	voiceProcessingConfig: ZvonokAudioGraphConfig;
+
 	voiceActivityThreshold: number;
 	isAutoInputSensitivity: boolean;
 	participantVolumes: ParticipantVolumePreference[];
@@ -81,6 +88,9 @@ function saveStoredPreferences(state: DeviceState) {
 				voiceActivityThreshold: state.voiceActivityThreshold,
 				isAutoInputSensitivity: state.isAutoInputSensitivity,
 				participantVolumes: state.participantVolumes,
+
+				voiceProcessingPreset: state.voiceProcessingPreset,
+				voiceProcessingConfig: state.voiceProcessingConfig
 			})
 		);
 	} catch (error) {
@@ -96,13 +106,19 @@ const initialState: DeviceState = {
 	micQualitySetting: storedPrefs?.micQualitySetting ?? "balanced",
 	cameraQuality: storedPrefs?.cameraQuality ?? "high",
 	screenShareQuality: storedPrefs?.screenShareQuality ?? "medium",
+
 	isNoiseSuppressionEnabled: storedPrefs?.isNoiseSuppressionEnabled ?? true,
 	isRnnoiseEnabled: storedPrefs?.isRnnoiseEnabled ?? false,
-	isEchoCancellationEnabled: storedPrefs?.isEchoCancellationEnabled ?? true,
-	isAutoGainControlEnabled: storedPrefs?.isAutoGainControlEnabled ?? true,
+	isEchoCancellationEnabled: storedPrefs?.isEchoCancellationEnabled ?? false,
+	isAutoGainControlEnabled: storedPrefs?.isAutoGainControlEnabled ?? false,
+
+	voiceProcessingPreset: storedPrefs?.voiceProcessingPreset ?? "default",
+	voiceProcessingConfig: storedPrefs?.voiceProcessingConfig ?? getVoicePresetConfig("default"),
+
 	voiceActivityThreshold: storedPrefs?.voiceActivityThreshold ?? 35,
 	isAutoInputSensitivity: storedPrefs?.isAutoInputSensitivity ?? true,
 	participantVolumes: storedPrefs?.participantVolumes ?? [],
+
 	screenShareRuntime: {
 		requestedFps: null,
 		actualFps: null,
@@ -152,6 +168,8 @@ export const deviceSlice = createSlice({
 		},
 		setRnnoise: (state, action: PayloadAction<boolean>) => {
 			state.isRnnoiseEnabled = action.payload;
+			state.voiceProcessingPreset = "custom";
+			state.voiceProcessingConfig.rnnoise.enabled = action.payload;
 			saveStoredPreferences(state);
 		},
 		setEchoCancellation: (state, action: PayloadAction<boolean>) => {
@@ -186,6 +204,47 @@ export const deviceSlice = createSlice({
 			}
 			saveStoredPreferences(state);
 		},
+		setVoiceCompressor: (
+			state,
+			action: PayloadAction<{
+				enabled?: boolean;
+				threshold?: number;
+				ratio?: number;
+				knee?: number;
+				attack?: number;
+				release?: number;
+			}>
+		) => {
+			state.voiceProcessingPreset = "custom";
+
+			state.voiceProcessingConfig.compressor = {
+				...state.voiceProcessingConfig.compressor,
+				...action.payload,
+			};
+
+			saveStoredPreferences(state);
+		},
+
+		setVoiceLimiter: (
+			state,
+			action: PayloadAction<{
+				enabled?: boolean;
+				threshold?: number;
+				ratio?: number;
+				knee?: number;
+				attack?: number;
+				release?: number;
+			}>
+		) => {
+			state.voiceProcessingPreset = "custom";
+
+			state.voiceProcessingConfig.limiter = {
+				...state.voiceProcessingConfig.limiter,
+				...action.payload,
+			};
+
+			saveStoredPreferences(state);
+		},
 		resetParticipantVolume: (
 			state,
 			action: PayloadAction<{ participantIdentity: string; source: ParticipantAudioSource }>
@@ -214,6 +273,67 @@ export const deviceSlice = createSlice({
 				...action.payload,
 				updatedAt: new Date().toISOString(),
 			};
+		},
+		setVoiceProcessingPreset: (
+			state,
+			action: PayloadAction<Exclude<ZvonokVoicePresetId, "custom">>
+		) => {
+			state.voiceProcessingPreset = action.payload;
+			state.voiceProcessingConfig = getVoicePresetConfig(action.payload);
+
+			// так как старая логика этого требует надо будет это пофисить
+			state.isRnnoiseEnabled = state.voiceProcessingConfig.rnnoise.enabled;
+
+			saveStoredPreferences(state);
+		},
+		setVoiceInputVolume: (state, action: PayloadAction<number>) => {
+			state.voiceProcessingPreset = "custom";
+			state.voiceProcessingConfig.inputVolume = action.payload;
+			saveStoredPreferences(state);
+		},
+
+		setVoiceOutputVolume: (state, action: PayloadAction<number>) => {
+			state.voiceProcessingPreset = "custom";
+			state.voiceProcessingConfig.outputVolume = action.payload;
+			saveStoredPreferences(state);
+		},
+
+		setVoiceRnnoiseEnabled: (state, action: PayloadAction<boolean>) => {
+			state.voiceProcessingPreset = "custom";
+			state.voiceProcessingConfig.rnnoise.enabled = action.payload;
+
+			// Пока оставляем совместимость со старым полем а не то будет бабах.
+			state.isRnnoiseEnabled = action.payload;
+
+			saveStoredPreferences(state);
+		},
+
+		setVoiceHighPass: (
+			state,
+			action: PayloadAction<{ enabled?: boolean; frequency?: number }>
+		) => {
+			state.voiceProcessingPreset = "custom";
+
+			state.voiceProcessingConfig.highPass = {
+				...state.voiceProcessingConfig.highPass,
+				...action.payload,
+			};
+
+			saveStoredPreferences(state);
+		},
+
+		setVoicePresence: (
+			state,
+			action: PayloadAction<{ enabled?: boolean; frequency?: number; gain?: number; q?: number }>
+		) => {
+			state.voiceProcessingPreset = "custom";
+
+			state.voiceProcessingConfig.presence = {
+				...state.voiceProcessingConfig.presence,
+				...action.payload,
+			};
+
+			saveStoredPreferences(state);
 		},
 		setConnectionTestRunning: (state) => {
 			state.connectionTestResult.status = "running";
@@ -254,7 +374,7 @@ export const deviceSlice = createSlice({
 			state.cameraQuality = "auto";
 			state.screenShareQuality = "auto";
 			saveStoredPreferences(state);
-		}
+		},
 	}
 })
 

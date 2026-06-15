@@ -24,9 +24,9 @@ export const MICROPHONE_QUALITY_PRESETS: Record<MicQualitySetting, MicQualityPre
 		latency: 0.03,
 		sampleRate: 24000,
 		channelCount: 1,
-		autoGainControl: true,
-		echoCancellation: true,
-		noiseSuppression: true,
+		autoGainControl: false,
+		echoCancellation: false,
+		noiseSuppression: false,
 		voiceIsolation: false,
 	},
 	balanced: {
@@ -36,8 +36,8 @@ export const MICROPHONE_QUALITY_PRESETS: Record<MicQualitySetting, MicQualityPre
 		latency: 0.02,
 		sampleRate: 48000,
 		channelCount: 1,
-		autoGainControl: true,
-		echoCancellation: true,
+		autoGainControl: false,
+		echoCancellation: false,
 		noiseSuppression: true,
 		voiceIsolation: true,
 	},
@@ -47,10 +47,10 @@ export const MICROPHONE_QUALITY_PRESETS: Record<MicQualitySetting, MicQualityPre
 		description: "Prioritizes cleaner voice quality over latency.",
 		latency: 0.01,
 		sampleRate: 48000,
-		channelCount: 2,
+		channelCount: 1,
 		autoGainControl: false,
 		echoCancellation: false,
-		noiseSuppression: false,
+		noiseSuppression: true,
 		voiceIsolation: false,
 		warning: "Может увеличить использование процессора и задержку от вас до слушателя",
 	},
@@ -62,8 +62,8 @@ export const MICROPHONE_QUALITY_PRESETS: Record<MicQualitySetting, MicQualityPre
 		sampleRate: 48000,
 		channelCount: 1,
 		autoGainControl: false,
-		echoCancellation: true,
-		noiseSuppression: false,
+		echoCancellation: false,
+		noiseSuppression: true,
 		voiceIsolation: false,
 		warning: "Подавление фонового шума может стать слабее.",
 	},
@@ -87,11 +87,19 @@ export function getMicrophoneCaptureOptions(
 			params.selectedMicrophoneId !== "default"
 				? params.selectedMicrophoneId
 				: undefined,
-		autoGainControl: params.isAutoGainControlEnabled && preset.autoGainControl,
+		// Deprecated
+		autoGainControl: false,
+
 		echoCancellation: params.isEchoCancellationEnabled && preset.echoCancellation,
-		noiseSuppression: shouldUseRnnoise ? false: params.isNoiseSuppressionEnabled && preset.noiseSuppression,
-		voiceIsolation: shouldUseRnnoise ? false: params.isNoiseSuppressionEnabled && (preset.voiceIsolation ?? false),
-		channelCount: shouldUseRnnoise ? 1: preset.channelCount,
+		noiseSuppression: shouldUseRnnoise 
+			? false
+			: params.isNoiseSuppressionEnabled && preset.noiseSuppression,
+
+		voiceIsolation: shouldUseRnnoise 
+			? false
+			: params.isNoiseSuppressionEnabled && (preset.voiceIsolation ?? false),
+
+		channelCount: 1,
 		sampleRate:  shouldUseRnnoise ? 48000: preset.sampleRate,
 		sampleSize: 16,
 		latency: preset.latency,

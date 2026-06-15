@@ -1,5 +1,6 @@
 import type { AudioProcessorOptions, Track, TrackProcessor } from "livekit-client";
-import { ZvonokAudioGraph, type ZvonokAudioGraphConfig } from "./GlobalAudioGraph";
+import { ZvonokAudioGraph } from "./GlobalAudioGraph";
+import type { ZvonokAudioGraphConfig } from "./ZvonokAudioGraphConfig";
 
 
 export class ZvonokLiveKitAudioProcessor implements TrackProcessor<Track.Kind.Audio, AudioProcessorOptions> {
@@ -9,7 +10,7 @@ export class ZvonokLiveKitAudioProcessor implements TrackProcessor<Track.Kind.Au
 
 	private audioGraph?: ZvonokAudioGraph;
 
-	constructor(private readonly config: ZvonokAudioGraphConfig) {}
+	constructor(private config: ZvonokAudioGraphConfig) {}
 
 	async init(options: AudioProcessorOptions): Promise<void> {
 		await this.destroy();
@@ -23,6 +24,15 @@ export class ZvonokLiveKitAudioProcessor implements TrackProcessor<Track.Kind.Au
 
 		this.audioGraph = audioGraph;
 		this.processedTrack = audioGraph.getProcessedTrack();
+	}
+
+	async updateConfig(nextConfig: ZvonokAudioGraphConfig): Promise<void> {
+		this.config = {
+			...nextConfig,
+			stereoOutput: false
+		}
+
+		await this.audioGraph?.updateConfig(this.config);	
 	}
 
 	async restart(options: AudioProcessorOptions): Promise<void> {
