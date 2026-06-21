@@ -99,6 +99,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 						console.log(data)
 
 						storeApi.dispatch(callActions.applyCallEvent(data));
+						storeApi.dispatch(activeCallActions.handleCallEvent(data));
 						
 						const callId = data.callId;
 						if (!callId) return;
@@ -125,9 +126,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 							storeApi.dispatch(getCallToken(callId));
 						}
 
-						if (data.type === "CALL_ENDED") {
-							storeApi.dispatch(activeCallActions.clearCall());	
-						}
 
 						if (data.type === "CALL_PARTICIPANT_JOINED") {
 							const state = storeApi.getState();
@@ -455,7 +453,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					})
 				})
 
-				storeApi.dispatch(activeCallActions.clearCall());
 				break;
 			}
 
@@ -473,7 +470,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					})
 				})
 
-				storeApi.dispatch(activeCallActions.clearCall());
 				break;
 			}
 
@@ -491,7 +487,6 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 					})
 				})
 
-				storeApi.dispatch(activeCallActions.clearCall());
 				break;
 			}
 
