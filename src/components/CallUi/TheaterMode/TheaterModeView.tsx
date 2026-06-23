@@ -18,7 +18,7 @@ export function TheaterModeView({ trackRef, displayName, onExit }: TheaterModeVi
 				{isReady ? (
 					<VideoTrack trackRef={trackRef} />
 				) : (
-					<div className={styles["loading"]}>Opening screen share...</div>
+					<div className={styles["loading"]}>Открываем видео...</div>
 				)}
 			</div>
 		</div>

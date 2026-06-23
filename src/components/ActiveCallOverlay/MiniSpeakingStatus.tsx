@@ -35,7 +35,7 @@ export function MiniSpeakingStatus() {
 					return left.identity.localeCompare(right.identity);
 				})
 				.map((participant) => ({
-					identity: participant.name || "Unknown",
+					identity: participant.name || "Участник",
 					isLocal: participant.isLocal,
 				})),
 		[participants, isAutoInputSensitivity, voiceActivityThreshold]

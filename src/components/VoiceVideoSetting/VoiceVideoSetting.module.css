@@ -120,6 +120,19 @@
     margin-top: 4px;
 }
 
+.error-inline {
+	font-size: 12px;
+	color: #f04747;
+	margin-top: 4px;
+}
+
+.hotkey-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	gap: 8px;
+	align-items: center;
+}
+
 .toggle-row {
 	display: inline-flex;
 	align-items: center;
@@ -285,6 +298,10 @@
 
 @media (max-width: 720px) {
 	.inline-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.hotkey-row {
 		grid-template-columns: 1fr;
 	}
 }

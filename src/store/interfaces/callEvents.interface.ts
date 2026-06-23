@@ -8,14 +8,18 @@ export interface BaseCallEvent {
 	roomId?: number;
 	roomType?: CallRoomType;
 	liveKitRoomName?: string;
+	livekitRoomName?: string;
 	callerUsername?: string;
 	hostUsername?: string;
 	participantUsername?: string;
 	callType?: "audio" | "video" | string;
 	occurredAt?: string;
 	timestamp?: string;
-	callStatus?: string;
-	participantStatus?: string;
+	callStatus?: "RINGING" | "ACTIVE" | "ENDED";
+	participantStatus?: "RINGING" | "ACCEPTED" | "JOINED" | "DECLINED" | "LEFT";
+	endReason?: string | null;
+	participantsCount?: number;
+	callRoomType?: CallRoomType;
 	fromUser?: string;
 }
 

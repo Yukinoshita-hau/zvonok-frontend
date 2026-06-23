@@ -27,6 +27,16 @@ export interface ScreenShareRuntimeInfo {
 	updatedAt: string | null;
 }
 
+export interface KeyboardShortcutPreference {
+	code: string;
+	key: string;
+	ctrlKey: boolean;
+	altKey: boolean;
+	shiftKey: boolean;
+	metaKey: boolean;
+	label: string;
+}
+
 export interface ConnectionTestResult {
 	status: "idle" | "running" | "succeeded" | "failed";
 	summary: string | null;
@@ -56,9 +66,36 @@ export interface DeviceState {
 	participantVolumes: ParticipantVolumePreference[];
 	screenShareRuntime: ScreenShareRuntimeInfo;
 	connectionTestResult: ConnectionTestResult;
+	muteMicrophoneHotkey: KeyboardShortcutPreference;
 }
 
 const DEVICE_PREFS_STORAGE_KEY = "device-preferences-v2";
+
+export const DEFAULT_MUTE_MICROPHONE_HOTKEY: KeyboardShortcutPreference = {
+	code: "KeyM",
+	key: "m",
+	ctrlKey: true,
+	altKey: true,
+	shiftKey: false,
+	metaKey: false,
+	label: "Ctrl+Alt+M",
+};
+
+function normalizeKeyboardShortcut(
+	value: Partial<KeyboardShortcutPreference> | undefined,
+	fallback: KeyboardShortcutPreference
+): KeyboardShortcutPreference {
+	if (!value?.code || typeof value.code !== "string") return fallback;
+	return {
+		code: value.code,
+		key: typeof value.key === "string" ? value.key : "",
+		ctrlKey: Boolean(value.ctrlKey),
+		altKey: Boolean(value.altKey),
+		shiftKey: Boolean(value.shiftKey),
+		metaKey: Boolean(value.metaKey),
+		label: typeof value.label === "string" && value.label.trim() ? value.label : fallback.label,
+	};
+}
 
 function loadStoredPreferences() {
 	try {
@@ -90,7 +127,8 @@ function saveStoredPreferences(state: DeviceState) {
 				participantVolumes: state.participantVolumes,
 
 				voiceProcessingPreset: state.voiceProcessingPreset,
-				voiceProcessingConfig: state.voiceProcessingConfig
+				voiceProcessingConfig: state.voiceProcessingConfig,
+				muteMicrophoneHotkey: state.muteMicrophoneHotkey,
 			})
 		);
 	} catch (error) {
@@ -136,6 +174,10 @@ const initialState: DeviceState = {
 		error: null,
 		updatedAt: null,
 	},
+	muteMicrophoneHotkey: normalizeKeyboardShortcut(
+		storedPrefs?.muteMicrophoneHotkey,
+		DEFAULT_MUTE_MICROPHONE_HOTKEY
+	),
 }
 
 export const deviceSlice = createSlice({
@@ -152,6 +194,17 @@ export const deviceSlice = createSlice({
 		},
 		setMicrophoneQuality: (state, action: PayloadAction<MicQualitySetting>) => {
 			state.micQualitySetting = action.payload;
+			saveStoredPreferences(state);
+		},
+		setMuteMicrophoneHotkey: (state, action: PayloadAction<KeyboardShortcutPreference>) => {
+			state.muteMicrophoneHotkey = normalizeKeyboardShortcut(
+				action.payload,
+				DEFAULT_MUTE_MICROPHONE_HOTKEY
+			);
+			saveStoredPreferences(state);
+		},
+		resetMuteMicrophoneHotkey: (state) => {
+			state.muteMicrophoneHotkey = DEFAULT_MUTE_MICROPHONE_HOTKEY;
 			saveStoredPreferences(state);
 		},
 		setCameraQuality: (previousState, action: PayloadAction<CallQualitySetting>) => {

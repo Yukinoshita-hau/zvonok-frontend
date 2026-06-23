@@ -30,22 +30,22 @@ export function AudioMixPanel({
 	onStreamReset,
 }: AudioMixPanelProps) {
 	if (participants.length === 0) {
-		return <div className={styles["empty"]}>No remote participants yet.</div>;
+		return <div className={styles["empty"]}>Пока нет удалённых участников.</div>;
 	}
 
 	if (!hasAnyRemoteAudioTracks) {
-		return <div className={styles["empty"]}>Remote audio tracks are not available yet.</div>;
+		return <div className={styles["empty"]}>Аудиодорожки участников пока недоступны.</div>;
 	}
 
 	return (
 		<div className={styles["panel"]}>
-			<div className={styles["title"]}>Participant volume</div>
+			<div className={styles["title"]}>Громкость участников</div>
 			{participants.map((participant) => (
 				<div key={participant.identity} className={styles["participant"]}>
 					<div className={styles["header"]}>
 						<div className={styles["avatar"]}>
 							{participant.avatarUrl ? (
-								<img src={participant.avatarUrl} alt={`${participant.displayName} avatar`} className={styles["avatarImage"]} />
+								<img src={participant.avatarUrl} alt={`Аватар ${participant.displayName}`} className={styles["avatarImage"]} />
 							) : (
 								<span>{participant.avatarLabel}</span>
 							)}

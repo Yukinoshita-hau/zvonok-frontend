@@ -17,7 +17,7 @@ export class ZvonokLiveKitAudioProcessor implements TrackProcessor<Track.Kind.Au
 
 		const audioGraph = new ZvonokAudioGraph({
 			...this.config,
-			stereoOutput: false
+			stereoOutput: true
 		});
 
 		await audioGraph.attachTrack(options.track);
@@ -29,7 +29,7 @@ export class ZvonokLiveKitAudioProcessor implements TrackProcessor<Track.Kind.Au
 	async updateConfig(nextConfig: ZvonokAudioGraphConfig): Promise<void> {
 		this.config = {
 			...nextConfig,
-			stereoOutput: false
+			stereoOutput: true
 		}
 
 		await this.audioGraph?.updateConfig(this.config);	

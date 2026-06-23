@@ -1,22 +1,44 @@
 .menu {
-	position: fixed;
+	position: absolute;
 	z-index: 40;
 	width: 320px;
 	max-width: calc(100vw - 16px);
-	padding: 10px;
-	border-radius: 10px;
-	border: 1px solid var(--border);
-	background: var(--bg-secondary);
-	box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+	padding: 11px;
+	border-radius: 14px;
+	border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent));
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, var(--accent) 8%), var(--bg-secondary));
+	color: var(--text-primary);
+	box-shadow:
+		0 22px 54px rgba(0, 0, 0, 0.42),
+		0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
+	backdrop-filter: blur(14px);
+	animation: context-menu-in 0.16s cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
 .header {
+	position: relative;
 	font-size: 13px;
 	font-weight: 700;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	margin-bottom: 8px;
+	margin-bottom: 9px;
+	padding: 0 2px 0 12px;
+	color: var(--text-primary);
+}
+
+.header::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	width: 5px;
+	height: 5px;
+	border-radius: 999px;
+	background: var(--accent);
+	box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 75%, transparent);
+	transform: translateY(-50%);
 }
 
 .item {
@@ -29,10 +51,13 @@
 	text-align: left;
 	padding: 0 8px;
 	cursor: pointer;
+	font-weight: 600;
+	transition: background-color 0.15s ease, color 0.15s ease, transform 0.14s ease;
 }
 
 .item:hover {
-	background: var(--bg-hover);
+	background: color-mix(in srgb, var(--bg-hover) 82%, var(--accent) 18%);
+	transform: translateX(2px);
 }
 
 .item:focus-visible {
@@ -42,6 +67,18 @@
 
 .divider {
 	height: 1px;
-	background: var(--border);
+	background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--border) 70%, var(--accent)), transparent);
 	margin: 8px 0;
+}
+
+@keyframes context-menu-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px) scale(0.97);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
 }

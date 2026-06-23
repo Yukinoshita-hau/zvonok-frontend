@@ -2,31 +2,34 @@
 	max-height: 220px;
 	overflow: auto;
 	padding: 10px;
-	border-radius: 10px;
-	border: 1px solid var(--border);
-	background: var(--bg-secondary);
+	border-radius: 14px;
+	border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent));
+	background: linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 94%, var(--accent) 6%), var(--bg-secondary));
+	color: var(--text-primary);
+	box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
 }
 
 .title {
 	font-weight: 700;
 	margin-bottom: 8px;
+	color: var(--text-primary);
 }
 
 .empty {
 	padding: 10px;
-	border-radius: 10px;
-	border: 1px solid var(--border);
+	border-radius: 14px;
+	border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent));
 	font-size: 13px;
 	color: var(--text-secondary);
-	background: var(--bg-secondary);
+	background: color-mix(in srgb, var(--bg-secondary) 94%, var(--accent) 6%);
 }
 
 .participant {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
-	padding: 8px 0;
-	border-top: 1px solid var(--border);
+	padding: 9px 0;
+	border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
 }
 
 .header {
@@ -39,7 +42,8 @@
 	width: 24px;
 	height: 24px;
 	border-radius: 999px;
-	background: var(--bg-hover);
+	background: color-mix(in srgb, var(--bg-hover) 82%, var(--accent) 18%);
+	color: var(--text-primary);
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -61,6 +65,7 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	color: var(--text-primary);
 }
 
 .row {
@@ -80,6 +85,7 @@
 
 .row input[type="range"] {
 	width: 100%;
+	accent-color: var(--accent);
 }
 
 .row input[type="range"]:focus-visible,
@@ -98,16 +104,18 @@
 	height: 30px;
 	border: none;
 	border-radius: 8px;
-	background: var(--bg-hover);
+	background: color-mix(in srgb, var(--bg-hover) 86%, var(--accent) 14%);
 	color: var(--text-primary);
 	cursor: pointer;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	transition: background-color 0.15s ease, transform 0.12s ease;
 }
 
 .reset:hover {
-	background: var(--bg-active);
+	background: color-mix(in srgb, var(--bg-active) 76%, var(--accent) 24%);
+	transform: translateY(-1px);
 }
 
 .reset:disabled {

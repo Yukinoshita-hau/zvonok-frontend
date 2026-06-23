@@ -20,7 +20,7 @@ export function ParticipantVolumeRow({
 		<div className={styles["row"]}>
 			<div className={styles["source"]}>
 				{source === "microphone" ? <Mic size={14} /> : <MonitorUp size={14} />}
-				<span>{source === "microphone" ? "Mic" : "Stream"}</span>
+				<span>{source === "microphone" ? "Микрофон" : "Трансляция"}</span>
 			</div>
 			<input
 				type="range"
@@ -29,13 +29,15 @@ export function ParticipantVolumeRow({
 				value={value}
 				disabled={disabled}
 				onChange={(event) => onChange(Number(event.target.value))}
+				aria-label={source === "microphone" ? "Громкость микрофона" : "Громкость трансляции"}
 			/>
 			<span className={styles["percent"]}>{value}%</span>
 			<button
 				type="button"
 				disabled={disabled}
 				onClick={onReset}
-				title="Reset to 100%"
+				title="Сбросить до 100%"
+				aria-label="Сбросить до 100%"
 				className={styles["reset"]}
 			>
 				<RotateCcw size={13} />

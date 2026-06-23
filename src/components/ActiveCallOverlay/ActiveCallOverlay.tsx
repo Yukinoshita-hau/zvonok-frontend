@@ -18,7 +18,7 @@ import { CodecDebugLayer } from "../CodecDebugLayer/CodecDebugLayer";
 import { MicrophoneProcessorSync } from "../CallUi/MicrophoneProcessorSync";
 
 export function ActiveCallOverlay() {
-	const [callHeight, setCallHeight] = useState(52);
+	const [callHeight, setCallHeight] = useState(70);
 
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
@@ -45,7 +45,7 @@ export function ActiveCallOverlay() {
 			return;
 		}
 
-		setCallHeight(52);
+		setCallHeight(70);
 	}, [call.isCallFocusMode, isCinemaMode, isExpanded]);
 
 	const roomOptions: RoomOptions = useMemo(() => {
@@ -86,7 +86,7 @@ export function ActiveCallOverlay() {
 		const onMove = (moveEvent: MouseEvent) => {
 			const delta = startY - moveEvent.clientY;
 			const vhDelta = (delta / window.innerHeight) * 100;
-			const next = Math.min(82, Math.max(38, startHeight + vhDelta));
+			const next = Math.min(90, Math.max(70, startHeight + vhDelta));
 			setCallHeight(next);
 		};
 
@@ -119,6 +119,7 @@ export function ActiveCallOverlay() {
 			>
 				{import.meta.env.VITE_LIVEKIT_DEBUG === "true" && <CodecDebugLayer />}
 				<CallAudioLayer />
+				<CallHotkeys />
 				<MicrophoneSettingsSync />
 				<MicrophoneProcessorSync />
 
@@ -173,7 +174,7 @@ export function ActiveCallOverlay() {
 					onClick={() => dispatch(callActions.setPresentationMode("expanded"))}
 				>
 					<span className={styles["hidden-bubble-dot"]} />
-					<span>Call</span>
+					<span>Звонок</span>
 				</button>
 			)}
 		</>

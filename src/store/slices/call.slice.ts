@@ -130,6 +130,7 @@ export const callSlice = createSlice({
 					break;
 				case "CALL_ACCEPT":
 				case "CALL_ACCEPTED":
+				case "CALL_PARTICIPANT_JOINED":
 					state.status = "connecting";
 					break;
 				case "CALL_DECLINE":
@@ -141,12 +142,23 @@ export const callSlice = createSlice({
 					Object.assign(state, initialState, ui, { status: "ended" as const });
 					break;
 				}
-				case "CALL_PARTICIPANT_JOINED":
 					break;
 			}
 		},
 		markAcceptedHandled: (state, action: PayloadAction<number>) => {
 			state.lastAcceptedCallId = action.payload;
+		},
+		prepareJoinedCall: (state, action: PayloadAction<{ callId: number; chatRoomId: number; roomType: CallRoomType; livekitRoomName: string; callerUsername: string; hostUsername: string }>) => {
+			state.status = "connecting";
+			state.direction = null;
+			state.callId = action.payload.callId;
+			state.chatRoomId = action.payload.chatRoomId;
+			state.roomType = action.payload.roomType;
+			state.livekitRoomName = action.payload.livekitRoomName;
+			state.callerUsername = action.payload.callerUsername;
+			state.hostUsername = action.payload.hostUsername;
+			state.error = null;
+			state.presentationMode = "expanded";
 		},
 		leaveCallLocally: (state) => {
 			resetCallState(state, "ended");

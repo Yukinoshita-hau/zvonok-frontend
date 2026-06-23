@@ -12,6 +12,8 @@ import { Phone, Send, SettingsIcon, X } from "lucide-react";
 import { RoomSettingModal } from "../../components/RoomSettingModal/RoomSettingModal";
 import { StringToColor } from "../../utils/stringHelpers";
 import { toastActions } from "../../store/slices/toast.slice";
+import { useActiveRoomCall } from "../../hooks/useActiveRoomCall";
+import { RoomActiveCallBanner } from "../../components/RoomActiveCallBanner/RoomActiveCallBanner";
 
 export function DmChat() {
 	const navigate = useNavigate();
@@ -23,7 +25,6 @@ export function DmChat() {
 	const usersById = useSelector((s: RootState) => s.users.byId);
 	const { replyTarget } = useSelector((s: RootState) => s.message);
 	const wsStatus = useSelector((s: RootState) => s.websocket.status);
-	const activeCall = useSelector((s: RootState) => s.activeCall.activeCall)
 	const callStatus = useSelector((s: RootState) => s.call.status);
 
 	const [text, setText] = useState("");
@@ -32,6 +33,8 @@ export function DmChat() {
 	const roomIdParam = searchParams.get("roomId");
 	const parsedRoomId = roomIdParam ? Number(roomIdParam) : null;
 	const roomId = parsedRoomId !== null && !Number.isNaN(parsedRoomId) ? parsedRoomId : null;
+
+	useActiveRoomCall(roomId);
 
 	useEffect(() => {
 		if (!roomId) {
@@ -187,6 +190,8 @@ export function DmChat() {
 					</button>
 				</div>
 			</div>
+
+			<RoomActiveCallBanner roomId={roomId} />
 
 			<RoomSettingModal
 				isOpen={isRoomSettingOpen}

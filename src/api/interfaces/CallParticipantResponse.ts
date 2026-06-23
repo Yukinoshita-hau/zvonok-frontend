@@ -1,13 +1,12 @@
-
-export type CallParticipantStatus = "RINGING" | "ACCEPTED" | "JOINED" | "DECLINED" | "LEFT"
+export type CallParticipantStatus = "RINGING" | "ACCEPTED" | "JOINED" | "DECLINED" | "LEFT";
 
 export interface CallParticipantResponse {
-	userId: string;
+	userId: number;
 	username: string;
-	displayName: string;
-	avatarUrl: string;
+	displayName: string | null;
+	avatarUrl: string | null;
 	status: CallParticipantStatus;
-	joinedAt: string;
-	acceptedAt: string;
-	leftAt: string;
+	joinedAt: string | null;
+	acceptedAt: string | null;
+	leftAt: string | null;
 }

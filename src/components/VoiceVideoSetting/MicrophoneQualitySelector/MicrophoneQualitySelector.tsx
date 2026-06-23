@@ -3,12 +3,12 @@ import type { MicrophoneQualitySelectorProps } from "./MicrophoneQualitySelector
 import styles from "./MicrophoneQualitySelector.module.css";
 
 const ORDER: MicQualitySetting[] = [
-	"clear",
+	"potato",
 	"stable",
 	"gaming",
+	"clear",
 	"studio",
 	"boosted",
-	"potato",
 	"insane"
 ];
 
