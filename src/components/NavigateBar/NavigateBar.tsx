@@ -10,7 +10,8 @@ import { useState } from "react";
 import { SettingModal } from "../SettingModal/SettingModal";
 import { callActions } from "../../store/slices/call.slice";
 import { StringToColor } from "../../utils/stringHelpers";
-import { LucideSettings, Settings2Icon, SettingsIcon } from "lucide-react";
+import { SettingsIcon } from "lucide-react";
+import { ConferenceLauncher } from "../ConferenceLauncher/ConferenceLauncher";
 
 export function NavigateBar({ servers }: NavigateBarProps) {
 	const navigate = useNavigate();
@@ -67,6 +68,8 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 					<span className={styles["messages-badge"]}/>
 				)}
 			</NavigateBarButton>
+
+			<ConferenceLauncher />
 
 			<NavigateBarButton onClick={() => setIsSettingModalOpen(true)}>
 				<SettingsIcon color="white" size={28} />

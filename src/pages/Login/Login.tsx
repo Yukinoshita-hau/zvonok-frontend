@@ -2,7 +2,7 @@ import AuthButton from "../../components/AuthButton/AuthButton";
 import AuthInput from "../../components/AuthInput/AuthInput";
 import styles from "./Login.module.css";
 import AuthHeadling from "../../components/AuthHeadling/AuthHeadling";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, type FormEvent } from "react";
 import { AxiosError } from "axios";
 import { useDispatch } from "react-redux";
@@ -10,11 +10,17 @@ import type { AppDispatch } from "../../store/store";
 import type { ErrorApiResponse } from "../../api/interfaces/ErrorApiResponse";
 import { getMyUser, loginUser } from "../../store/slices/user.slice";
 
+interface LoginLocationState {
+	from?: string;
+}
+
 export default function Login() {
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const navigate = useNavigate();
+	const location = useLocation();
 	const dispatch = useDispatch<AppDispatch>();
+	const redirectTo = (location.state as LoginLocationState | null)?.from || "/";
 
 	const submit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -42,7 +48,7 @@ export default function Login() {
 			).unwrap();
 
 			await dispatch(getMyUser()).unwrap();
-			navigate("/");
+			navigate(redirectTo, { replace: true });
 		} catch (e) {
 			if (typeof e === "string") {
 				setError(e);

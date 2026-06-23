@@ -4,6 +4,8 @@ import type { CallTokenDto } from "../../api/interfaces/CallTokenDto";
 import type { BaseCallEvent } from "../interfaces/callEvents.interface";
 import { type CallRoomType, type callStatus } from "../interfaces/call.types";
 import type { RestoreCallSessionResponse } from "../../api/interfaces/RestoreCallSessionResponse";
+import { conferenceApi } from "../../api/conferenceApi";
+import type { ConferenceCreateResponse, ConferenceJoinResponse } from "../../api/interfaces/ConferenceDtos";
 
 export type CallPresentationMode = "expanded" | "minimized" | "hidden";
 
@@ -20,6 +22,10 @@ export interface CallState {
 	serverUrl: string | null;
 	participantToken: string | null;
 	tokenExpiresAt: string | null;
+	conferenceId: number | null;
+	conferenceCode: string | null;
+	conferenceJoinUrl: string | null;
+	isConferenceHost: boolean;
 	lastEventId: string | null;
 	processedEventIds: string[];
 	lastAcceptedCallId: number | null;
@@ -43,6 +49,10 @@ export const initialState: CallState = {
 	serverUrl: null,
 	participantToken: null,
 	tokenExpiresAt: null,
+	conferenceId: null,
+	conferenceCode: null,
+	conferenceJoinUrl: null,
+	isConferenceHost: false,
 	lastEventId: null,
 	processedEventIds: [],
 	lastAcceptedCallId: null,
@@ -85,6 +95,76 @@ export const restoreCallSession = createAsyncThunk(
 		}
 	}
 );
+
+export const createConference = createAsyncThunk(
+	"call/createConference",
+	async (_, thunkAPI) => {
+		try {
+			const { data } = await conferenceApi.createConference();
+			return data;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Не удалось создать конференцию"
+			);
+		}
+	}
+);
+
+export const joinConference = createAsyncThunk(
+	"call/joinConference",
+	async (code: string, thunkAPI) => {
+		try {
+			const { data } = await conferenceApi.joinConference(code);
+			return data;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue({
+				message: e?.response?.data?.message ?? e?.message ?? "Не удалось войти в конференцию",
+				status: e?.response?.status ?? e?.response?.data?.status ?? 0,
+			});
+		}
+	}
+);
+
+export const endConference = createAsyncThunk(
+	"call/endConference",
+	async (code: string, thunkAPI) => {
+		try {
+			await conferenceApi.endConference(code);
+			return code;
+		} catch (e: any) {
+			return thunkAPI.rejectWithValue(
+				e?.response?.data?.message ?? e?.message ?? "Не удалось завершить конференцию"
+			);
+		}
+	}
+);
+
+const applyConferenceConnection = (
+	state: CallState,
+	data: ConferenceCreateResponse | ConferenceJoinResponse,
+	isHost: boolean
+) => {
+	state.status = "in_call";
+	state.direction = null;
+	state.callId = null;
+	state.chatRoomId = null;
+	state.roomType = "GROUP";
+	state.callerUsername = null;
+	state.hostUsername = null;
+	state.peerUsernames = [];
+	state.livekitRoomName = data.livekitRoomName;
+	state.serverUrl = data.serverUrl;
+	state.participantToken = data.token;
+	state.tokenExpiresAt = null;
+	state.conferenceId = data.conferenceId;
+	state.conferenceCode = data.code;
+	state.conferenceJoinUrl = "joinUrl" in data ? data.joinUrl : null;
+	state.isConferenceHost = isHost;
+	state.error = null;
+	state.presentationMode = "expanded";
+	state.isCallFocusMode = false;
+	state.isTheaterMode = false;
+};
 
 export const callSlice = createSlice({
 	name: "call",
@@ -227,6 +307,10 @@ export const callSlice = createSlice({
 			.addCase(restoreCallSession.fulfilled, (state, action: PayloadAction<RestoreCallSessionResponse>) => {
 				const data = action.payload;
 
+				if (state.conferenceCode || (state.status === "in_call" && state.participantToken)) {
+					return;
+				}
+
 				if (data.callRestoreType === "NONE") {
 					resetCallState(state, "idle")
 					return;
@@ -261,8 +345,40 @@ export const callSlice = createSlice({
 
 			})
 			.addCase(restoreCallSession.rejected, (state, action) => {
+				if (state.conferenceCode || (state.status === "in_call" && state.participantToken)) {
+					return;
+				}
 				state.status = "idle";
 				state.error = typeof action.payload === "string" ? action.payload : "Failed to restore call";
+			})
+			.addCase(createConference.pending, (state) => {
+				state.status = "connecting";
+				state.error = null;
+			})
+			.addCase(createConference.fulfilled, (state, action: PayloadAction<ConferenceCreateResponse>) => {
+				applyConferenceConnection(state, action.payload, true);
+			})
+			.addCase(createConference.rejected, (state, action) => {
+				state.status = "error";
+				state.error = typeof action.payload === "string" ? action.payload : "Не удалось создать конференцию";
+			})
+			.addCase(joinConference.pending, (state) => {
+				state.status = "connecting";
+				state.error = null;
+			})
+			.addCase(joinConference.fulfilled, (state, action: PayloadAction<ConferenceJoinResponse>) => {
+				applyConferenceConnection(state, action.payload, false);
+			})
+			.addCase(joinConference.rejected, (state, action) => {
+				state.status = "error";
+				const payload = action.payload as { message?: string } | string | undefined;
+				state.error = typeof payload === "string" ? payload : payload?.message ?? "Не удалось войти в конференцию";
+			})
+			.addCase(endConference.fulfilled, (state) => {
+				resetCallState(state, "ended");
+			})
+			.addCase(endConference.rejected, (state, action) => {
+				state.error = typeof action.payload === "string" ? action.payload : "Не удалось завершить конференцию";
 			});
 	},
 });

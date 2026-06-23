@@ -6,7 +6,7 @@ import { BackupCodecPolicy, isBackupVideoCodec, type RoomOptions } from "livekit
 import styles from "./ActiveCallOverlay.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
 import { CallUi } from "../CallUi/CallUi";
-import { callActions } from "../../store/slices/call.slice";
+import { callActions, endConference } from "../../store/slices/call.slice";
 import { CallAudioLayer } from "./CallAudioLayer";
 import { getQualityPreset, getVideoEncoding, type ManualCallQuality, type ScreenShareManualQuality } from "../../utils/callQuality";
 import { CallQualityController } from "../CallUi/CallQualityController";
@@ -162,7 +162,13 @@ export function ActiveCallOverlay() {
 						onOpenChat={handleOpenChat}
 						onExpand={() => dispatch(callActions.setPresentationMode("expanded"))}
 						onHide={() => dispatch(callActions.setPresentationMode("hidden"))}
-						onEnd={() => dispatch(callActions.endCall())}
+						onEnd={() => {
+							if (call.conferenceCode && call.isConferenceHost) {
+								dispatch(endConference(call.conferenceCode));
+								return;
+							}
+							dispatch(callActions.endCall());
+						}}
 					/>
 				)}
 			</LiveKitRoom>

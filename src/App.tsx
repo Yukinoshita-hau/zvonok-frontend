@@ -12,6 +12,7 @@ import { NotificationsPage } from './components/NotificationsPage/NotificationPa
 import { ServerLayout } from './pages/ServerLayout/ServerLayout'
 import { ChannelChat } from './components/ChannelChat/ChannelChat'
 import { MyServers } from './pages/MyServers/MyServers'
+import { ConferenceJoin } from './pages/ConferenceJoin/ConferenceJoin'
 
 export function App() {
 
@@ -84,6 +85,10 @@ export function App() {
 						<MyServers/>	
 					),
 					children: []
+				},
+				{
+					path: "conference/:code",
+					element: <ConferenceJoin />
 				}
 			]
 		}

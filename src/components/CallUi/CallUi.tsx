@@ -4,7 +4,7 @@ import { RemoteTrackPublication } from "livekit-client";
 import { X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
-import { callActions } from "../../store/slices/call.slice";
+import { callActions, endConference } from "../../store/slices/call.slice";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	getCameraCaptureOptions,
@@ -60,6 +60,15 @@ export function CallUi({
 	} = useCallParticipants();
 
 	const onLeave = () => {
+		if (call.conferenceCode) {
+			if (call.isConferenceHost) {
+				void dispatch(endConference(call.conferenceCode));
+				return;
+			}
+			dispatch(callActions.leaveCallLocally());
+			return;
+		}
+
 		if (!call.callId) {
 			dispatch(callActions.leaveCallLocally());
 			return;
