@@ -6,10 +6,11 @@ interface ParticipantContextMenuProps {
 	y: number;
 	displayName: string;
 	hasScreenShare: boolean;
+	hasMicrophoneAudio: boolean;
 	hasScreenShareAudio: boolean;
 	micVolume: number;
 	streamVolume: number;
-	onOpenProfile: () => void;
+	onOpenProfile?: () => void;
 	onOpenScreenShare: () => void;
 	onOpenTheater: () => void;
 	onMicChange: (value: number) => void;
@@ -23,6 +24,7 @@ export function ParticipantContextMenu({
 	y,
 	displayName,
 	hasScreenShare,
+	hasMicrophoneAudio,
 	hasScreenShareAudio,
 	micVolume,
 	streamVolume,
@@ -42,16 +44,18 @@ export function ParticipantContextMenu({
 			onClick={(event) => event.stopPropagation()}
 		>
 			<div className={styles["header"]} title={displayName}>{displayName}</div>
-			<button type="button" className={styles["item"]} onClick={onOpenProfile}>
-				Open profile
-			</button>
+			{onOpenProfile && (
+				<button type="button" className={styles["item"]} onClick={onOpenProfile}>
+					Открыть профиль
+				</button>
+			)}
 			{hasScreenShare && (
 				<>
 					<button type="button" className={styles["item"]} onClick={onOpenScreenShare}>
-						Open screen share
+						Открыть трансляцию
 					</button>
 					<button type="button" className={styles["item"]} onClick={onOpenTheater}>
-						Open theater mode
+						Открыть кино-режим
 					</button>
 				</>
 			)}
@@ -59,6 +63,7 @@ export function ParticipantContextMenu({
 			<ParticipantVolumeMenu
 				micVolume={micVolume}
 				streamVolume={streamVolume}
+				hasMicrophoneAudio={hasMicrophoneAudio}
 				hasScreenShareAudio={hasScreenShareAudio}
 				onMicChange={onMicChange}
 				onMicReset={onMicReset}

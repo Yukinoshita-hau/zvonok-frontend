@@ -130,6 +130,7 @@ export const callSlice = createSlice({
 					break;
 				case "CALL_ACCEPT":
 				case "CALL_ACCEPTED":
+				case "CALL_PARTICIPANT_JOINED":
 					state.status = "connecting";
 					break;
 				case "CALL_DECLINE":
@@ -141,7 +142,6 @@ export const callSlice = createSlice({
 					Object.assign(state, initialState, ui, { status: "ended" as const });
 					break;
 				}
-				case "CALL_PARTICIPANT_JOINED":
 					break;
 			}
 		},

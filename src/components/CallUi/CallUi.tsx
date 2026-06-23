@@ -1,21 +1,11 @@
-import {
-	TrackToggle,
-	isTrackReference,
-	useParticipants,
-	useTracks,
-	VideoTrack,
-	type TrackReference,
-} from "@livekit/components-react";
-import { Mic, MonitorUp, RotateCcw } from "lucide-react";
+import { VideoTrack } from "@livekit/components-react";
 import styles from "./CallUi.module.css";
-import { RemoteTrackPublication, Track } from "livekit-client";
+import { RemoteTrackPublication } from "livekit-client";
+import { X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { callActions } from "../../store/slices/call.slice";
-import { deviceActions } from "../../store/slices/device.slice";
-import { useEffect, useMemo, useState } from "react";
-import { CallParticipantTile } from "./CallParticipantTile";
-import { MicrophoneToggleButton } from "./MicrophoneToggleButton";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	getCameraCaptureOptions,
 	getCameraPublishOptions,
@@ -26,8 +16,20 @@ import {
 	resolveScreenShareQualitySetting,
 } from "../../utils/callQuality";
 import type { CallUiProps } from "./CallUi.props";
-import type { UserMini } from "../../entities/UserMini";
 import { TheaterModeView } from "./TheaterMode/TheaterModeView";
+import { useCallParticipants } from "./hooks/useCallParticipants";
+import { ParticipantsGrid, type ParticipantContextMenuAnchor } from "./ParticipantsGrid";
+import { CallControls } from "./CallControls";
+import type { ParticipantCard } from "./hooks/useCallParticipants";
+import { ParticipantContextMenu } from "./ParticipantContextMenu/ParticipantContextMenu";
+import { deviceActions, type ParticipantAudioSource } from "../../store/slices/device.slice";
+import { FocusedScreenShareVolume } from "./FocusedScreenShareVolume";
+
+interface ParticipantMenuState {
+	cardId: string;
+	x: number;
+	y: number;
+}
 
 export function CallUi({
 	hasChat,
@@ -39,37 +41,25 @@ export function CallUi({
 	onToggleFocus,
 	onToggleCinema,
 }: CallUiProps) {
-	const [hadRemoteParticipant, setHadRemoteParticipant] = useState(false);
-	const [isAudioPanelOpen, setIsAudioPanelOpen] = useState(false);
-
+	const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
+	const [participantMenu, setParticipantMenu] = useState<ParticipantMenuState | null>(null);
+	const callRootRef = useRef<HTMLDivElement>(null);
+	const previousScreenTrackSidsRef = useRef<Set<string>>(new Set());
 	const dispatch = useDispatch<AppDispatch>();
 
 	const call = useSelector((s: RootState) => s.call);
 	const myUser = useSelector((s: RootState) => s.user.myUser);
-	const rooms = useSelector((s: RootState) => s.room.rooms);
-	const usersById = useSelector((s: RootState) => s.users.byId);
 	const device = useSelector((s: RootState) => s.device);
 	const participantVolumes = useSelector((s: RootState) => s.device.participantVolumes);
 
-	const participants = useParticipants();
-
-	const videoTracks = useTracks([
-		{ source: Track.Source.Camera, withPlaceholder: false },
-	]);
-	const microphoneAudioTracks = useTracks([
-		{ source: Track.Source.Microphone, withPlaceholder: false },
-	]);
-
-	const screenTracks = useTracks([Track.Source.ScreenShare], {
-		onlySubscribed: false,
-	});
-
-	const screenAudioTracks = useTracks([
-		{ source: Track.Source.ScreenShareAudio, withPlaceholder: false },
-	]);
+	const {
+		participantCards,
+		remoteMicrophoneParticipants,
+		remoteScreenAudioParticipants,
+		availableScreenTracks,
+	} = useCallParticipants();
 
 	const onLeave = () => {
-		console.debug("[call] user hangup clicked", { callId: call.callId, roomType: call.roomType });
 		if (!call.callId) {
 			dispatch(callActions.leaveCallLocally());
 			return;
@@ -82,7 +72,6 @@ export function CallUi({
 				dispatch(callActions.endCallLocally());
 				return;
 			}
-
 			dispatch({ type: "call/sendLeave", payload: { callId: call.callId, chatRoomId: call.chatRoomId ?? undefined } });
 			dispatch(callActions.leaveCallLocally());
 			return;
@@ -92,675 +81,365 @@ export function CallUi({
 		dispatch(callActions.endCallLocally());
 	};
 
-	const currentRoom = useMemo(
-		() => rooms.find((room) => room.id === call.chatRoomId) ?? null,
-		[rooms, call.chatRoomId]
-	);
-
-	const currentRoomMembers = useMemo(() => {
-		if (!currentRoom) return [];
-
-		return (currentRoom.memberIds ?? [])
-			.map((memberId) => usersById[memberId])
-			.filter(isUserMini);
-	}, [currentRoom, usersById]);
-
-	const participantAvatarResolver = useMemo(() => {
-		const avatarsByKey = new Map<string, string | null>();
-
-		const normalizedMyUser =
-			myUser?.id ? usersById[myUser.id] ?? myUser : myUser;
-
-		const remoteMembers = currentRoomMembers.filter(
-			(member) => member.id !== myUser?.id
-		);
-
-		if (normalizedMyUser?.username) {
-			avatarsByKey.set(
-				normalizeIdentityKey(normalizedMyUser.username),
-				normalizedMyUser.avatarUrl ?? null
-			);
-
-			avatarsByKey.set(
-				String(normalizedMyUser.id),
-				normalizedMyUser.avatarUrl ?? null
-			);
-		}
-
-		currentRoomMembers.forEach((member) => {
-			avatarsByKey.set(
-				normalizeIdentityKey(member.username),
-				member.avatarUrl ?? null
-			);
-
-			avatarsByKey.set(
-				String(member.id),
-				member.avatarUrl ?? null
-			);
-		});
-
-		return (identity: string, isLocal: boolean) => {
-			if (isLocal) {
-				return normalizedMyUser?.avatarUrl ?? null;
-			}
-
-			const normalizedIdentity = normalizeIdentityKey(identity);
-
-			const exactAvatar = avatarsByKey.get(normalizedIdentity);
-
-			if (exactAvatar !== undefined) {
-				return exactAvatar;
-			}
-
-			const matchedMember = remoteMembers.find((member) => {
-				const normalizedUsername = normalizeIdentityKey(member.username);
-
-				return (
-					normalizedIdentity.includes(normalizedUsername) ||
-					normalizedUsername.includes(normalizedIdentity)
-				);
-			});
-
-			if (matchedMember) {
-				return matchedMember.avatarUrl ?? null;
-			}
-
-			if (remoteMembers.length === 1) {
-				return remoteMembers[0].avatarUrl ?? null;
-			}
-
-			return null;
-		};
-	}, [currentRoomMembers, myUser, usersById]);
-
-	const availableScreenTracks = useMemo(
-		() =>
-			screenTracks.filter(
-				(trackRef) => trackRef.publication && !trackRef.publication.isMuted
-			),
-		[screenTracks]
-	);
-
-	const subscribedVideoTracks = useMemo(
-		() =>
-			videoTracks
-				.filter(
-					(trackRef) =>
-						trackRef.publication &&
-						(trackRef.participant.isLocal || trackRef.publication.isSubscribed) &&
-						!trackRef.publication.isMuted
-				)
-				.filter(isTrackReference),
-		[videoTracks]
-	);
-
-	const remoteMicrophoneParticipants = useMemo(() => {
-		const participantSet = new Set<string>();
-		microphoneAudioTracks.forEach((trackRef) => {
-			if (trackRef.participant.isLocal) return;
-			if (!trackRef.publication || trackRef.publication.isMuted) return;
-			participantSet.add(trackRef.participant.identity);
-		});
-		return participantSet;
-	}, [microphoneAudioTracks]);
-
-	const remoteScreenAudioParticipants = useMemo(() => {
-		const participantSet = new Set<string>();
-		screenAudioTracks.forEach((trackRef) => {
-			if (trackRef.participant.isLocal) return;
-			if (!trackRef.publication || trackRef.publication.isMuted) return;
-			participantSet.add(trackRef.participant.identity);
-		});
-		return participantSet;
-	}, [screenAudioTracks]);
-
-	const videoTrackByParticipant = useMemo(() => {
-		const trackMap = new Map<string, TrackReference>();
-
-		subscribedVideoTracks.forEach((trackRef) => {
-			trackMap.set(trackRef.participant.identity, trackRef);
-		});
-
-		return trackMap;
-	}, [subscribedVideoTracks]);
-
-	const screenTrackByParticipant = useMemo(() => {
-		const trackMap = new Map<string, TrackReference>();
-
-		availableScreenTracks.forEach((trackRef) => {
-			if (!isTrackReference(trackRef)) return;
-
-			trackMap.set(trackRef.participant.identity, trackRef);
-		});
-
-		return trackMap;
-	}, [availableScreenTracks]);
-
-	const sortedParticipants = useMemo(
-		() =>
-			[...participants].sort((left, right) => {
-				if (left.isLocal !== right.isLocal) return left.isLocal ? -1 : 1;
-
-				return left.identity.localeCompare(right.identity);
-			}),
-		[participants]
-	);
-
-	const participantCards = useMemo(
-		() =>
-			sortedParticipants.map((participant) => ({
-				participant,
-				videoTrack: videoTrackByParticipant.get(participant.identity),
-				screenTrack: screenTrackByParticipant.get(participant.identity),
-				avatarUrl: participantAvatarResolver(
-					participant.identity,
-					participant.isLocal
-				),
-			})),
-		[
-			sortedParticipants,
-			videoTrackByParticipant,
-			screenTrackByParticipant,
-			participantAvatarResolver,
-		]
-	);
-
-	const participantCardByIdentity = useMemo(() => {
-		const map = new Map<
-			string,
-			{ avatarUrl: string | null; displayName: string }
-		>();
-		participantCards.forEach(({ participant, avatarUrl }) => {
-			map.set(participant.identity, {
-				avatarUrl,
-				displayName: participant.name || participant.identity,
-			});
-		});
-		return map;
-	}, [participantCards]);
-
-	const remoteParticipantsCount = useMemo(
-		() => sortedParticipants.filter((participant) => !participant.isLocal).length,
-		[sortedParticipants]
-	);
-
 	const qualityRecommendation = device.connectionTestResult.recommendation;
 
 	const cameraPreset = useMemo(() => {
-		const quality = resolveQualitySetting(
-			"camera",
-			device.cameraQuality,
-			qualityRecommendation
-		);
-
+		const quality = resolveQualitySetting("camera", device.cameraQuality, qualityRecommendation);
 		return getQualityPreset("camera", quality);
 	}, [device.cameraQuality, qualityRecommendation]);
 
 	const screenSharePreset = useMemo(() => {
-		const quality = resolveScreenShareQualitySetting(
-			device.screenShareQuality,
-			qualityRecommendation
-		);
-
+		const quality = resolveScreenShareQualitySetting(device.screenShareQuality, qualityRecommendation);
 		return getQualityPreset("screenShare", quality);
 	}, [device.screenShareQuality, qualityRecommendation]);
 
-	const cameraCaptureOptions = useMemo(
-		() => getCameraCaptureOptions(device.selectedCameraId, cameraPreset),
-		[device.selectedCameraId, cameraPreset]
-	);
-
-	const cameraPublishOptions = useMemo(
-		() => getCameraPublishOptions(cameraPreset),
-		[cameraPreset]
-	);
-
-	const screenShareCaptureOptions = useMemo(
-		() => getScreenShareCaptureOptions(screenSharePreset),
-		[screenSharePreset]
-	);
-
-	const screenSharePublishOptions = useMemo(
-		() => getScreenSharePublishOptions(screenSharePreset),
-		[screenSharePreset]
-	);
-
-	useEffect(() => {
-		if (remoteParticipantsCount > 0) {
-			setHadRemoteParticipant(true);
-		}
-	}, [remoteParticipantsCount]);
+	const cameraCaptureOptions = useMemo(() => getCameraCaptureOptions(device.selectedCameraId, cameraPreset), [device.selectedCameraId, cameraPreset]);
+	const cameraPublishOptions = useMemo(() => getCameraPublishOptions(cameraPreset), [cameraPreset]);
+	const screenShareCaptureOptions = useMemo(() => getScreenShareCaptureOptions(screenSharePreset), [screenSharePreset]);
+	const screenSharePublishOptions = useMemo(() => getScreenSharePublishOptions(screenSharePreset), [screenSharePreset]);
 
 	const hasScreenShare = availableScreenTracks.length > 0;
+	const isSingleParticipantView = !hasScreenShare && participantCards.length === 1;
 
-	const isSingleParticipantView =
-		!hasScreenShare && participantCards.length === 1;
+	const screenTrackSidByCardId = useMemo(() => {
+		const map = new Map<string, string>();
+		participantCards.forEach((card) => {
+			if (!card.isScreenShareCard) return;
+			const trackSid = card.videoTrack?.publication?.trackSid;
+			if (trackSid) map.set(card.id, trackSid);
+		});
+		return map;
+	}, [participantCards]);
+
+	const focusedCard = useMemo(() => {
+		if (!focusedCardId) return null;
+		return participantCards.find((card) => card.id === focusedCardId && card.videoTrack) ?? null;
+	}, [focusedCardId, participantCards]);
+
+	const contextMenuCard = useMemo(() => {
+		if (!participantMenu) return null;
+		return participantCards.find((card) => card.id === participantMenu.cardId) ?? null;
+	}, [participantCards, participantMenu]);
+
+	const screenCardByIdentity = useMemo(() => {
+		const map = new Map<string, ParticipantCard>();
+		participantCards.forEach((card) => {
+			if (card.isScreenShareCard) {
+				map.set(card.participant.identity, card);
+			}
+		});
+		return map;
+	}, [participantCards]);
+
+	const canOpenCinemaMode = Boolean(focusedCard?.videoTrack);
 
 	useEffect(() => {
 		if (!isCinemaMode) return;
-
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key !== "Escape") return;
 			onToggleCinema();
 		};
-
 		window.addEventListener("keydown", onKeyDown);
-		return () => {
-			window.removeEventListener("keydown", onKeyDown);
-		};
+		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [isCinemaMode, onToggleCinema]);
 
 	useEffect(() => {
 		if (!availableScreenTracks.length) {
-			if (call.selectedScreenTrackSid !== null) {
-				dispatch(callActions.setSelectedScreenTrackSid(null));
-			}
-
+			if (call.selectedScreenTrackSid !== null) dispatch(callActions.setSelectedScreenTrackSid(null));
+			previousScreenTrackSidsRef.current = new Set();
 			return;
 		}
 
-		const selectedStillExists = availableScreenTracks.some(
-			(trackRef) =>
-				trackRef.publication?.trackSid === call.selectedScreenTrackSid
+		const currentSids = new Set(
+			availableScreenTracks
+				.map((trackRef) => trackRef.publication?.trackSid)
+				.filter((trackSid): trackSid is string => Boolean(trackSid))
 		);
+		const newlySharedSid = [...currentSids].find(
+			(trackSid) => !previousScreenTrackSidsRef.current.has(trackSid)
+		);
+		previousScreenTrackSidsRef.current = currentSids;
 
+		if (newlySharedSid) {
+			dispatch(callActions.setSelectedScreenTrackSid(newlySharedSid));
+			return;
+		}
+
+		const selectedStillExists = availableScreenTracks.some((t) => t.publication?.trackSid === call.selectedScreenTrackSid);
 		if (!selectedStillExists) {
-			dispatch(
-				callActions.setSelectedScreenTrackSid(
-					availableScreenTracks[0].publication?.trackSid ?? null
-				)
-			);
+			dispatch(callActions.setSelectedScreenTrackSid(null));
 		}
 	}, [availableScreenTracks, call.selectedScreenTrackSid, dispatch]);
 
 	useEffect(() => {
 		availableScreenTracks.forEach((trackRef) => {
 			const publication = trackRef.publication;
-
 			if (!(publication instanceof RemoteTrackPublication)) return;
-
-			const shouldSubscribe =
-				publication.trackSid === call.selectedScreenTrackSid;
-
-			if (publication.isDesired !== shouldSubscribe) {
-				publication.setSubscribed(shouldSubscribe);
-			}
+			if (!publication.isDesired) publication.setSubscribed(true);
 		});
-	}, [availableScreenTracks, call.selectedScreenTrackSid]);
+	}, [availableScreenTracks]);
 
-	const mainScreenTrack = useMemo(() => {
-		if (!availableScreenTracks.length) return null;
+	const openCardInFocus = useCallback((card: ParticipantCard) => {
+		setParticipantMenu(null);
+		setFocusedCardId(card.id);
+		const screenTrackSid = screenTrackSidByCardId.get(card.id);
+		if (screenTrackSid) {
+			dispatch(callActions.setSelectedScreenTrackSid(screenTrackSid));
+		}
+		dispatch(callActions.setCallFocusMode(true));
+	}, [dispatch, screenTrackSidByCardId]);
 
-		return (
-			availableScreenTracks.find(
-				(trackRef) =>
-					trackRef.publication?.trackSid === call.selectedScreenTrackSid
-			) ?? availableScreenTracks[0]
-		);
-	}, [availableScreenTracks, call.selectedScreenTrackSid]);
+	const closeFocusMode = useCallback(() => {
+		setFocusedCardId(null);
+		dispatch(callActions.setCallFocusMode(false));
+	}, [dispatch]);
 
-	const getOpenScreenShareHandler = (screenTrack?: TrackReference) => {
-		const trackSid = screenTrack?.publication?.trackSid;
+	const clearFocusedMedia = useCallback(() => {
+		const screenTrackSid = focusedCardId ? screenTrackSidByCardId.get(focusedCardId) : null;
+		setFocusedCardId(null);
+		if (screenTrackSid && call.selectedScreenTrackSid === screenTrackSid) {
+			dispatch(callActions.setSelectedScreenTrackSid(null));
+		}
+	}, [call.selectedScreenTrackSid, dispatch, focusedCardId, screenTrackSidByCardId]);
 
-		if (!trackSid) return undefined;
-
-		return () => dispatch(callActions.setSelectedScreenTrackSid(trackSid));
-	};
-
-	const getVolumeValue = (
-		participantIdentity: string,
-		source: "microphone" | "screenShareAudio"
-	) =>
-		participantVolumes.find(
-			(item) =>
-				item.participantIdentity === participantIdentity && item.source === source
+	const getParticipantVolume = useCallback((participantIdentity: string, source: ParticipantAudioSource) => {
+		return participantVolumes.find(
+			(item) => item.participantIdentity === participantIdentity && item.source === source
 		)?.volume ?? 100;
+	}, [participantVolumes]);
 
-	const hasAnyRemoteAudioTracks =
-		remoteMicrophoneParticipants.size > 0 || remoteScreenAudioParticipants.size > 0;
+	const setParticipantVolume = useCallback((
+		participantIdentity: string,
+		source: ParticipantAudioSource,
+		volume: number
+	) => {
+		dispatch(deviceActions.setParticipantVolume({ participantIdentity, source, volume }));
+	}, [dispatch]);
+
+	const resetParticipantVolume = useCallback((participantIdentity: string, source: ParticipantAudioSource) => {
+		dispatch(deviceActions.resetParticipantVolume({ participantIdentity, source }));
+	}, [dispatch]);
+
+	const openParticipantMenu = useCallback((card: ParticipantCard, anchor: ParticipantContextMenuAnchor) => {
+		const menuWidth = 320;
+		const menuHeight = screenCardByIdentity.has(card.participant.identity) ||
+			remoteScreenAudioParticipants.has(card.participant.identity)
+			? 230
+			: 132;
+		const rootRect = callRootRef.current?.getBoundingClientRect();
+		const rootLeft = rootRect?.left ?? 0;
+		const rootTop = rootRect?.top ?? 0;
+		const rootWidth = rootRect?.width ?? window.innerWidth;
+		const rootHeight = rootRect?.height ?? window.innerHeight;
+		const cardLeft = anchor.left - rootLeft;
+		const cardBottom = anchor.bottom - rootTop;
+		const preferredX = cardLeft + 8;
+		const belowY = cardBottom + 8;
+		const aboveY = (anchor.top - rootTop) - menuHeight - 8;
+		const preferredY = anchor.preferAbove ? aboveY : belowY;
+		const maxX = Math.max(8, rootWidth - menuWidth - 8);
+		const maxY = Math.max(8, rootHeight - menuHeight - 8);
+		const x = Math.max(8, Math.min(preferredX, maxX));
+		const y = Math.max(8, Math.min(preferredY, maxY));
+
+		setParticipantMenu({
+			cardId: card.id,
+			x: Math.max(8, x),
+			y,
+		});
+	}, [remoteScreenAudioParticipants, screenCardByIdentity]);
 
 	useEffect(() => {
-		if (!isCinemaMode) return;
-		if (mainScreenTrack) return;
+		if (!participantMenu) return;
+		const closeMenu = () => setParticipantMenu(null);
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") closeMenu();
+		};
+
+		window.addEventListener("click", closeMenu);
+		window.addEventListener("contextmenu", closeMenu);
+		window.addEventListener("keydown", onKeyDown);
+		window.addEventListener("resize", closeMenu);
+
+		return () => {
+			window.removeEventListener("click", closeMenu);
+			window.removeEventListener("contextmenu", closeMenu);
+			window.removeEventListener("keydown", onKeyDown);
+			window.removeEventListener("resize", closeMenu);
+		};
+	}, [participantMenu]);
+
+	useEffect(() => {
+		if (!focusedCardId) return;
+		if (participantCards.some((card) => card.id === focusedCardId)) return;
+		setFocusedCardId(null);
+	}, [focusedCardId, participantCards]);
+
+	useEffect(() => {
+		if (!isCinemaMode || focusedCard?.videoTrack) return;
 		dispatch(callActions.setTheaterMode(false));
-	}, [dispatch, isCinemaMode, mainScreenTrack]);
+	}, [dispatch, focusedCard, isCinemaMode]);
+
+	const focusedScreenShareVolumeControl = focusedCard?.isScreenShareCard &&
+		remoteScreenAudioParticipants.has(focusedCard.participant.identity) ? (
+		<FocusedScreenShareVolume
+			volume={getParticipantVolume(focusedCard.participant.identity, "screenShareAudio")}
+			onChange={(volume) => setParticipantVolume(
+				focusedCard.participant.identity,
+				"screenShareAudio",
+				volume
+			)}
+			onReset={() => resetParticipantVolume(focusedCard.participant.identity, "screenShareAudio")}
+		/>
+	) : null;
 
 	return (
-		<div className={styles["call-root"]}>
+		<div ref={callRootRef} className={styles["call-root"]}>
 			{isCinemaMode ? (
-				mainScreenTrack ? (
+				focusedCard?.videoTrack ? (
 					<div className={styles["cinema-layout"]}>
 						<TheaterModeView
-							trackRef={mainScreenTrack}
-							displayName={mainScreenTrack.participant.name || mainScreenTrack.participant.identity}
+							trackRef={focusedCard.videoTrack}
+							displayName={focusedCard.displayName}
 							onExit={onToggleCinema}
 						/>
+						{focusedScreenShareVolumeControl}
 					</div>
 				) : (
 					<div className={styles["empty-state"]}>
-						<div className={styles["empty-title"]}>Cinema mode is unavailable</div>
-						<div className={styles["empty-subtitle"]}>Select a screen share first.</div>
+						<div className={styles["empty-title"]}>Кино-режим недоступен</div>
+						<div className={styles["empty-subtitle"]}>Сначала выберите камеру или трансляцию экрана.</div>
 					</div>
 				)
-			) : hasScreenShare && mainScreenTrack ? (
+			) : isFocusMode && focusedCard?.videoTrack ? (
 				<div className={styles["screen-layout"]}>
-					<div className={styles["main-screen"]}>
-						{mainScreenTrack.participant.isLocal ||
-							mainScreenTrack.publication?.isSubscribed ? (
-							<VideoTrack trackRef={mainScreenTrack} />
+					<div
+						className={[
+							styles["main-screen"],
+							focusedCard.isScreenShareCard ? styles["main-screen-share"] : styles["main-camera"],
+						].join(" ")}
+					>
+						{focusedCard.videoTrack.participant.isLocal || focusedCard.videoTrack.publication?.isSubscribed ? (
+							<VideoTrack trackRef={focusedCard.videoTrack} />
 						) : (
-							<div className={styles["screen-loading"]}>
-								Opening screen share...
-							</div>
+							<div className={styles["screen-loading"]}>Открываем видео...</div>
 						)}
-
-						<div className={styles["name"]}>
-							{mainScreenTrack.participant.name ||
-								mainScreenTrack.participant.identity}
-						</div>
+						<div className={styles["name"]}>{focusedCard.displayName}</div>
+						<button
+							type="button"
+							className={styles["focus-close-media-button"]}
+							onClick={clearFocusedMedia}
+							title="Закрыть выбранное видео"
+							aria-label="Закрыть выбранное видео"
+						>
+							<X size={18} />
+						</button>
+						<button
+							type="button"
+							className={styles["focus-exit-button"]}
+							onClick={closeFocusMode}
+							title="Выйти из фокус-режима"
+						>
+							Выйти
+						</button>
+						{focusedScreenShareVolumeControl}
 					</div>
 
-					<div className={styles["participants-strip"]}>
-						{participantCards.map(
-							(
-								{ participant, videoTrack, screenTrack, avatarUrl },
-								index
-							) => (
-								<CallParticipantTile
-									key={participant.sid ?? participant.identity ?? index}
-									className={styles["participant-tile"]}
-									participant={participant}
-									videoTrack={videoTrack}
-									avatarUrl={avatarUrl}
-									isScreenSharing={Boolean(screenTrack)}
-									isScreenShareSelected={
-										screenTrack?.publication?.trackSid ===
-										call.selectedScreenTrackSid
-									}
-									onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-								/>
-							)
-						)}
+					<div className={styles["participants-strip-shell"]}>
+						<ParticipantsGrid
+							participantCards={participantCards}
+							focusedCardId={focusedCard.id}
+							onOpenCard={openCardInFocus}
+							onOpenContextMenu={openParticipantMenu}
+							itemsPerPage={8}
+							className={styles["participants-strip"]}
+							tileClassName={styles["participant-tile"]}
+							preferContextMenuAbove
+						/>
 					</div>
+				</div>
+			) : isFocusMode && participantCards.length > 0 ? (
+				<div className={styles["grid-container"]}>
+					<ParticipantsGrid
+						participantCards={participantCards}
+						focusedCardId={focusedCardId}
+						onOpenCard={openCardInFocus}
+						onOpenContextMenu={openParticipantMenu}
+						itemsPerPage={8}
+					/>
 				</div>
 			) : isSingleParticipantView ? (
-				<div className={styles["single-layout"]}>
-					{participantCards.map(
-						({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
-							<CallParticipantTile
-								key={participant.sid ?? participant.identity ?? index}
-								className={styles["single-tile"]}
-								participant={participant}
-								videoTrack={videoTrack}
-								avatarUrl={avatarUrl}
-								isScreenSharing={Boolean(screenTrack)}
-								isScreenShareSelected={
-									screenTrack?.publication?.trackSid ===
-									call.selectedScreenTrackSid
-								}
-								onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-							/>
-						)
-					)}
-				</div>
+				<ParticipantsGrid
+					participantCards={participantCards}
+					focusedCardId={focusedCardId}
+					onOpenCard={openCardInFocus}
+					onOpenContextMenu={openParticipantMenu}
+					className={styles["single-layout"]}
+					tileClassName={styles["single-tile"]}
+				/>
 			) : participantCards.length > 0 ? (
-				<div className={styles["participants-grid"]}>
-					{participantCards.map(
-						({ participant, videoTrack, screenTrack, avatarUrl }, index) => (
-							<CallParticipantTile
-								key={participant.sid ?? participant.identity ?? index}
-								className={styles["tile"]}
-								participant={participant}
-								videoTrack={videoTrack}
-								avatarUrl={avatarUrl}
-								isScreenSharing={Boolean(screenTrack)}
-								isScreenShareSelected={
-									screenTrack?.publication?.trackSid ===
-									call.selectedScreenTrackSid
-								}
-								onOpenScreenShare={getOpenScreenShareHandler(screenTrack)}
-							/>
-						)
-					)}
+				<div className={styles["grid-container"]}>
+					<ParticipantsGrid
+						participantCards={participantCards}
+						focusedCardId={focusedCardId}
+						onOpenCard={openCardInFocus}
+						onOpenContextMenu={openParticipantMenu}
+						itemsPerPage={6}
+					/>
 				</div>
 			) : (
 				<div className={styles["empty-state"]}>
-					<div className={styles["empty-title"]}>
-						Connecting call...
-					</div>
-					<div className={styles["empty-subtitle"]}>
-						Waiting for participants to join the room.
-					</div>
-				</div>
-			)}
-
-			{isAudioPanelOpen && !isCinemaMode && (
-				<div className={styles["audio-panel"]}>
-					<div className={styles["audio-panel-title"]}>Participant volume</div>
-					{sortedParticipants.filter((participant) => !participant.isLocal).length === 0 ? (
-						<div className={styles["audio-panel-empty"]}>No remote participants yet.</div>
-					) : !hasAnyRemoteAudioTracks ? (
-						<div className={styles["audio-panel-empty"]}>
-							Remote audio tracks are not available yet.
-						</div>
-					) : (
-						sortedParticipants
-							.filter((participant) => !participant.isLocal)
-							.map((participant) => {
-								const micAvailable = remoteMicrophoneParticipants.has(participant.identity);
-								const streamAvailable = remoteScreenAudioParticipants.has(participant.identity);
-								const micVolume = getVolumeValue(participant.identity, "microphone");
-								const streamVolume = getVolumeValue(participant.identity, "screenShareAudio");
-								const card = participantCardByIdentity.get(participant.identity);
-								const displayName = card?.displayName || participant.identity;
-								const avatarLabel = displayName.slice(0, 1).toUpperCase();
-
-								return (
-									<div key={participant.identity} className={styles["audio-row"]}>
-										<div className={styles["audio-header"]}>
-											<div className={styles["audio-avatar"]}>
-												{card?.avatarUrl ? (
-													<img
-														src={card.avatarUrl}
-														crossOrigin="anonymous"
-														alt={`${displayName} avatar`}
-														className={styles["audio-avatar-image"]}
-													/>
-												) : (
-													<span>{avatarLabel}</span>
-												)}
-											</div>
-											<div className={styles["audio-name"]} title={displayName}>
-												{displayName}
-											</div>
-										</div>
-										<div className={styles["audio-slider-row"]}>
-											<div className={styles["audio-source-label"]}>
-												<Mic size={14} />
-												<span>Mic</span>
-											</div>
-											<input
-												type="range"
-												min={0}
-												max={100}
-												value={micVolume}
-												disabled={!micAvailable}
-												onChange={(event) =>
-													dispatch(
-														deviceActions.setParticipantVolume({
-															participantIdentity: participant.identity,
-															source: "microphone",
-															volume: Number(event.target.value),
-														})
-													)
-												}
-											/>
-											<span className={styles["audio-percent"]}>{micVolume}%</span>
-											<button
-												type="button"
-												className={styles["audio-reset"]}
-												title="Reset to 100%"
-												onClick={() =>
-													dispatch(
-														deviceActions.resetParticipantVolume({
-															participantIdentity: participant.identity,
-															source: "microphone",
-														})
-													)
-												}
-											>
-												<RotateCcw size={13} />
-											</button>
-										</div>
-										{streamAvailable && (
-											<div className={styles["audio-slider-row"]}>
-												<div className={styles["audio-source-label"]}>
-													<MonitorUp size={14} />
-													<span>Stream</span>
-												</div>
-												<input
-													type="range"
-													min={0}
-													max={100}
-													value={streamVolume}
-													onChange={(event) =>
-														dispatch(
-															deviceActions.setParticipantVolume({
-																participantIdentity: participant.identity,
-																source: "screenShareAudio",
-																volume: Number(event.target.value),
-															})
-														)
-													}
-												/>
-												<span className={styles["audio-percent"]}>{streamVolume}%</span>
-												<button
-													type="button"
-													className={styles["audio-reset"]}
-													title="Reset to 100%"
-													onClick={() =>
-														dispatch(
-															deviceActions.resetParticipantVolume({
-																participantIdentity: participant.identity,
-																source: "screenShareAudio",
-															})
-														)
-													}
-												>
-													<RotateCcw size={13} />
-												</button>
-											</div>
-										)}
-									</div>
-								);
-							})
-					)}
+					<div className={styles["empty-title"]}>Подключаем звонок...</div>
+					<div className={styles["empty-subtitle"]}>Ждём, когда участники зайдут в комнату.</div>
 				</div>
 			)}
 
 			{!isCinemaMode && (
-				<div className={styles["controls-bar"]}>
-					<MicrophoneToggleButton
-						className={styles["control-button"]}
-						enabledLabel="Mic"
-						disabledLabel="Muted"
-						showIcon
-					/>
-
-					<TrackToggle
-						source={Track.Source.Camera}
-						className={styles["control-button"]}
-						captureOptions={cameraCaptureOptions}
-						publishOptions={cameraPublishOptions}
-					/>
-
-					<TrackToggle
-						source={Track.Source.ScreenShare}
-						className={styles["control-button"]}
-						captureOptions={screenShareCaptureOptions}
-						publishOptions={screenSharePublishOptions}
-						title="Share screen. Audio is included only when your browser and selected source support it"
-					/>
-
-					{hasChat && (
-						<button
-							type="button"
-							className={styles["control-button"]}
-							onClick={onOpenChat}
-							title="Open call chat"
-						>
-							Chat
-						</button>
-					)}
-
-					<button
-						type="button"
-						className={styles["control-button"]}
-						onClick={() => setIsAudioPanelOpen((prev) => !prev)}
-						title="Per-user audio volume controls"
-					>
-						{isAudioPanelOpen ? "Close Mix" : "Audio Mix"}
-					</button>
-
-					<button
-						type="button"
-						className={styles["control-button"]}
-						onClick={onToggleFocus}
-						title={isFocusMode ? "Exit call focus mode" : "Focus call"}
-					>
-						{isFocusMode ? "Unfocus" : "Focus"}
-					</button>
-
-					<button
-						type="button"
-						className={styles["control-button"]}
-						onClick={() => {
-							if (!call.selectedScreenTrackSid) return;
-							onToggleCinema();
-						}}
-						title={
-							call.selectedScreenTrackSid
-								? isCinemaMode
-									? "Exit cinema mode"
-									: "Open cinema mode"
-								: "Select a screen share first"
-						}
-						disabled={!call.selectedScreenTrackSid}
-					>
-						{isCinemaMode ? "Exit Cinema" : "Cinema"}
-					</button>
-
-					<button
-						type="button"
-						className={styles["control-button"]}
-						onClick={onMinimize}
-						title="Minimize call"
-					>
-						Mini
-					</button>
-
-					<button
-						type="button"
-						className={styles["control-button"]}
-						onClick={onHide}
-						title="Hide call"
-					>
-						Hide
-					</button>
-
-					<button className={styles["leave-button"]} onClick={onLeave}>
-						<img src="/leave-call-icon.svg" alt="Leave call" />
-					</button>
-				</div>
+				<CallControls
+					hasChat={hasChat}
+					isFocusMode={isFocusMode}
+					isCinemaMode={isCinemaMode}
+					canOpenCinema={canOpenCinemaMode}
+					cameraCaptureOptions={cameraCaptureOptions}
+					cameraPublishOptions={cameraPublishOptions}
+					screenShareCaptureOptions={screenShareCaptureOptions}
+					screenSharePublishOptions={screenSharePublishOptions}
+					onOpenChat={onOpenChat}
+					onToggleFocus={onToggleFocus}
+					onToggleCinema={onToggleCinema}
+					onMinimize={onMinimize}
+					onHide={onHide}
+					onLeave={onLeave}
+				/>
+			)}
+			{participantMenu && contextMenuCard && !isCinemaMode && (
+				<ParticipantContextMenu
+					x={participantMenu.x}
+					y={participantMenu.y}
+					displayName={contextMenuCard.displayName}
+					hasScreenShare={Boolean(screenCardByIdentity.get(contextMenuCard.participant.identity))}
+					hasMicrophoneAudio={remoteMicrophoneParticipants.has(contextMenuCard.participant.identity)}
+					hasScreenShareAudio={remoteScreenAudioParticipants.has(contextMenuCard.participant.identity)}
+					micVolume={getParticipantVolume(contextMenuCard.participant.identity, "microphone")}
+					streamVolume={getParticipantVolume(contextMenuCard.participant.identity, "screenShareAudio")}
+					onOpenScreenShare={() => {
+						const screenCard = screenCardByIdentity.get(contextMenuCard.participant.identity);
+						if (screenCard) openCardInFocus(screenCard);
+					}}
+					onOpenTheater={() => {
+						const targetCard = contextMenuCard.isScreenShareCard
+							? contextMenuCard
+							: screenCardByIdentity.get(contextMenuCard.participant.identity);
+						if (!targetCard) return;
+						openCardInFocus(targetCard);
+						onToggleCinema();
+					}}
+					onMicChange={(volume) => setParticipantVolume(contextMenuCard.participant.identity, "microphone", volume)}
+					onMicReset={() => resetParticipantVolume(contextMenuCard.participant.identity, "microphone")}
+					onStreamChange={(volume) => setParticipantVolume(contextMenuCard.participant.identity, "screenShareAudio", volume)}
+					onStreamReset={() => resetParticipantVolume(contextMenuCard.participant.identity, "screenShareAudio")}
+				/>
 			)}
 		</div>
 	);
-}
-
-function normalizeIdentityKey(value: string) {
-	return value.trim().toLowerCase();
-}
-
-function isUserMini(value: UserMini | undefined): value is UserMini {
-	return Boolean(value);
 }

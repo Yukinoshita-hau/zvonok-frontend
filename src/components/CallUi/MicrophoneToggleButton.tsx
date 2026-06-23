@@ -14,14 +14,18 @@ interface MicrophoneToggleButtonProps {
 	disabledLabel?: string;
 	showIcon?: boolean;
 	titlePrefix?: string;
+	labelClassName?: string;
+	iconSize?: number;
 }
 
 export function MicrophoneToggleButton({
 	className,
-	enabledLabel = "Mic",
-	disabledLabel = "Muted",
+	enabledLabel = "Микрофон",
+	disabledLabel = "Без звука",
 	showIcon = false,
-	titlePrefix = "Microphone",
+	titlePrefix = "Микрофон",
+	labelClassName,
+	iconSize = 16,
 }: MicrophoneToggleButtonProps) {
 	const captureOptions = useMicrophoneCaptureOptions();
 
@@ -40,13 +44,15 @@ export function MicrophoneToggleButton({
 	});
 
 	const title = enabled
-		? `${titlePrefix}: on`
-		: `${titlePrefix}: muted`;
+		? `${titlePrefix}: включён`
+		: `${titlePrefix}: выключен`;
 
 	return (
-		<button {...buttonProps} title={title} aria-label={title}>
-			{showIcon && (enabled ? <Mic size={16} /> : <MicOff size={16} />)}
-			<span>{enabled ? enabledLabel : disabledLabel}</span>
+		<button {...buttonProps} title={title} aria-label={title} data-active={enabled}>
+			{showIcon && (enabled ? <Mic size={iconSize} /> : <MicOff size={iconSize} />)}
+			{(enabled ? enabledLabel : disabledLabel) && (
+				<span className={labelClassName}>{enabled ? enabledLabel : disabledLabel}</span>
+			)}
 		</button>
 	);
 }

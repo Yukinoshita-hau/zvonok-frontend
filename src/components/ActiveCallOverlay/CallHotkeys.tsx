@@ -1,18 +1,21 @@
 import { useEffect } from "react";
 import { useRoomContext } from "@livekit/components-react";
+import { useSelector } from "react-redux";
 import { useMicrophoneCaptureOptions } from "../CallUi/useMicrophoneCaptureOptions";
+import type { RootState } from "../../store/store";
 
-const MUTE_HOTKEY_CODE = "KeyM";
-const MUTE_HOTKEY_KEYS = new Set(["m", "ь", "м"]);
 
 export function CallHotkeys() {
 	const room = useRoomContext();
 	const captureOptions = useMicrophoneCaptureOptions();
+	const muteMicrophoneHotkey = useSelector(
+		(s: RootState) => s.device.muteMicrophoneHotkey
+	);
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.repeat || event.defaultPrevented) return;
-			if (!isMuteHotkey(event)) return;
+			if (!isMuteHotkey(event, muteMicrophoneHotkey)) return;
 			if (isEditableTarget(event.target) || isModalOpen()) return;
 
 			event.preventDefault();
@@ -27,16 +30,22 @@ export function CallHotkeys() {
 		return () => {
 			window.removeEventListener("keydown", onKeyDown);
 		};
-	}, [captureOptions, room]);
+	}, [captureOptions, muteMicrophoneHotkey, room]);
 
 	return null;
 }
 
-function isMuteHotkey(event: KeyboardEvent) {
-	if (!event.ctrlKey || !event.altKey || event.shiftKey || event.metaKey) return false;
-	if (event.code === MUTE_HOTKEY_CODE) return true;
-
-	return MUTE_HOTKEY_KEYS.has(event.key.toLowerCase());
+function isMuteHotkey(
+	event: KeyboardEvent,
+	hotkey: RootState["device"]["muteMicrophoneHotkey"]
+) {
+	return (
+		event.code === hotkey.code &&
+		event.ctrlKey === hotkey.ctrlKey &&
+		event.altKey === hotkey.altKey &&
+		event.shiftKey === hotkey.shiftKey &&
+		event.metaKey === hotkey.metaKey
+	);
 }
 
 function isEditableTarget(target: EventTarget | null) {

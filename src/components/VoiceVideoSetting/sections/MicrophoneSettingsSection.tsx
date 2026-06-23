@@ -1,4 +1,6 @@
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from "react";
 import { deviceActions } from "../../../store/slices/device.slice";
+import type { KeyboardShortcutPreference } from "../../../store/slices/device.slice";
 import type { AppDispatch } from "../../../store/store";
 import {
 	MICROPHONE_QUALITY_PRESETS,
@@ -19,7 +21,8 @@ interface MicrophoneSettingsSectionProps {
 	isListening: boolean;
 	isAutoInputSensitivity: boolean;
 	voiceActivityThreshold: number;
-	audioPreviewRef: React.RefObject<HTMLAudioElement | null>;
+	muteMicrophoneHotkey: KeyboardShortcutPreference;
+	audioPreviewRef: RefObject<HTMLAudioElement | null>;
 	onListeningToggle: () => void;
 }
 
@@ -35,9 +38,42 @@ export function MicrophoneSettingsSection({
 	isListening,
 	isAutoInputSensitivity,
 	voiceActivityThreshold,
+	muteMicrophoneHotkey,
 	audioPreviewRef,
 	onListeningToggle,
 }: MicrophoneSettingsSectionProps) {
+	const [isCapturingMuteHotkey, setIsCapturingMuteHotkey] = useState(false);
+	const [hotkeyCaptureError, setHotkeyCaptureError] = useState<string | null>(null);
+	const hotkeyInputRef = useRef<HTMLInputElement | null>(null);
+
+	const startHotkeyCapture = () => {
+		setIsCapturingMuteHotkey(true);
+		setHotkeyCaptureError(null);
+		window.setTimeout(() => hotkeyInputRef.current?.focus(), 0);
+	};
+
+	const onMuteHotkeyKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+		if (!isCapturingMuteHotkey) return;
+		event.preventDefault();
+		event.stopPropagation();
+
+		if (event.key === "Escape") {
+			setIsCapturingMuteHotkey(false);
+			setHotkeyCaptureError(null);
+			return;
+		}
+
+		const nextHotkey = createShortcutPreference(event.nativeEvent);
+		if (!nextHotkey) {
+			setHotkeyCaptureError("Use a modifier combo or an F-key.");
+			return;
+		}
+
+		dispatch(deviceActions.setMuteMicrophoneHotkey(nextHotkey));
+		setIsCapturingMuteHotkey(false);
+		setHotkeyCaptureError(null);
+	};
+
 	return (
 		<section className={styles["settings-card"]}>
 			<div className={styles["section-header"]}>
@@ -64,6 +100,46 @@ export function MicrophoneSettingsSection({
 						</option>
 					))}
 				</select>
+			</div>
+
+			<div className={styles["form-group"]}>
+				<label className={styles["label"]}>Горячии клавиши включения и выключения микрофона</label>
+
+				<div className={styles["hotkey-row"]}>
+					<input
+						ref={hotkeyInputRef}
+						className={styles["input"]}
+						readOnly
+						value={isCapturingMuteHotkey ? "Press shortcut..." : muteMicrophoneHotkey.label}
+						onClick={startHotkeyCapture}
+						onKeyDown={onMuteHotkeyKeyDown}
+					/>
+					<button
+						type="button"
+						className={styles["btn-secondary-neutral"]}
+						onClick={startHotkeyCapture}
+					>
+						Запись
+					</button>
+					<button
+						type="button"
+						className={styles["btn-secondary-neutral"]}
+						onClick={() => {
+							dispatch(deviceActions.resetMuteMicrophoneHotkey());
+							setIsCapturingMuteHotkey(false);
+							setHotkeyCaptureError(null);
+						}}
+					>
+						Сброс
+					</button>
+				</div>
+
+				<span className={styles["help-text"]}>
+					По умолчанию - Ctrl+Alt+M. Нажмите Escape во время записи, чтобы отменить.
+				</span>
+				{hotkeyCaptureError && (
+					<span className={styles["error-inline"]}>{hotkeyCaptureError}</span>
+				)}
 			</div>
 
 			<div className={styles["form-group"]}>
@@ -166,4 +242,49 @@ function getDeviceLabel(
 	const trimmed = device.label?.trim();
 	if (trimmed) return trimmed;
 	return `${fallbackType} ${index + 1}`;
+}
+
+function createShortcutPreference(event: KeyboardEvent): KeyboardShortcutPreference | null {
+	if (isModifierKey(event.key)) return null;
+	const hasModifier = event.ctrlKey || event.altKey || event.shiftKey || event.metaKey;
+	const isFunctionKey = /^F([1-9]|1[0-9]|2[0-4])$/.test(event.code);
+	if (!hasModifier && !isFunctionKey) return null;
+
+	const keyLabel = getShortcutKeyLabel(event);
+	if (!keyLabel) return null;
+
+	const parts = [
+		event.ctrlKey ? "Ctrl" : null,
+		event.altKey ? "Alt" : null,
+		event.shiftKey ? "Shift" : null,
+		event.metaKey ? "Meta" : null,
+		keyLabel,
+	].filter((part): part is string => Boolean(part));
+
+	return {
+		code: event.code,
+		key: event.key,
+		ctrlKey: event.ctrlKey,
+		altKey: event.altKey,
+		shiftKey: event.shiftKey,
+		metaKey: event.metaKey,
+		label: parts.join("+"),
+	};
+}
+
+function isModifierKey(key: string) {
+	return key === "Control" || key === "Alt" || key === "Shift" || key === "Meta";
+}
+
+function getShortcutKeyLabel(event: KeyboardEvent) {
+	if (event.code.startsWith("Key")) return event.code.slice(3);
+	if (event.code.startsWith("Digit")) return event.code.slice(5);
+	if (event.code.startsWith("Numpad")) return event.code.replace("Numpad", "Num ");
+	if (event.code === "Space") return "Space";
+	if (event.code === "Minus") return "-";
+	if (event.code === "Equal") return "=";
+	if (event.code.startsWith("Arrow")) return event.code.replace("Arrow", "");
+	if (/^F([1-9]|1[0-9]|2[0-4])$/.test(event.code)) return event.code;
+	if (event.key.length === 1) return event.key.toUpperCase();
+	return event.key;
 }

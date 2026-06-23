@@ -10,62 +10,54 @@ export function CallParticipantTile({
 	participant,
 	videoTrack,
 	avatarUrl,
+	displayName,
 	className,
-	isScreenSharing = false,
-	isScreenShareSelected = false,
-	onOpenScreenShare,
+	isScreenShareCard = false,
+	isFocused = false,
+	onOpenFocus,
 	onContextMenu,
 }: CallParticipantTileProps) {
 	const { voiceActivityThreshold, isAutoInputSensitivity } = useSelector(
 		(state: RootState) => state.device
 	);
-	const identity = participant.name || "Unknown";
+	const identity = displayName || participant.name || "Участник";
 	const avatarLabel = identity.slice(0, 1).toUpperCase();
 	const avatarBg = StringToColor(identity);
 	const micEnabled = participant.isMicrophoneEnabled;
 	const localThreshold = (isAutoInputSensitivity ? 30 : voiceActivityThreshold) / 100;
-	const isSpeaking = participant.isLocal
-		? participant.audioLevel >= localThreshold
-		: participant.isSpeaking;
-	const isClickableScreenShare = isScreenSharing && onOpenScreenShare;
+	// На карточке трансляции не подсвечиваем речь: это экран, а не участник.
+	const isSpeaking = isScreenShareCard
+		? false
+		: participant.isLocal
+			? participant.audioLevel >= localThreshold
+			: participant.isSpeaking;
+	const hasVideo = Boolean(videoTrack);
+	const isClickable = hasVideo && Boolean(onOpenFocus);
 
 	return (
 		<button
 			type="button"
-			onClick={isClickableScreenShare ? onOpenScreenShare : undefined}
+			onClick={isClickable ? onOpenFocus : undefined}
 			onContextMenu={onContextMenu}
 			className={[
 				className,
 				styles["participant-card"],
 				isSpeaking ? styles["participant-speaking"] : "",
-				isScreenSharing ? styles["participant-screen-sharing"] : "",
-				isScreenShareSelected ? styles["participant-screen-selected"] : "",
-				isClickableScreenShare ? styles["participant-clickable"] : "",
+				isScreenShareCard ? styles["participant-screen-sharing"] : "",
+				isFocused ? styles["participant-screen-selected"] : "",
+				isClickable ? styles["participant-clickable"] : "",
 			].join(" ")}
-			title={isScreenSharing ? `Open ${identity}'s screen share` : undefined}
+			title={
+				isScreenShareCard
+					? `Открыть трансляцию ${participant.name || participant.identity}`
+					: hasVideo
+						? `Открыть видео ${participant.name || participant.identity}`
+						: undefined
+			}
 		>
 			<div className={styles["media"]}>
 				{videoTrack ? (
 					<VideoTrack trackRef={videoTrack} />
-				) : isScreenSharing ? (
-					<div
-						className={styles["screen-share-placeholder"]}
-						style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}
-					>
-						{avatarUrl && (
-							<img
-								className={styles["screen-share-avatar-image"]}
-								src={avatarUrl}
-								crossOrigin="anonymous"
-								alt={`${identity} avatar`}
-							/>
-						)}
-						<div className={styles["screen-share-overlay"]}>
-							<MonitorUp size={22} />
-							<span>Показывает экран</span>
-							<small>Нажмите, чтобы открыть</small>
-						</div>
-					</div>
 				) : (
 					<div
 						className={styles["avatar-fallback"]}
@@ -76,7 +68,7 @@ export function CallParticipantTile({
 								className={styles["avatar-image"]}
 								src={avatarUrl}
 								crossOrigin="anonymous"
-								alt={`${identity} avatar`}
+								alt={`Аватар ${identity}`}
 							/>
 						) : (
 							<span className={styles["avatar-initial"]}>{avatarLabel}</span>
@@ -85,20 +77,22 @@ export function CallParticipantTile({
 				)}
 			</div>
 
-			{isScreenSharing && videoTrack && (
+			{isScreenShareCard && (
 				<div className={styles["screen-share-badge"]}>
 					<MonitorUp size={12} />
 				</div>
 			)}
 
-			<div
-				className={`${styles["mic-indicator"]} ${
-					micEnabled ? styles["mic-indicator-on"] : styles["mic-indicator-off"]
-				}`}
-				title={micEnabled ? "Microphone is enabled" : "Microphone is muted"}
-			>
-				{micEnabled ? <Mic size={10} /> : <MicOff size={10} />}
-			</div>
+			{!isScreenShareCard && (
+				<div
+					className={`${styles["mic-indicator"]} ${
+						micEnabled ? styles["mic-indicator-on"] : styles["mic-indicator-off"]
+					}`}
+					title={micEnabled ? "Микрофон включён" : "Микрофон выключен"}
+				>
+					{micEnabled ? <Mic size={10} /> : <MicOff size={10} />}
+				</div>
+			)}
 
 			<div className={styles["name"]}>{identity}</div>
 		</button>

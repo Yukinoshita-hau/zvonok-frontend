@@ -29,6 +29,7 @@ export function VoiceVideoSetting() {
 		screenShareRuntime,
 		voiceProcessingConfig,
 		voiceProcessingPreset,
+		muteMicrophoneHotkey,
 	} = useSelector((s: RootState) => s.device);
 
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
@@ -318,6 +319,7 @@ export function VoiceVideoSetting() {
 					isListening={isListening}
 					isAutoInputSensitivity={isAutoInputSensitivity}
 					voiceActivityThreshold={voiceActivityThreshold}
+					muteMicrophoneHotkey={muteMicrophoneHotkey}
 					audioPreviewRef={audioPreviewRef}
 					onListeningToggle={() => setIsListening((previous) => !previous)}
 				/>

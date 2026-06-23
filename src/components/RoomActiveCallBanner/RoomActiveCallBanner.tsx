@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
-import { activeCallActions, joinActiveCall } from "../../store/slices/activeCall.slice";
-import { callActions, getCallToken } from "../../store/slices/call.slice";
+import { activeCallActions } from "../../store/slices/activeCall.slice";
+import { getCallToken } from "../../store/slices/call.slice";
 import styles from "./RoomActiveCallBanner.module.css";
 
 interface RoomActiveCallBannerProps {
@@ -29,17 +29,16 @@ export function RoomActiveCallBanner({ roomId }: RoomActiveCallBannerProps) {
 
 	const handleJoin = async () => {
 		try {
-			const joinedCall = await dispatch(joinActiveCall({ callId: activeCall.callId, chatRoomId: activeCall.chatRoomId })).unwrap();
-			dispatch(activeCallActions.setCurrentCall({ callId: joinedCall.callId, roomId: joinedCall.chatRoomId }));
-			dispatch(callActions.prepareJoinedCall({
-				callId: joinedCall.callId,
-				chatRoomId: joinedCall.chatRoomId,
-				roomType: joinedCall.roomType,
-				livekitRoomName: joinedCall.liveKitRoomName,
-				callerUsername: joinedCall.callerUsername,
-				hostUsername: joinedCall.hostUsername,
-			}));
-			dispatch(getCallToken(joinedCall.callId));
+			dispatch(activeCallActions.setCurrentCall({ callId: activeCall.callId, roomId: activeCall.chatRoomId }));
+
+			dispatch({
+				type: "call/sendJoin",
+				payload: {
+					callId: activeCall.callId,
+					chatRoomId: activeCall.chatRoomId ?? undefined,
+				},
+			});
+			dispatch(getCallToken(activeCall.callId));
 		} catch {
 			// joinError is stored in Redux and rendered in the banner.
 		}

@@ -24,10 +24,10 @@ export function MiniCallDock({
 			<div className={styles["mini-actions"]}>
 				<MicrophoneToggleButton
 					className={`${styles["mini-button"]} ${styles["mini-mic-button"]}`}
-					enabledLabel="Mute"
-					disabledLabel="Unmute"
+					enabledLabel="Выкл."
+					disabledLabel="Вкл."
 					showIcon
-					titlePrefix="Mini microphone control"
+					titlePrefix="Микрофон"
 				/>
 				{hasChat && (
 					<button
@@ -35,7 +35,7 @@ export function MiniCallDock({
 						className={styles["mini-button"]}
 						onClick={onOpenChat}
 					>
-						Chat
+						Чат
 					</button>
 				)}
 				<button
@@ -43,21 +43,21 @@ export function MiniCallDock({
 					className={styles["mini-button"]}
 					onClick={onExpand}
 				>
-					Expand
+					Открыть
 				</button>
 				<button
 					type="button"
 					className={styles["mini-button"]}
 					onClick={onHide}
 				>
-					Hide
+					Скрыть
 				</button>
 				<button
 					type="button"
 					className={styles["mini-leave"]}
 					onClick={onEnd}
 				>
-					End
+					Завершить
 				</button>
 			</div>
 		</div>

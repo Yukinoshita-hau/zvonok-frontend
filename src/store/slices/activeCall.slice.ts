@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { callApi } from "../../api/callApi";
 import type { ActiveCallResponse } from "../../api/interfaces/ActiveCallResponse";
-import type { JoinCallDto } from "../../api/interfaces/CallDtos";
 import type { CallParticipantStatus } from "../../api/interfaces/CallParticipantResponse";
 import type { BaseCallEvent } from "../interfaces/callEvents.interface";
 
@@ -67,15 +66,6 @@ export const getActiveCall = createAsyncThunk("activeCall/getActiveCall", async 
 	} catch (e: any) {
 		if (e?.response?.status === 404) return { roomId, activeCall: null };
 		return thunkAPI.rejectWithValue(e?.message ?? "Failed to get active call");
-	}
-});
-
-export const joinActiveCall = createAsyncThunk("activeCall/joinActiveCall", async (dto: JoinCallDto, thunkAPI) => {
-	try {
-		const { data } = await callApi.joinCall(dto);
-		return data;
-	} catch (e: any) {
-		return thunkAPI.rejectWithValue(e?.message ?? "Failed to join call");
 	}
 });
 
@@ -165,21 +155,6 @@ export const activeCallSlice = createSlice({
 				}
 				state.error = null;
 			})
-			.addCase(joinActiveCall.pending, (state) => {
-				state.joinStatus = "loading";
-				state.joinError = null;
-			})
-			.addCase(joinActiveCall.fulfilled, (state, action: PayloadAction<ActiveCallResponse>) => {
-				state.activeCallsByRoomId[action.payload.chatRoomId] = action.payload;
-				state.currentCallId = action.payload.callId;
-				state.currentRoomId = action.payload.chatRoomId;
-				state.status = "connecting";
-				state.joinStatus = "succeeded";
-			})
-			.addCase(joinActiveCall.rejected, (state, action) => {
-				state.joinStatus = "failed";
-				state.joinError = typeof action.payload === "string" ? action.payload : "Failed to join call";
-			});
 	},
 });
 

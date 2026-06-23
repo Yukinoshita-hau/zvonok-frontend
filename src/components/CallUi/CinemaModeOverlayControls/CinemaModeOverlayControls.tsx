@@ -5,11 +5,11 @@ export function CinemaModeOverlayControls({ displayName, onExit }: CinemaModeOve
 	return (
 		<div className={styles["overlay"]}>
 			<div className={styles["meta"]}>
-				<div className={styles["title"]}>{displayName} is sharing screen</div>
-				<div className={styles["hint"]}>Esc to exit Cinema Mode</div>
+				<div className={styles["title"]}>{displayName} показывает экран</div>
+				<div className={styles["hint"]}>Esc — выйти из кино-режима</div>
 			</div>
 			<button type="button" className={styles["exit"]} onClick={onExit}>
-				Exit Cinema
+				Выйти
 			</button>
 		</div>
 	);

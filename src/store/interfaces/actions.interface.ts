@@ -50,6 +50,11 @@ interface CallAcceptAction {
 	payload: { callId: number; chatRoomId?: number }
 }
 
+interface CallJoinAction {
+	type: "call/sendJoin";
+	payload: { callId: number; chatRoomId?: number }
+}
+
 interface CallDeclineAction {
 	type: "call/sendDecline";
 	payload: { callId: number; chatRoomId?: number }
@@ -99,6 +104,7 @@ export type Actions =
 	| MarkMessageReadAction
 	| CallInviteAction
 	| CallAcceptAction
+	| CallJoinAction
 	| CallDeclineAction
 	| CallEndAction
 	| CallLeaveAction

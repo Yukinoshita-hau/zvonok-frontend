@@ -3,6 +3,7 @@ import { ParticipantVolumeRow } from "../AudioMixPanel/ParticipantVolumeRow";
 interface ParticipantVolumeMenuProps {
 	micVolume: number;
 	streamVolume: number;
+	hasMicrophoneAudio: boolean;
 	hasScreenShareAudio: boolean;
 	onMicChange: (value: number) => void;
 	onMicReset: () => void;
@@ -13,6 +14,7 @@ interface ParticipantVolumeMenuProps {
 export function ParticipantVolumeMenu({
 	micVolume,
 	streamVolume,
+	hasMicrophoneAudio,
 	hasScreenShareAudio,
 	onMicChange,
 	onMicReset,
@@ -26,6 +28,7 @@ export function ParticipantVolumeMenu({
 				value={micVolume}
 				onChange={onMicChange}
 				onReset={onMicReset}
+				disabled={!hasMicrophoneAudio}
 			/>
 			{hasScreenShareAudio && (
 				<ParticipantVolumeRow
