@@ -19,6 +19,144 @@
 	animation: toolbar-in 0.2s ease-out both;
 }
 
+.collapseButton {
+	width: 28px;
+	height: 34px;
+	border: none;
+	border-radius: 11px;
+	background: color-mix(in srgb, var(--bg-hover) 84%, transparent);
+	color: var(--text-secondary);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: transform 0.14s ease, background-color 0.14s ease, color 0.14s ease;
+}
+
+.collapseButton:hover {
+	transform: translateY(-1px);
+	background: var(--bg-active);
+	color: var(--text-primary);
+}
+
+.collapsedToolbar {
+	position: absolute;
+	left: 50%;
+	top: 14px;
+	z-index: 14;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	max-width: calc(100% - 28px);
+	min-height: 40px;
+	padding: 7px 10px;
+	border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+	border-radius: 999px;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, transparent), color-mix(in srgb, var(--bg-primary) 88%, transparent));
+	color: var(--text-primary);
+	box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(18px);
+	cursor: pointer;
+	transform: translateX(-50%);
+	animation: collapsed-toolbar-in 0.16s ease-out both;
+}
+
+.collapsedToolbar:hover {
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 98%, transparent), color-mix(in srgb, var(--bg-hover) 88%, transparent));
+}
+
+.overlayCollapsedToolbar {
+	top: 10px;
+}
+
+.collapsedColor {
+	width: 16px;
+	height: 16px;
+	border-radius: 999px;
+	box-shadow:
+		0 0 0 2px rgba(255, 255, 255, 0.2),
+		inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.collapsedText {
+	max-width: 120px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 12px;
+	font-weight: 850;
+}
+
+.collapsedAccess {
+	max-width: 138px;
+	padding: 4px 7px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--accent) 16%, var(--bg-hover));
+	color: color-mix(in srgb, var(--accent) 70%, #fff);
+	font-size: 11px;
+	font-weight: 850;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.overlayToolbar {
+	top: 10px;
+	width: calc(100% - 20px);
+	max-width: calc(100% - 20px);
+	flex-wrap: wrap;
+	justify-content: center;
+	align-content: flex-start;
+	gap: 7px;
+	padding: 7px 8px;
+	border-radius: 16px;
+}
+
+.overlayToolbar .dragHandle {
+	display: none;
+}
+
+.overlayToolbar .collapseButton {
+	height: 32px;
+}
+
+.overlayToolbar .group,
+.overlayToolbar .dangerGroup,
+.overlayToolbar .colors,
+.overlayToolbar .overlayControls,
+.overlayToolbar .statusGroup {
+	flex: 0 1 auto;
+	min-width: 0;
+}
+
+.overlayToolbar .colors {
+	max-width: 252px;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.overlayToolbar .sliderLabel {
+	grid-template-columns: 30px minmax(72px, 104px);
+}
+
+.overlayToolbar .opacityLabel {
+	grid-template-columns: 38px minmax(72px, 112px);
+}
+
+.overlayToolbar .accessBadge,
+.overlayToolbar .readOnlyBadge {
+	max-width: 126px;
+}
+
+.overlayToolbar .permissionsPanel {
+	left: 50%;
+	right: auto;
+	transform: translateX(-50%);
+	animation: overlay-menu-pop 0.14s ease-out both;
+}
+
 .dragHandle {
 	width: 5px;
 	height: 38px;
@@ -30,11 +168,19 @@
 }
 
 .group,
+.dangerGroup,
 .colors,
-.overlayControls {
+.overlayControls,
+.statusGroup {
 	display: flex;
 	align-items: center;
 	gap: 6px;
+}
+
+.dangerGroup {
+	margin-left: 8px;
+	padding-left: 8px;
+	border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }
 
 .button,
@@ -73,7 +219,9 @@
 .activeButton:disabled,
 .laserButton:disabled,
 .laserActiveButton:disabled,
-.dangerButton:disabled {
+.dangerButton:disabled,
+.color:disabled,
+.activeColor:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 	transform: none;
@@ -156,6 +304,166 @@
 	accent-color: var(--accent);
 }
 
+.sliderLabel input:disabled {
+	opacity: 0.48;
+}
+
+.statusGroup {
+	position: relative;
+	padding: 0 2px;
+}
+
+.accessBadge,
+.readOnlyBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-height: 30px;
+	max-width: 160px;
+	padding: 0 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 800;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+	background: color-mix(in srgb, var(--bg-hover) 84%, transparent);
+	color: var(--text-secondary);
+}
+
+.accessBadge {
+	color: color-mix(in srgb, var(--accent) 72%, #fff);
+	background: color-mix(in srgb, var(--accent) 16%, var(--bg-hover));
+}
+
+.readOnlyBadge {
+	color: #fecaca;
+	background: color-mix(in srgb, var(--danger) 22%, var(--bg-hover));
+}
+
+.permissionsMenu {
+	position: relative;
+}
+
+.permissionsMenu[open] .permissionsTrigger {
+	background: color-mix(in srgb, var(--accent) 28%, var(--bg-hover));
+	color: #fff;
+}
+
+.permissionsTrigger {
+	height: 34px;
+	padding: 0 10px;
+	border: none;
+	border-radius: 12px;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 800;
+	list-style: none;
+	transition: transform 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.permissionsTrigger::-webkit-details-marker {
+	display: none;
+}
+
+.permissionsTrigger:hover {
+	transform: translateY(-1px);
+	background: var(--bg-active);
+	box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+
+.permissionsPanel {
+	position: absolute;
+	top: calc(100% + 10px);
+	right: 0;
+	z-index: 18;
+	width: 244px;
+	max-height: min(360px, calc(100vh - 90px));
+	overflow: auto;
+	padding: 8px;
+	border-radius: 16px;
+	border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 96%, transparent), var(--bg-primary));
+	box-shadow: 0 22px 68px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(18px);
+	animation: menu-pop 0.14s ease-out both;
+}
+
+.permissionItem,
+.permissionActive {
+	width: 100%;
+	min-height: 34px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 9px;
+	border: none;
+	border-radius: 10px;
+	background: transparent;
+	color: var(--text-secondary);
+	font-size: 13px;
+	font-weight: 750;
+	text-align: left;
+	cursor: pointer;
+}
+
+.permissionItem:hover {
+	background: var(--bg-hover);
+	color: var(--text-primary);
+}
+
+.permissionActive {
+	background: color-mix(in srgb, var(--accent) 22%, var(--bg-hover));
+	color: var(--text-primary);
+}
+
+.permissionDivider {
+	height: 1px;
+	margin: 7px 2px;
+	background: color-mix(in srgb, var(--border) 74%, transparent);
+}
+
+.permissionLabel {
+	padding: 2px 9px 6px;
+	color: var(--text-secondary);
+	font-size: 11px;
+	font-weight: 850;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.participantList {
+	display: grid;
+	gap: 2px;
+}
+
+.rolePill,
+.markerPill {
+	margin-left: auto;
+	padding: 2px 6px;
+	border-radius: 999px;
+	font-size: 10px;
+	font-weight: 850;
+}
+
+.rolePill {
+	background: color-mix(in srgb, var(--accent) 18%, transparent);
+	color: color-mix(in srgb, var(--accent) 70%, #fff);
+}
+
+.markerPill {
+	background: color-mix(in srgb, #22c55e 24%, transparent);
+	color: color-mix(in srgb, #22c55e 72%, #fff);
+	box-shadow: 0 0 0 1px color-mix(in srgb, #22c55e 22%, transparent);
+}
+
 .segmented {
 	display: flex;
 	align-items: center;
@@ -196,6 +504,42 @@
 	from {
 		opacity: 0;
 		transform: translate(-50%, -8px) scale(0.98);
+	}
+
+	to {
+		opacity: 1;
+		transform: translate(-50%, 0) scale(1);
+	}
+}
+
+@keyframes collapsed-toolbar-in {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -6px) scale(0.96);
+	}
+
+	to {
+		opacity: 1;
+		transform: translate(-50%, 0) scale(1);
+	}
+}
+
+@keyframes menu-pop {
+	from {
+		opacity: 0;
+		transform: translateY(-6px) scale(0.98);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes overlay-menu-pop {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -6px) scale(0.98);
 	}
 
 	to {

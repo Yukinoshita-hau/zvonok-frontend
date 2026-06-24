@@ -1,12 +1,16 @@
 import { useLayoutEffect, useState } from "react";
 import { DrawableCanvas } from "../DrawableCanvas/DrawableCanvas";
 import type { CanvasBoardSessionDto } from "../../../api/interfaces/CanvasDtos";
+import type { CanvasParticipantOption } from "../CallCanvas.types";
 import styles from "./ScreenShareOverlayCanvas.module.css";
 
 interface ScreenShareOverlayCanvasProps {
 	callId: number;
 	board: CanvasBoardSessionDto;
 	canDraw: boolean;
+	currentUsername?: string | null;
+	isCurrentUserHost?: boolean;
+	participantOptions?: CanvasParticipantOption[];
 	onExit: () => void;
 }
 
@@ -21,6 +25,9 @@ export function ScreenShareOverlayCanvas({
 	callId,
 	board,
 	canDraw,
+	currentUsername,
+	isCurrentUserHost,
+	participantOptions,
 	onExit,
 }: ScreenShareOverlayCanvasProps) {
 	const [overlayRect, setOverlayRect] = useState<OverlayRect | null>(null);
@@ -76,6 +83,9 @@ export function ScreenShareOverlayCanvas({
 				callId={callId}
 				board={board}
 				canDraw={canDraw}
+				currentUsername={currentUsername}
+				isCurrentUserHost={isCurrentUserHost}
+				participantOptions={participantOptions}
 				variant="overlay"
 				onExit={onExit}
 			/>

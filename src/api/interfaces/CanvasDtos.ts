@@ -6,10 +6,17 @@ export type CanvasTool = "PEN" | "ERASER";
 
 export type CanvasInteractionTool = CanvasTool | "LASER";
 
+export type CanvasDrawingAccess =
+	| "EVERYONE"
+	| "HOSTS_ONLY"
+	| "SELECTED_PARTICIPANT"
+	| "VIEW_ONLY";
+
 export type CanvasDrawEventType =
 	| "STROKE_START"
 	| "STROKE_POINT"
 	| "STROKE_END"
+	| "STROKE_REMOVED"
 	| "BOARD_CLEAR"
 	| "CURSOR_MOVE"
 	| "CURSOR_LEAVE"
@@ -19,11 +26,17 @@ export type CanvasDrawEventType =
 export type CanvasBoardLifecycleEventType =
 	| "BOARD_CREATED"
 	| "BOARD_CLOSED"
-	| "BOARD_CLEARED";
+	| "BOARD_CLEARED"
+	| "BOARD_PERMISSIONS_UPDATED";
 
 export interface CreateCanvasBoardRequest {
 	mode: CanvasBoardMode;
 	background: CanvasBackground;
+}
+
+export interface UpdateCanvasBoardPermissionsRequest {
+	drawingAccess: CanvasDrawingAccess;
+	selectedDrawerUsername: string | null;
 }
 
 export interface CanvasBoardSessionDto {
@@ -35,6 +48,8 @@ export interface CanvasBoardSessionDto {
 	createdBy: string;
 	createdAt: string;
 	active: boolean;
+	drawingAccess?: CanvasDrawingAccess;
+	selectedDrawerUsername?: string | null;
 }
 
 export interface CanvasDrawEventDto {

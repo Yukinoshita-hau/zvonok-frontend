@@ -3,13 +3,22 @@ import type { AppDispatch, RootState } from "../../../store/store";
 import { canvasActions } from "../../../store/slices/canvas.slice";
 import { selectFocusedCanvasBoard } from "../../../store/selectors/canvas.selectors";
 import { DrawableCanvas } from "../DrawableCanvas/DrawableCanvas";
+import type { CanvasParticipantOption } from "../CallCanvas.types";
 import styles from "./WhiteboardFocus.module.css";
 
 interface WhiteboardFocusProps {
 	callId: number;
+	currentUsername?: string | null;
+	isCurrentUserHost?: boolean;
+	participantOptions?: CanvasParticipantOption[];
 }
 
-export function WhiteboardFocus({ callId }: WhiteboardFocusProps) {
+export function WhiteboardFocus({
+	callId,
+	currentUsername,
+	isCurrentUserHost,
+	participantOptions,
+}: WhiteboardFocusProps) {
 	const dispatch = useDispatch<AppDispatch>();
 	const board = useSelector((state: RootState) => selectFocusedCanvasBoard(state));
 
@@ -35,6 +44,9 @@ export function WhiteboardFocus({ callId }: WhiteboardFocusProps) {
 				callId={callId}
 				board={board}
 				canDraw
+				currentUsername={currentUsername}
+				isCurrentUserHost={isCurrentUserHost}
+				participantOptions={participantOptions}
 				variant="whiteboard"
 				onExit={() => dispatch(canvasActions.clearFocusedCanvasBoard())}
 			/>

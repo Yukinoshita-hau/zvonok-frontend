@@ -263,6 +263,11 @@ export function handleWebSocketPublishAction(
 
 			const sub = context.client.subscribe(path, (message) => {
 				const data = JSON.parse(message.body) as CanvasDrawEventDto;
+				const currentUsername = context.storeApi.getState().user.myUser?.username;
+				if (currentUsername && data.userId === currentUsername && isOptimisticCanvasStrokeEvent(data)) {
+					return;
+				}
+
 				context.storeApi.dispatch(canvasActions.applyCanvasDrawEvent(data));
 			});
 			context.subscriptions[path] = sub;
@@ -289,6 +294,12 @@ export function handleWebSocketPublishAction(
 		default:
 			return "not-handled";
 	}
+}
+
+function isOptimisticCanvasStrokeEvent(event: CanvasDrawEventDto): boolean {
+	return event.type === "STROKE_START" ||
+		event.type === "STROKE_POINT" ||
+		event.type === "STROKE_END";
 }
 
 function blockPublish(): PublishActionResult {

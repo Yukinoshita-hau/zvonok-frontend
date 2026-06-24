@@ -7,6 +7,7 @@ import type {
 	CanvasSnapshotDto,
 	CanvasTool,
 	StrokeRenderState,
+	UpdateCanvasBoardPermissionsRequest,
 } from "../../api/interfaces/CanvasDtos";
 
 interface CanvasState {
@@ -88,6 +89,30 @@ export const clearCanvasBoard = createAsyncThunk(
 	}
 );
 
+export const undoLastCanvasStroke = createAsyncThunk(
+	"canvas/undoLastStroke",
+	async ({ callId, boardId }: { callId: number; boardId: number }) => {
+		await canvasApi.undoLastCanvasStroke(callId, boardId);
+		return { boardId };
+	}
+);
+
+export const updateCanvasBoardPermissions = createAsyncThunk(
+	"canvas/updateBoardPermissions",
+	async ({
+		callId,
+		boardId,
+		request,
+	}: {
+		callId: number;
+		boardId: number;
+		request: UpdateCanvasBoardPermissionsRequest;
+	}) => {
+		const board = await canvasApi.updateCanvasBoardPermissions(callId, boardId, request);
+		return { callId, board };
+	}
+);
+
 export const closeCanvasBoard = createAsyncThunk(
 	"canvas/closeBoard",
 	async ({ callId, boardId }: { callId: number; boardId: number }) => {
@@ -105,7 +130,7 @@ export const canvasSlice = createSlice({
 			const callId = board.callId;
 			const boards = state.boardsByCallId[callId] ?? [];
 
-			if (type === "BOARD_CREATED") {
+			if (type === "BOARD_CREATED" || type === "BOARD_PERMISSIONS_UPDATED") {
 				const exists = boards.some((item) => item.id === board.id);
 				state.boardsByCallId[callId] = exists
 					? boards.map((item) => (item.id === board.id ? board : item))
@@ -141,6 +166,13 @@ export const canvasSlice = createSlice({
 
 			if (event.type === "BOARD_CLEAR") {
 				state.strokesByBoardId[boardId] = [];
+				return;
+			}
+
+			if (event.type === "STROKE_REMOVED") {
+				if (!event.strokeId) return;
+				state.strokesByBoardId[boardId] = (state.strokesByBoardId[boardId] ?? [])
+					.filter((stroke) => stroke.id !== event.strokeId);
 				return;
 			}
 
@@ -235,6 +267,15 @@ export const canvasSlice = createSlice({
 			})
 			.addCase(clearCanvasBoard.fulfilled, (state, action) => {
 				state.strokesByBoardId[action.payload.boardId] = [];
+			})
+			.addCase(updateCanvasBoardPermissions.fulfilled, (state, action) => {
+				const { callId, board } = action.payload;
+				const boards = state.boardsByCallId[callId] ?? [];
+				const exists = boards.some((item) => item.id === board.id);
+
+				state.boardsByCallId[callId] = exists
+					? boards.map((item) => (item.id === board.id ? board : item))
+					: [...boards, board];
 			})
 			.addCase(closeCanvasBoard.fulfilled, (state, action) => {
 				const { callId, boardId } = action.payload;

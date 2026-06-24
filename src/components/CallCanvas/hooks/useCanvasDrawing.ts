@@ -24,6 +24,12 @@ interface UseCanvasDrawingParams {
 	canDraw: boolean;
 }
 
+interface LocalCanvasCursorState {
+	x: number;
+	y: number;
+	visible: boolean;
+}
+
 const CURSOR_THROTTLE_MS = 33;
 const LASER_THROTTLE_MS = 24;
 const CURSOR_STALE_MS = 2500;
@@ -47,6 +53,11 @@ export function useCanvasDrawing({
 	const lastCursorPointRef = useRef<CanvasPointDto | null>(null);
 	const lastLaserSentAtRef = useRef(0);
 	const [isDrawing, setIsDrawing] = useState(false);
+	const [localCursor, setLocalCursor] = useState<LocalCanvasCursorState>({
+		x: 0,
+		y: 0,
+		visible: false,
+	});
 	const [remoteCursorsByUserId, setRemoteCursorsByUserId] = useState<Record<string, RemoteCursorState>>({});
 	const [laserTrailsByUserId, setLaserTrailsByUserId] = useState<Record<string, LaserTrailState>>({});
 	const [presenceNow, setPresenceNow] = useState(() => Date.now());
@@ -287,12 +298,21 @@ export function useCanvasDrawing({
 		publishEvent(drawEvent);
 	}, [board.id, publishEvent, userId]);
 
+	useEffect(() => {
+		if (canDraw) return;
+		setLocalCursor((current) => ({ ...current, visible: false }));
+		sendLaserEnd();
+		finishStroke();
+	}, [canDraw, finishStroke, sendLaserEnd]);
+
 	const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-		if (!canDraw || event.button !== 0) return;
+		if (event.button !== 0) return;
 
 		event.currentTarget.setPointerCapture(event.pointerId);
 		const point = getNormalizedPoint(event, event.currentTarget);
+		setLocalCursor({ ...point, visible: canDraw });
 		sendCursorMove(point);
+		if (!canDraw) return;
 
 		if (tool === "LASER") {
 			isLaserActiveRef.current = true;
@@ -323,10 +343,10 @@ export function useCanvasDrawing({
 	}, [board.id, canDraw, color, publishEvent, sendCursorMove, sendLaserPoint, tool, userId, width]);
 
 	const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-		if (!canDraw) return;
-
 		const point = getNormalizedPoint(event, event.currentTarget);
+		setLocalCursor({ ...point, visible: canDraw });
 		sendCursorMove(point);
+		if (!canDraw) return;
 
 		if (tool === "LASER") {
 			if (isLaserActiveRef.current) {
@@ -367,6 +387,7 @@ export function useCanvasDrawing({
 	}, [finishStroke, sendLaserEnd, tool]);
 
 	const handlePointerLeave = useCallback(() => {
+		setLocalCursor((current) => ({ ...current, visible: false }));
 		sendCursorLeave();
 		handlePointerEnd();
 	}, [handlePointerEnd, sendCursorLeave]);
@@ -374,6 +395,7 @@ export function useCanvasDrawing({
 	return {
 		canvasRef,
 		isDrawing,
+		localCursor,
 		remoteCursors,
 		laserTrails,
 		presenceNow,

@@ -30,6 +30,7 @@ import { WhiteboardTile } from "../CallCanvas/WhiteboardTile/WhiteboardTile";
 import { WhiteboardFocus } from "../CallCanvas/WhiteboardFocus/WhiteboardFocus";
 import { toastActions } from "../../store/slices/toast.slice";
 import { ScreenShareOverlayCanvas } from "../CallCanvas/ScreenShareOverlayCanvas/ScreenShareOverlayCanvas";
+import type { CanvasParticipantOption } from "../CallCanvas/CallCanvas.types";
 
 interface ParticipantMenuState {
 	cardId: string;
@@ -65,6 +66,7 @@ export function CallUi({
 
 	const {
 		participantCards,
+		sortedParticipants,
 		remoteMicrophoneParticipants,
 		remoteScreenAudioParticipants,
 		availableScreenTracks,
@@ -156,6 +158,31 @@ export function CallUi({
 	const canOpenCinemaMode = Boolean(focusedCard?.videoTrack);
 	const canUseWhiteboard = Boolean(call.callId);
 	const canUseScreenOverlay = Boolean(call.callId && focusedCard?.isScreenShareCard && focusedCard.videoTrack);
+	const isCurrentUserHost = Boolean(
+		myUser?.username &&
+		(
+			call.isConferenceHost ||
+			(call.hostUsername && myUser.username === call.hostUsername)
+		)
+	);
+	const canvasParticipantOptions = useMemo<CanvasParticipantOption[]>(() => {
+		const seen = new Set<string>();
+		return sortedParticipants.flatMap((participant) => {
+			const username = participant.identity || participant.name;
+			if (!username || seen.has(username)) return [];
+			seen.add(username);
+
+			const isHost = username === call.hostUsername ||
+				participant.name === call.hostUsername ||
+				(participant.isLocal && isCurrentUserHost);
+
+			return [{
+				username,
+				displayName: participant.name || participant.identity,
+				role: isHost ? "HOST" : "MEMBER",
+			}];
+		});
+	}, [call.hostUsername, isCurrentUserHost, sortedParticipants]);
 	const shouldRenderScreenOverlay = Boolean(
 		call.callId &&
 		screenOverlayBoard &&
@@ -436,6 +463,9 @@ export function CallUi({
 									callId={call.callId}
 									board={screenOverlayBoard}
 									canDraw
+									currentUsername={myUser?.username}
+									isCurrentUserHost={isCurrentUserHost}
+									participantOptions={canvasParticipantOptions}
 									onExit={() => setIsScreenOverlayEnabled(false)}
 								/>
 							)}
@@ -449,7 +479,12 @@ export function CallUi({
 					</div>
 				)
 			) : isFocusMode && isWhiteboardFocused && call.callId ? (
-				<WhiteboardFocus callId={call.callId} />
+				<WhiteboardFocus
+					callId={call.callId}
+					currentUsername={myUser?.username}
+					isCurrentUserHost={isCurrentUserHost}
+					participantOptions={canvasParticipantOptions}
+				/>
 			) : isFocusMode && focusedCard?.videoTrack ? (
 				<div className={styles["screen-layout"]}>
 					<div
@@ -468,6 +503,9 @@ export function CallUi({
 								callId={call.callId}
 								board={screenOverlayBoard}
 								canDraw
+								currentUsername={myUser?.username}
+								isCurrentUserHost={isCurrentUserHost}
+								participantOptions={canvasParticipantOptions}
 								onExit={() => setIsScreenOverlayEnabled(false)}
 							/>
 						)}

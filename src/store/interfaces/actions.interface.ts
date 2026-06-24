@@ -125,6 +125,7 @@ interface CanvasDrawSendAction {
 				| "STROKE_START"
 				| "STROKE_POINT"
 				| "STROKE_END"
+				| "STROKE_REMOVED"
 				| "BOARD_CLEAR"
 				| "CURSOR_MOVE"
 				| "CURSOR_LEAVE"

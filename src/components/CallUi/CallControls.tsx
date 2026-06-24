@@ -78,7 +78,7 @@ export const CallControls = React.memo(function CallControls({
 					isActive={isWhiteboardOpen}
 					onClick={onOpenWhiteboard}
 					disabled={!canUseWhiteboard}
-					title={canUseWhiteboard ? "Открыть совместную доску" : "Доска доступна после подключения к звонку"}
+					title={canUseWhiteboard ? "Открыть доску" : "Доска доступна после подключения к звонку"}
 				/>
 
 				<CallControlButton
@@ -87,7 +87,9 @@ export const CallControls = React.memo(function CallControls({
 					isActive={isScreenOverlayOpen}
 					onClick={onToggleScreenOverlay}
 					disabled={!canUseScreenOverlay}
-					title={canUseScreenOverlay ? "Рисовать поверх трансляции" : "Сначала откройте трансляцию экрана в фокусе"}
+					title={canUseScreenOverlay
+						? (isScreenOverlayOpen ? "Скрыть инструменты" : "Открыть инструменты")
+						: "Сначала откройте трансляцию экрана в фокусе"}
 				/>
 			</div>
 

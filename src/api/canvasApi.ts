@@ -4,6 +4,7 @@ import type {
 	CanvasBoardSessionDto,
 	CanvasSnapshotDto,
 	CreateCanvasBoardRequest,
+	UpdateCanvasBoardPermissionsRequest,
 } from "./interfaces/CanvasDtos";
 
 export const canvasApi: CanvasApiInterface = {
@@ -32,6 +33,22 @@ export const canvasApi: CanvasApiInterface = {
 
 	clearCanvasBoard: async (callId: number, boardId: number): Promise<void> => {
 		await api.post(`/calls/${callId}/boards/${boardId}/clear`);
+	},
+
+	undoLastCanvasStroke: async (callId: number, boardId: number): Promise<void> => {
+		await api.post(`/calls/${callId}/boards/${boardId}/undo`);
+	},
+
+	updateCanvasBoardPermissions: async (
+		callId: number,
+		boardId: number,
+		request: UpdateCanvasBoardPermissionsRequest
+	): Promise<CanvasBoardSessionDto> => {
+		const { data } = await api.patch<CanvasBoardSessionDto>(
+			`/calls/${callId}/boards/${boardId}/permissions`,
+			request
+		);
+		return data;
 	},
 
 	closeCanvasBoard: async (callId: number, boardId: number): Promise<void> => {

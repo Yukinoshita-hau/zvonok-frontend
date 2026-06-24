@@ -69,8 +69,59 @@
 	cursor: default;
 }
 
+.canvas.localCursorEnabled {
+	cursor: none;
+}
+
 .canvas.drawing {
 	cursor: none;
+}
+
+.localCursor {
+	position: absolute;
+	z-index: 7;
+	left: 0;
+	top: 0;
+	width: var(--local-cursor-size);
+	height: var(--local-cursor-size);
+	border-radius: 999px;
+	pointer-events: none;
+	transform: translate(-50%, -50%);
+	transition: width 0.1s ease, height 0.1s ease, border-color 0.1s ease, background-color 0.1s ease;
+}
+
+.localCursorPen {
+	border: 2px solid var(--local-cursor-color);
+	background:
+		radial-gradient(circle, var(--local-cursor-color) 0 2px, transparent 3px),
+		color-mix(in srgb, var(--local-cursor-color) 12%, transparent);
+	box-shadow:
+		0 0 0 3px color-mix(in srgb, var(--local-cursor-color) 18%, transparent),
+		0 8px 20px rgba(0, 0, 0, 0.24);
+}
+
+.localCursorEraser {
+	border: 2px solid rgba(255, 255, 255, 0.92);
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
+		color-mix(in srgb, var(--bg-primary) 34%, transparent);
+	box-shadow:
+		inset 0 0 0 1px rgba(15, 23, 42, 0.36),
+		0 0 0 3px rgba(255, 255, 255, 0.18),
+		0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.localCursorLaser {
+	width: 18px;
+	height: 18px;
+	border: 1px solid color-mix(in srgb, var(--local-cursor-color) 72%, #fff);
+	background:
+		linear-gradient(var(--local-cursor-color), var(--local-cursor-color)) center / 2px 100% no-repeat,
+		linear-gradient(90deg, var(--local-cursor-color), var(--local-cursor-color)) center / 100% 2px no-repeat,
+		radial-gradient(circle, var(--local-cursor-color) 0 2px, transparent 3px);
+	box-shadow:
+		0 0 0 4px color-mix(in srgb, var(--local-cursor-color) 16%, transparent),
+		0 0 18px color-mix(in srgb, var(--local-cursor-color) 68%, transparent);
 }
 
 .confirmBackdrop {
