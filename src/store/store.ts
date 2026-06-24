@@ -15,6 +15,7 @@ import uiSlice from "./slices/ui.slice";
 import channelMessageSlice from "./slices/channelMessage.slice";
 import usersSlice from "./slices/users.slice";
 import activeCallSlice from "./slices/activeCall.slice";
+import canvasSlice from "./slices/canvas.slice";
 
 
 const appReducer = combineReducers({
@@ -28,6 +29,7 @@ const appReducer = combineReducers({
 	websocket: websocketSlice,
 	call: callSlice,
 	activeCall: activeCallSlice,
+	canvas: canvasSlice,
 	notification: notificationSlice,
 	toast: toastSlice,
 	device: deviceSlice,

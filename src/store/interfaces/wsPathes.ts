@@ -2,6 +2,8 @@ const USER_QUEUE_PREFIX = "/user/queue";
 const APP_CHAT_PREFIX = "/app/chat";
 const APP_CALL_PREFIX = "/app/call";
 const APP_FRIEND_REQUESTS_PREFIX = "/app/friend";
+const TOPIC_CALL_PREFIX = "/topic/calls";
+const APP_CALLS_PREFIX = "/app/calls";
 
 export const WS_MESSAGES_PATH = `${USER_QUEUE_PREFIX}/messages`;
 export const WS_CALL_PATH = `${USER_QUEUE_PREFIX}/call`;
@@ -31,3 +33,7 @@ export const WS_ACCEPT_FRIEND_REQUEST_PATH = `${APP_FRIEND_REQUESTS_PREFIX}/acce
 export const WS_REJECT_FRIEND_REQUEST_PATH = `${APP_FRIEND_REQUESTS_PREFIX}/reject`;
 export const WS_CANCEL_FRIEND_REQUEST_PATH = `${APP_FRIEND_REQUESTS_PREFIX}/cancel`;
 export const WS_REMOVE_FRIEND_REQUEST_PATH = `${APP_FRIEND_REQUESTS_PREFIX}/remove`;
+
+export const getCanvasBoardLifecyclePath = (callId: number) => `${TOPIC_CALL_PREFIX}/${callId}/boards`;
+export const getCanvasBoardDrawPath = (callId: number, boardId: number) => `${TOPIC_CALL_PREFIX}/${callId}/boards/${boardId}`;
+export const getCanvasBoardDrawPublishPath = (callId: number, boardId: number) => `${APP_CALLS_PREFIX}/${callId}/boards/${boardId}/draw`;

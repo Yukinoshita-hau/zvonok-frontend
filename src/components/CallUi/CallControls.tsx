@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageSquare, MonitorUp, PhoneOff, Video, VideoOff } from "lucide-react";
+import { Brush, MessageSquare, MonitorUp, PenLine, PhoneOff, Video, VideoOff } from "lucide-react";
 import { MicrophoneToggleButton } from "./MicrophoneToggleButton";
 import { CallControlButton } from "./CallControlButton";
 import { CallTrackToggleButton } from "./CallTrackToggleButton";
@@ -18,11 +18,17 @@ export const CallControls = React.memo(function CallControls({
 	screenShareCaptureOptions,
 	screenSharePublishOptions,
 	onOpenChat,
+	onOpenWhiteboard,
+	onToggleScreenOverlay,
 	onToggleFocus,
 	onToggleCinema,
 	onMinimize,
 	onHide,
 	onLeave,
+	canUseWhiteboard = true,
+	isWhiteboardOpen = false,
+	canUseScreenOverlay = false,
+	isScreenOverlayOpen = false,
 }: CallControlsProps) {
 	return (
 		<div className={styles["controls-bar"]} aria-label="Управление звонком">
@@ -65,6 +71,24 @@ export const CallControls = React.memo(function CallControls({
 						title="Открыть чат звонка"
 					/>
 				)}
+
+				<CallControlButton
+					icon={<Brush size={18} />}
+					label="Доска"
+					isActive={isWhiteboardOpen}
+					onClick={onOpenWhiteboard}
+					disabled={!canUseWhiteboard}
+					title={canUseWhiteboard ? "Открыть совместную доску" : "Доска доступна после подключения к звонку"}
+				/>
+
+				<CallControlButton
+					icon={<PenLine size={18} />}
+					label="Разметка"
+					isActive={isScreenOverlayOpen}
+					onClick={onToggleScreenOverlay}
+					disabled={!canUseScreenOverlay}
+					title={canUseScreenOverlay ? "Рисовать поверх трансляции" : "Сначала откройте трансляцию экрана в фокусе"}
+				/>
 			</div>
 
 			<div className={styles["controls-secondary-group"]}>

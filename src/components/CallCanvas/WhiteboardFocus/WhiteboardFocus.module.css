@@ -1,0 +1,44 @@
+.root {
+	flex: 1;
+	min-height: 0;
+	padding: 4px;
+	border-radius: 18px;
+	background:
+		radial-gradient(circle at top, color-mix(in srgb, var(--accent) 18%, transparent), transparent 38%),
+		var(--bg-primary);
+}
+
+.empty {
+	flex: 1;
+	min-height: 0;
+	display: grid;
+	place-items: center;
+	align-content: center;
+	gap: 10px;
+	border-radius: 18px;
+	background: var(--bg-primary);
+	color: var(--text-primary);
+	text-align: center;
+}
+
+.emptyTitle {
+	font-size: 22px;
+	font-weight: 800;
+}
+
+.emptySubtitle {
+	color: var(--text-secondary);
+	font-size: 14px;
+}
+
+.emptyButton {
+	height: 40px;
+	padding: 0 16px;
+	border: none;
+	border-radius: 12px;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	font-weight: 700;
+	cursor: pointer;
+}
+

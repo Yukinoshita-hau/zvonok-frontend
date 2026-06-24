@@ -94,6 +94,54 @@ interface RemoveFriendAction {
 	type: "friend/removeFriend";
 	payload: { friendUsername: number }
 }
+
+interface CanvasLifecycleSubscribeAction {
+	type: "canvas/subscribeCanvasBoardLifecycle";
+	payload: number;
+}
+
+interface CanvasLifecycleUnsubscribeAction {
+	type: "canvas/unsubscribeCanvasBoardLifecycle";
+	payload: number;
+}
+
+interface CanvasDrawSubscribeAction {
+	type: "canvas/subscribeCanvasDrawEvents";
+	payload: { callId: number; boardId: number };
+}
+
+interface CanvasDrawUnsubscribeAction {
+	type: "canvas/unsubscribeCanvasDrawEvents";
+	payload: { callId: number; boardId: number };
+}
+
+interface CanvasDrawSendAction {
+	type: "canvas/sendCanvasDrawEvent";
+	payload: {
+		callId: number;
+		boardId: number;
+		event: {
+			type:
+				| "STROKE_START"
+				| "STROKE_POINT"
+				| "STROKE_END"
+				| "BOARD_CLEAR"
+				| "CURSOR_MOVE"
+				| "CURSOR_LEAVE"
+				| "LASER_POINT"
+				| "LASER_END";
+			boardId: number;
+			strokeId?: string | null;
+			userId?: string | null;
+			x?: number | null;
+			y?: number | null;
+			color?: string | null;
+			width?: number | null;
+			tool?: "PEN" | "ERASER" | null;
+			timestamp?: string | null;
+		};
+	}
+}
 export type Actions =
 	| WsConnectAction
 	| SendMessageAction
@@ -112,4 +160,9 @@ export type Actions =
 	| AcceptFriendRequestAction
 	| RejectFriendRequestAction
 	| CancelFriendRequestAction
-	| RemoveFriendAction;
+	| RemoveFriendAction
+	| CanvasLifecycleSubscribeAction
+	| CanvasLifecycleUnsubscribeAction
+	| CanvasDrawSubscribeAction
+	| CanvasDrawUnsubscribeAction
+	| CanvasDrawSendAction;

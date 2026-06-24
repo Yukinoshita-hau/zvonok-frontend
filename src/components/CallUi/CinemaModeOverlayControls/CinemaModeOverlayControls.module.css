@@ -31,6 +31,14 @@
 	color: rgba(255, 255, 255, 0.75);
 }
 
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.ghost,
 .exit {
 	height: 34px;
 	padding: 0 14px;
@@ -41,4 +49,18 @@
 	cursor: pointer;
 	font-weight: 600;
 	flex-shrink: 0;
+}
+
+.ghost {
+	background: rgba(255, 255, 255, 0.12);
+}
+
+.ghost[data-active="true"] {
+	background: color-mix(in srgb, var(--accent) 42%, rgba(0, 0, 0, 0.64));
+	border-color: rgba(255, 255, 255, 0.42);
+}
+
+.ghost:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
 }

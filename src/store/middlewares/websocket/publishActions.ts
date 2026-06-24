@@ -16,9 +16,14 @@ import {
 	WS_SEND_LEAVE_PATH,
 	WS_SEND_MESSAGE_PATH,
 	WS_SEND_PRIVATE_MESSAGE_PATH,
-	WS_UPDATE_READ_MESSAGE_PATH
+	WS_UPDATE_READ_MESSAGE_PATH,
+	getCanvasBoardDrawPath,
+	getCanvasBoardDrawPublishPath,
+	getCanvasBoardLifecyclePath
 } from "../../interfaces/wsPathes";
 import { channelMessageActions } from "../../slices/channelMessage.slice";
+import { canvasActions } from "../../slices/canvas.slice";
+import type { CanvasBoardEventDto, CanvasDrawEventDto } from "../../../api/interfaces/CanvasDtos";
 import type { PublishActionResult, WebSocketPublishContext } from "./types";
 
 export function handleWebSocketPublishAction(
@@ -225,6 +230,58 @@ export function handleWebSocketPublishAction(
 
 			context.client.publish({
 				destination: `${WS_REMOVE_FRIEND_REQUEST_PATH}/${action.payload.friendUsername}`
+			});
+
+			return "handled";
+		}
+		case "canvas/subscribeCanvasBoardLifecycle": {
+			if (!context.client?.connected) return blockPublish();
+
+			const path = getCanvasBoardLifecyclePath(action.payload);
+			if (context.subscriptions[path]) return "handled";
+
+			const sub = context.client.subscribe(path, (message) => {
+				const data = JSON.parse(message.body) as CanvasBoardEventDto;
+				context.storeApi.dispatch(canvasActions.applyCanvasBoardEvent(data));
+			});
+			context.subscriptions[path] = sub;
+
+			return "handled";
+		}
+		case "canvas/unsubscribeCanvasBoardLifecycle": {
+			const path = getCanvasBoardLifecyclePath(action.payload);
+			context.subscriptions[path]?.unsubscribe();
+			delete context.subscriptions[path];
+
+			return "handled";
+		}
+		case "canvas/subscribeCanvasDrawEvents": {
+			if (!context.client?.connected) return blockPublish();
+
+			const path = getCanvasBoardDrawPath(action.payload.callId, action.payload.boardId);
+			if (context.subscriptions[path]) return "handled";
+
+			const sub = context.client.subscribe(path, (message) => {
+				const data = JSON.parse(message.body) as CanvasDrawEventDto;
+				context.storeApi.dispatch(canvasActions.applyCanvasDrawEvent(data));
+			});
+			context.subscriptions[path] = sub;
+
+			return "handled";
+		}
+		case "canvas/unsubscribeCanvasDrawEvents": {
+			const path = getCanvasBoardDrawPath(action.payload.callId, action.payload.boardId);
+			context.subscriptions[path]?.unsubscribe();
+			delete context.subscriptions[path];
+
+			return "handled";
+		}
+		case "canvas/sendCanvasDrawEvent": {
+			if (!context.client?.connected) return blockPublish();
+
+			context.client.publish({
+				destination: getCanvasBoardDrawPublishPath(action.payload.callId, action.payload.boardId),
+				body: JSON.stringify(action.payload.event),
 			});
 
 			return "handled";

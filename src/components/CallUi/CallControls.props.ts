@@ -15,9 +15,15 @@ export interface CallControlsProps {
 	screenShareCaptureOptions: ReturnType<typeof getScreenShareCaptureOptions>;
 	screenSharePublishOptions: ReturnType<typeof getScreenSharePublishOptions>;
 	onOpenChat: () => void;
+	onOpenWhiteboard: () => void;
+	onToggleScreenOverlay: () => void;
 	onToggleFocus: () => void;
 	onToggleCinema: () => void;
 	onMinimize: () => void;
 	onHide: () => void;
 	onLeave: () => void;
+	canUseWhiteboard?: boolean;
+	isWhiteboardOpen?: boolean;
+	canUseScreenOverlay?: boolean;
+	isScreenOverlayOpen?: boolean;
 }

@@ -16,6 +16,7 @@ export interface ParticipantContextMenuAnchor {
 
 interface ParticipantsGridProps {
 	participantCards: ParticipantCard[];
+	extraTiles?: React.ReactNode[];
 	focusedCardId: string | null;
 	onOpenCard: (card: ParticipantCard) => void;
 	onOpenContextMenu?: (card: ParticipantCard, anchor: ParticipantContextMenuAnchor) => void;
@@ -28,6 +29,7 @@ interface ParticipantsGridProps {
 
 export const ParticipantsGrid = React.memo(function ParticipantsGrid({
 	participantCards,
+	extraTiles = [],
 	focusedCardId,
 	onOpenCard,
 	onOpenContextMenu,
@@ -41,16 +43,22 @@ export const ParticipantsGrid = React.memo(function ParticipantsGrid({
 	const [animationKey, setAnimationKey] = useState(0);
 	const previousPageRef = useRef(0);
 
+	const totalItems = participantCards.length + extraTiles.length;
 	const totalPages = disablePagination
 		? 1
-		: Math.max(1, Math.ceil(participantCards.length / itemsPerPage));
+		: Math.max(1, Math.ceil(totalItems / itemsPerPage));
 	const safePage = Math.min(currentPage, totalPages - 1);
 
 	const currentItems = useMemo(() => {
-		if (disablePagination) return participantCards;
+		const items = [
+			...participantCards.map((card) => ({ type: "participant" as const, card })),
+			...extraTiles.map((tile, index) => ({ type: "extra" as const, tile, key: `extra-${index}` })),
+		];
+
+		if (disablePagination) return items;
 		const start = safePage * itemsPerPage;
-		return participantCards.slice(start, start + itemsPerPage);
-	}, [disablePagination, itemsPerPage, participantCards, safePage]);
+		return items.slice(start, start + itemsPerPage);
+	}, [disablePagination, extraTiles, itemsPerPage, participantCards, safePage]);
 
 	useEffect(() => {
 		if (currentPage !== safePage) {
@@ -67,36 +75,43 @@ export const ParticipantsGrid = React.memo(function ParticipantsGrid({
 	return (
 		<>
 			<div key={animationKey} className={className || styles["participants-grid"]}>
-				{currentItems.map((card) => (
-					<CallParticipantTile
-						key={card.id}
-						className={[
-							tileClassName || styles["tile"],
-							styles["tile-animated"],
-						].join(" ")}
-						participant={card.participant}
-						videoTrack={card.videoTrack}
-						avatarUrl={card.avatarUrl}
-						displayName={card.displayName}
-						isScreenShareCard={card.isScreenShareCard}
-						isFocused={card.id === focusedCardId}
-						onOpenFocus={card.videoTrack ? () => onOpenCard(card) : undefined}
-						onContextMenu={onOpenContextMenu ? (event) => {
-							event.preventDefault();
-							event.stopPropagation();
-							const rect = event.currentTarget.getBoundingClientRect();
-							onOpenContextMenu(card, {
-								left: rect.left,
-								top: rect.top,
-								right: rect.right,
-								bottom: rect.bottom,
-								width: rect.width,
-								height: rect.height,
-								preferAbove: preferContextMenuAbove,
-							});
-						} : undefined}
-					/>
-				))}
+				{currentItems.map((item) => {
+					if (item.type === "extra") {
+						return <React.Fragment key={item.key}>{item.tile}</React.Fragment>;
+					}
+
+					const card = item.card;
+					return (
+						<CallParticipantTile
+							key={card.id}
+							className={[
+								tileClassName || styles["tile"],
+								styles["tile-animated"],
+							].join(" ")}
+							participant={card.participant}
+							videoTrack={card.videoTrack}
+							avatarUrl={card.avatarUrl}
+							displayName={card.displayName}
+							isScreenShareCard={card.isScreenShareCard}
+							isFocused={card.id === focusedCardId}
+							onOpenFocus={card.videoTrack ? () => onOpenCard(card) : undefined}
+							onContextMenu={onOpenContextMenu ? (event) => {
+								event.preventDefault();
+								event.stopPropagation();
+								const rect = event.currentTarget.getBoundingClientRect();
+								onOpenContextMenu(card, {
+									left: rect.left,
+									top: rect.top,
+									right: rect.right,
+									bottom: rect.bottom,
+									width: rect.width,
+									height: rect.height,
+									preferAbove: preferContextMenuAbove,
+								});
+							} : undefined}
+						/>
+					);
+				})}
 			</div>
 
 			{!disablePagination && totalPages > 1 && (
@@ -106,7 +121,7 @@ export const ParticipantsGrid = React.memo(function ParticipantsGrid({
 						className={styles["pagination-button"]}
 						onClick={() => setCurrentPage((page) => Math.max(0, page - 1))}
 						disabled={safePage === 0}
-						aria-label="Previous participants page"
+						aria-label="Предыдущая страница участников"
 					>
 						<ChevronLeft size={20} />
 					</button>
@@ -118,7 +133,7 @@ export const ParticipantsGrid = React.memo(function ParticipantsGrid({
 						className={styles["pagination-button"]}
 						onClick={() => setCurrentPage((page) => Math.min(totalPages - 1, page + 1))}
 						disabled={safePage >= totalPages - 1}
-						aria-label="Next participants page"
+						aria-label="Следующая страница участников"
 					>
 						<ChevronRight size={20} />
 					</button>

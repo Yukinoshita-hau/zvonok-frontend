@@ -1,0 +1,5 @@
+.overlay {
+	position: absolute;
+	z-index: 8;
+	pointer-events: auto;
+}

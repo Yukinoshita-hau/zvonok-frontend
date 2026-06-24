@@ -1,0 +1,181 @@
+.root {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+	border-radius: 14px;
+	background-color: #f8fafc;
+	box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.whiteboard {
+	color: #0f172a;
+}
+
+.grid {
+	background:
+		linear-gradient(90deg, rgba(100, 116, 139, 0.13) 1px, transparent 1px),
+		linear-gradient(rgba(100, 116, 139, 0.13) 1px, transparent 1px),
+		radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.08), transparent 28%),
+		#f8fafc;
+	background-size: 34px 34px, 34px 34px, auto, auto;
+}
+
+.dots {
+	background:
+		radial-gradient(circle, rgba(100, 116, 139, 0.26) 1px, transparent 1.4px),
+		radial-gradient(circle at 80% 8%, rgba(168, 85, 247, 0.09), transparent 30%),
+		radial-gradient(circle at 8% 90%, rgba(34, 197, 94, 0.08), transparent 28%),
+		#f8fafc;
+	background-size: 22px 22px, auto, auto, auto;
+}
+
+.clean {
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.92)),
+		#f8fafc;
+}
+
+.overlay {
+	background: transparent;
+	box-shadow: none;
+}
+
+.overlay .canvas {
+	opacity: var(--canvas-overlay-opacity, 1);
+	transition: opacity 0.16s ease;
+}
+
+.overlayHidden .canvas {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	touch-action: none;
+	cursor: crosshair;
+}
+
+.canvas.eraser {
+	cursor: cell;
+}
+
+.canvas.disabled {
+	cursor: default;
+}
+
+.canvas.drawing {
+	cursor: none;
+}
+
+.confirmBackdrop {
+	position: absolute;
+	inset: 0;
+	z-index: 30;
+	display: grid;
+	place-items: center;
+	padding: 18px;
+	background: rgba(0, 0, 0, 0.24);
+	backdrop-filter: blur(5px);
+	animation: confirm-fade-in 0.14s ease-out both;
+}
+
+.confirmDialog {
+	position: relative;
+	width: min(360px, 100%);
+	overflow: hidden;
+	padding: 18px;
+	border-radius: 18px;
+	border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 96%, #000), var(--bg-primary));
+	color: var(--text-primary);
+	box-shadow: 0 26px 80px rgba(0, 0, 0, 0.45);
+	animation: confirm-pop-in 0.16s ease-out both;
+}
+
+.confirmGlow {
+	position: absolute;
+	inset: -80px -40px auto auto;
+	width: 160px;
+	height: 160px;
+	border-radius: 50%;
+	background: color-mix(in srgb, var(--danger) 20%, transparent);
+	filter: blur(24px);
+	pointer-events: none;
+}
+
+.confirmTitle {
+	position: relative;
+	font-size: 18px;
+	font-weight: 800;
+}
+
+.confirmText {
+	position: relative;
+	margin-top: 8px;
+	color: var(--text-secondary);
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+.confirmActions {
+	position: relative;
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 18px;
+}
+
+.confirmSecondary,
+.confirmDanger {
+	height: 38px;
+	padding: 0 14px;
+	border: none;
+	border-radius: 12px;
+	color: var(--text-primary);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.confirmSecondary {
+	background: var(--bg-hover);
+}
+
+.confirmDanger {
+	background: var(--danger);
+	color: #fff;
+}
+
+.confirmSecondary:disabled,
+.confirmDanger:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+@keyframes confirm-fade-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes confirm-pop-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px) scale(0.97);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
