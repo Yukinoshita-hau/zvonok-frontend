@@ -130,7 +130,9 @@ interface CanvasDrawSendAction {
 				| "CURSOR_MOVE"
 				| "CURSOR_LEAVE"
 				| "LASER_POINT"
-				| "LASER_END";
+				| "LASER_END"
+				| "REACTION"
+				| "VIEWPORT_CHANGED";
 			boardId: number;
 			strokeId?: string | null;
 			userId?: string | null;
@@ -139,6 +141,8 @@ interface CanvasDrawSendAction {
 			color?: string | null;
 			width?: number | null;
 			tool?: "PEN" | "ERASER" | null;
+			reaction?: "THUMBS_UP" | "FIRE" | "QUESTION" | "CHECK" | "EYES" | null;
+			zoom?: number | null;
 			timestamp?: string | null;
 		};
 	}

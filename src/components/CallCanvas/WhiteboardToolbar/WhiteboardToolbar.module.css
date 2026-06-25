@@ -103,15 +103,20 @@
 }
 
 .overlayToolbar {
-	top: 10px;
-	width: calc(100% - 20px);
-	max-width: calc(100% - 20px);
-	flex-wrap: wrap;
-	justify-content: center;
-	align-content: flex-start;
-	gap: 7px;
-	padding: 7px 8px;
+	left: 12px;
+	top: 12px;
+	width: 50px;
+	max-width: 50px;
+	max-height: calc(100% - 24px);
+	flex-direction: column;
+	flex-wrap: nowrap;
+	justify-content: flex-start;
+	align-content: center;
+	gap: 6px;
+	overflow: visible;
+	padding: 7px;
 	border-radius: 16px;
+	transform: none;
 }
 
 .overlayToolbar .dragHandle {
@@ -119,16 +124,24 @@
 }
 
 .overlayToolbar .collapseButton {
-	height: 32px;
+	width: 36px;
+	height: 30px;
 }
 
 .overlayToolbar .group,
 .overlayToolbar .dangerGroup,
 .overlayToolbar .colors,
 .overlayToolbar .overlayControls,
-.overlayToolbar .statusGroup {
+.overlayToolbar .statusGroup,
+.overlayToolbar .reactionGroup {
 	flex: 0 1 auto;
+	flex-direction: column;
 	min-width: 0;
+}
+
+.overlayToolbar .group,
+.overlayToolbar .overlayControls {
+	width: 100%;
 }
 
 .overlayToolbar .colors {
@@ -157,6 +170,66 @@
 	animation: overlay-menu-pop 0.14s ease-out both;
 }
 
+.overlayToolbar .morePanel {
+	position: absolute;
+	left: calc(100% + 8px);
+	top: 0;
+	right: auto;
+	width: min(276px, calc(100vw - 84px));
+	max-height: min(390px, calc(100vh - 40px));
+	overflow-x: hidden;
+	overflow-y: auto;
+	transform: none;
+	animation: menu-pop 0.14s ease-out both;
+}
+
+.overlayToolbar .moreMenu {
+	position: static;
+}
+
+.overlayToolbar .presenterActions {
+	display: none;
+}
+
+.overlayToolbar .morePanel .permissionsMenu {
+	width: 100%;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.overlayToolbar .morePanel .permissionsTrigger {
+	height: 32px;
+	min-width: 0;
+}
+
+.overlayToolbar .morePanel .permissionsPanel {
+	position: relative;
+	inset: auto;
+	left: auto;
+	right: auto;
+	top: auto;
+	width: 100%;
+	max-width: 100%;
+	max-height: 168px;
+	box-sizing: border-box;
+	overflow-x: hidden;
+	overflow-y: auto;
+	transform: none;
+	scrollbar-color: color-mix(in srgb, var(--accent) 42%, var(--border)) transparent;
+}
+
+.overlayToolbar .morePanel .permissionItem,
+.overlayToolbar .morePanel .permissionActive {
+	min-width: 0;
+	white-space: nowrap;
+}
+
+.overlayToolbar .morePanel .permissionItem span,
+.overlayToolbar .morePanel .permissionActive span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 .dragHandle {
 	width: 5px;
 	height: 38px;
@@ -171,7 +244,8 @@
 .dangerGroup,
 .colors,
 .overlayControls,
-.statusGroup {
+.statusGroup,
+.reactionGroup {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -183,13 +257,27 @@
 	border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
 }
 
+.overlayToolbar .dangerGroup {
+	margin-left: 0;
+	padding-left: 0;
+	border-left: none;
+}
+
+.overlayToolbar .morePanel .dangerGroup {
+	flex-direction: row;
+	width: auto;
+}
+
 .button,
 .activeButton,
 .laserButton,
 .laserActiveButton,
 .dangerButton,
+.moreTrigger,
 .segment,
-.segmentActive {
+.segmentActive,
+.reactionButton,
+.reactionActive {
 	width: 34px;
 	height: 34px;
 	border: none;
@@ -208,8 +296,11 @@
 .laserButton:hover,
 .laserActiveButton:hover,
 .dangerButton:hover,
+.moreTrigger:hover,
 .segment:hover,
-.segmentActive:hover {
+.segmentActive:hover,
+.reactionButton:hover,
+.reactionActive:hover {
 	transform: translateY(-1px);
 	background: var(--bg-active);
 	box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
@@ -220,8 +311,11 @@
 .laserButton:disabled,
 .laserActiveButton:disabled,
 .dangerButton:disabled,
+.moreTrigger:disabled,
 .color:disabled,
-.activeColor:disabled {
+.activeColor:disabled,
+.reactionButton:disabled,
+.reactionActive:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 	transform: none;
@@ -250,8 +344,173 @@
 	color: #fff;
 }
 
-.colors {
+.moreMenu,
+.permissionsMenu {
+	position: relative;
+}
+
+.moreTrigger {
+	list-style: none;
+}
+
+.moreTrigger::-webkit-details-marker {
+	display: none;
+}
+
+.moreMenu[open] .moreTrigger {
+	background: color-mix(in srgb, var(--accent) 26%, var(--bg-hover));
+	color: #fff;
+}
+
+.morePanel {
+	position: absolute;
+	top: calc(100% + 10px);
+	right: 0;
+	z-index: 20;
+	width: 272px;
+	max-height: 65vh;
+	overflow: auto;
+	padding: 10px;
+	border-radius: 18px;
+	border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 96%, transparent), var(--bg-primary));
+	box-shadow: 0 24px 72px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(18px);
+	animation: menu-pop 0.14s ease-out both;
+}
+
+.moreSection {
+	display: grid;
+	gap: 4px;
+	padding: 8px 0;
+}
+
+.moreSection + .moreSection {
+	border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+}
+
+.moreTitle {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 7px 4px;
+	color: var(--text-secondary);
+	font-size: 11px;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.reactionGroup {
+	padding: 2px;
+	border-radius: 14px;
+	background: color-mix(in srgb, var(--bg-primary) 60%, transparent);
+}
+
+.reactionButton,
+.reactionActive {
+	font-size: 17px;
+}
+
+.reactionActive {
+	background: color-mix(in srgb, var(--accent) 32%, var(--bg-hover));
+}
+
+.reactionGrid {
+	display: grid;
+	gap: 3px;
+}
+
+.templateGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 4px;
+}
+
+.templateGrid .permissionItem,
+.templateGrid .permissionActive {
+	min-height: 32px;
+}
+
+.timerGrid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 4px;
+	padding: 0 7px;
+}
+
+.timerGrid button {
+	min-width: 0;
+	height: 30px;
+	padding: 0 6px;
+	border: none;
+	border-radius: 10px;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 850;
+}
+
+.timerGrid button:hover {
+	background: var(--bg-active);
+}
+
+.presenterActions {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 4px;
+}
+
+.morePanel .permissionsMenu {
+	display: grid;
+	gap: 4px;
+}
+
+.morePanel .permissionsTrigger {
+	width: 100%;
+	justify-content: space-between;
+}
+
+.morePanel .permissionsPanel {
+	position: static;
+	width: 100%;
+	max-height: 220px;
+	box-shadow: none;
+	margin-top: 4px;
+	animation: none;
+}
+
+.quickRow {
+	display: flex;
+	gap: 5px;
+	padding: 0 6px;
+}
+
+.quickRow button {
+	height: 28px;
+	padding: 0 9px;
+	border: none;
+	border-radius: 999px;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	font-size: 12px;
+	font-weight: 800;
+	cursor: pointer;
+}
+
+.colors,
+.menuColors {
 	padding: 0 2px;
+}
+
+.menuColors {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 2px 7px 7px;
 }
 
 .color,
@@ -281,7 +540,8 @@
 }
 
 .sliderLabel,
-.opacityLabel {
+.opacityLabel,
+.menuSlider {
 	display: grid;
 	align-items: center;
 	gap: 8px;
@@ -298,8 +558,14 @@
 	grid-template-columns: 38px 104px;
 }
 
+.menuSlider {
+	grid-template-columns: 40px minmax(0, 1fr);
+	padding: 2px 7px 7px;
+}
+
 .sliderLabel input,
-.opacityLabel input {
+.opacityLabel input,
+.menuSlider input {
 	width: 100%;
 	accent-color: var(--accent);
 }
@@ -311,6 +577,27 @@
 .statusGroup {
 	position: relative;
 	padding: 0 2px;
+}
+
+.inlineStatus {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 28px;
+	margin: 0 7px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--accent) 14%, var(--bg-hover));
+	color: color-mix(in srgb, var(--accent) 72%, #fff);
+	font-size: 12px;
+	font-weight: 850;
+	overflow: hidden;
+}
+
+.inlineStatus span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .accessBadge,
@@ -340,10 +627,6 @@
 .readOnlyBadge {
 	color: #fecaca;
 	background: color-mix(in srgb, var(--danger) 22%, var(--bg-hover));
-}
-
-.permissionsMenu {
-	position: relative;
 }
 
 .permissionsMenu[open] .permissionsTrigger {
@@ -495,8 +778,46 @@
 		justify-content: center;
 	}
 
+	.overlayToolbar {
+		left: 10px;
+		top: 10px;
+		width: 48px;
+		max-width: 48px;
+		max-height: calc(100% - 20px);
+	}
+
+	.overlayToolbar .colors {
+		max-width: 180px;
+	}
+
+	.overlayToolbar .morePanel {
+		left: calc(100% + 8px);
+		top: 0;
+		width: min(268px, calc(100vw - 76px));
+		max-height: min(360px, calc(100vh - 28px));
+	}
+
 	.dragHandle {
 		display: none;
+	}
+}
+
+@media (max-width: 640px) {
+	.overlayToolbar .button,
+	.overlayToolbar .activeButton,
+	.overlayToolbar .laserButton,
+	.overlayToolbar .laserActiveButton,
+	.overlayToolbar .dangerButton,
+	.overlayToolbar .moreTrigger,
+	.overlayToolbar .reactionButton,
+	.overlayToolbar .reactionActive {
+		width: 32px;
+		height: 32px;
+		border-radius: 11px;
+	}
+
+	.overlayToolbar .morePanel {
+		width: min(254px, calc(100vw - 72px));
 	}
 }
 

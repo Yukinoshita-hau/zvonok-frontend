@@ -1,0 +1,93 @@
+.layer {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	pointer-events: none;
+}
+
+.note {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	min-width: 118px;
+	min-height: 92px;
+	border: 1px solid color-mix(in srgb, var(--note-color) 42%, rgba(255, 255, 255, 0.18));
+	border-radius: 14px;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--note-color) 88%, #fff), color-mix(in srgb, var(--note-color) 78%, #000));
+	color: #111827;
+	box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+	pointer-events: auto;
+	transform: translate(-50%, -50%);
+	overflow: hidden;
+}
+
+.noteHandle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 26px;
+	padding: 5px 7px 3px;
+	cursor: grab;
+	color: rgba(17, 24, 39, 0.68);
+	font-size: 11px;
+	font-weight: 850;
+}
+
+.noteHandle button {
+	width: 20px;
+	height: 20px;
+	border: none;
+	border-radius: 8px;
+	background: rgba(17, 24, 39, 0.14);
+	color: #111827;
+	cursor: pointer;
+	font-size: 15px;
+	font-weight: 900;
+	line-height: 1;
+}
+
+.note textarea {
+	flex: 1;
+	width: 100%;
+	min-height: 0;
+	padding: 4px 9px;
+	border: none;
+	background: transparent;
+	color: #111827;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 750;
+	line-height: 1.25;
+	resize: none;
+	outline: none;
+}
+
+.note textarea:disabled {
+	cursor: default;
+	opacity: 1;
+}
+
+.noteFooter {
+	display: flex;
+	justify-content: flex-end;
+	padding: 4px 7px 7px;
+}
+
+.vote,
+.voteActive {
+	border: none;
+	border-radius: 999px;
+	padding: 4px 8px;
+	background: rgba(17, 24, 39, 0.12);
+	color: #111827;
+	font-size: 12px;
+	font-weight: 900;
+	cursor: pointer;
+}
+
+.voteActive {
+	background: rgba(17, 24, 39, 0.82);
+	color: #fff;
+}

@@ -23,7 +23,11 @@ import {
 } from "../../interfaces/wsPathes";
 import { channelMessageActions } from "../../slices/channelMessage.slice";
 import { canvasActions } from "../../slices/canvas.slice";
-import type { CanvasBoardEventDto, CanvasDrawEventDto } from "../../../api/interfaces/CanvasDtos";
+import type {
+	CanvasBoardEventDto,
+	CanvasBoardObjectEventDto,
+	CanvasDrawEventDto,
+} from "../../../api/interfaces/CanvasDtos";
 import type { PublishActionResult, WebSocketPublishContext } from "./types";
 
 export function handleWebSocketPublishAction(
@@ -262,7 +266,12 @@ export function handleWebSocketPublishAction(
 			if (context.subscriptions[path]) return "handled";
 
 			const sub = context.client.subscribe(path, (message) => {
-				const data = JSON.parse(message.body) as CanvasDrawEventDto;
+				const data = JSON.parse(message.body) as CanvasDrawEventDto | CanvasBoardObjectEventDto;
+				if (isCanvasObjectEvent(data)) {
+					context.storeApi.dispatch(canvasActions.applyCanvasObjectEvent(data));
+					return;
+				}
+
 				const currentUsername = context.storeApi.getState().user.myUser?.username;
 				if (currentUsername && data.userId === currentUsername && isOptimisticCanvasStrokeEvent(data)) {
 					return;
@@ -283,6 +292,9 @@ export function handleWebSocketPublishAction(
 		}
 		case "canvas/sendCanvasDrawEvent": {
 			if (!context.client?.connected) return blockPublish();
+			if (isEndedCanvasStrokePoint(context, action.payload.boardId, action.payload.event)) {
+				return "handled";
+			}
 
 			context.client.publish({
 				destination: getCanvasBoardDrawPublishPath(action.payload.callId, action.payload.boardId),
@@ -294,6 +306,27 @@ export function handleWebSocketPublishAction(
 		default:
 			return "not-handled";
 	}
+}
+
+function isEndedCanvasStrokePoint(
+	context: WebSocketPublishContext,
+	boardId: number,
+	event: CanvasDrawEventDto
+): boolean {
+	if (event.type !== "STROKE_POINT" || !event.strokeId) return false;
+
+	const stroke = context.storeApi.getState().canvas.strokesByBoardId[boardId]
+		?.find((item) => item.id === event.strokeId);
+
+	return Boolean(stroke?.ended);
+}
+
+function isCanvasObjectEvent(event: CanvasDrawEventDto | CanvasBoardObjectEventDto): event is CanvasBoardObjectEventDto {
+	return event.type === "NOTE_CREATED" ||
+		event.type === "NOTE_UPDATED" ||
+		event.type === "NOTE_DELETED" ||
+		event.type === "NOTE_VOTED" ||
+		event.type === "NOTE_UNVOTED";
 }
 
 function isOptimisticCanvasStrokeEvent(event: CanvasDrawEventDto): boolean {

@@ -1,0 +1,104 @@
+.chip {
+	position: absolute;
+	right: 14px;
+	top: 14px;
+	z-index: 13;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 38px;
+	padding: 7px 9px;
+	border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+	color: var(--text-primary);
+	box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+	backdrop-filter: blur(16px);
+}
+
+.overlayChip {
+	right: auto;
+	left: 72px;
+	top: 12px;
+}
+
+.miniChip {
+	position: absolute;
+	right: 14px;
+	top: 14px;
+	z-index: 13;
+	min-width: 54px;
+	height: 32px;
+	padding: 0 10px;
+	border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--bg-primary) 78%, transparent);
+	color: var(--text-primary);
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+	backdrop-filter: blur(16px);
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 900;
+	font-variant-numeric: tabular-nums;
+}
+
+.finished {
+	animation: timer-pulse 0.9s ease-in-out infinite alternate;
+}
+
+.time {
+	min-width: 48px;
+	font-variant-numeric: tabular-nums;
+	font-size: 13px;
+	font-weight: 900;
+	text-align: center;
+}
+
+.controls {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.controls button {
+	height: 24px;
+	padding: 0 7px;
+	border: none;
+	border-radius: 999px;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 850;
+}
+
+.controls button:hover {
+	background: var(--bg-active);
+}
+
+.closeButton {
+	width: 24px;
+	height: 24px;
+	border: none;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--bg-hover) 86%, transparent);
+	color: var(--text-secondary);
+	cursor: pointer;
+	font-size: 17px;
+	line-height: 1;
+}
+
+.closeButton:hover {
+	background: var(--bg-active);
+	color: var(--text-primary);
+}
+
+@keyframes timer-pulse {
+	from {
+		box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24), 0 0 0 0 color-mix(in srgb, var(--danger) 0%, transparent);
+	}
+
+	to {
+		box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24), 0 0 0 5px color-mix(in srgb, var(--danger) 22%, transparent);
+	}
+}

@@ -12,7 +12,9 @@ import type {
 	CanvasDrawEventDto,
 	CanvasInteractionTool,
 	CanvasPointDto,
+	CanvasReactionType,
 } from "../../../api/interfaces/CanvasDtos";
+import type { CanvasReactionState } from "../CanvasReactionLayer/CanvasReactionLayer";
 import type { LaserTrailState, RemoteCursorState } from "../DrawableCanvas/CanvasPresenceLayer";
 
 interface UseCanvasDrawingParams {
@@ -21,7 +23,9 @@ interface UseCanvasDrawingParams {
 	color: string;
 	width: number;
 	tool: CanvasInteractionTool;
+	reaction: CanvasReactionType;
 	canDraw: boolean;
+	onCreateStickyNote?: (point: CanvasPointDto) => void;
 }
 
 interface LocalCanvasCursorState {
@@ -42,16 +46,21 @@ export function useCanvasDrawing({
 	color,
 	width,
 	tool,
+	reaction,
 	canDraw,
+	onCreateStickyNote,
 }: UseCanvasDrawingParams) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const activeStrokeIdRef = useRef<string | null>(null);
+	const endedStrokeIdsRef = useRef<Set<string>>(new Set());
 	const isLaserActiveRef = useRef(false);
 	const lastSentAtRef = useRef(0);
 	const lastPointRef = useRef<CanvasPointDto | null>(null);
 	const lastCursorSentAtRef = useRef(0);
 	const lastCursorPointRef = useRef<CanvasPointDto | null>(null);
 	const lastLaserSentAtRef = useRef(0);
+	const localCursorFrameRef = useRef<number | null>(null);
+	const pendingLocalCursorRef = useRef<LocalCanvasCursorState | null>(null);
 	const [isDrawing, setIsDrawing] = useState(false);
 	const [localCursor, setLocalCursor] = useState<LocalCanvasCursorState>({
 		x: 0,
@@ -60,6 +69,7 @@ export function useCanvasDrawing({
 	});
 	const [remoteCursorsByUserId, setRemoteCursorsByUserId] = useState<Record<string, RemoteCursorState>>({});
 	const [laserTrailsByUserId, setLaserTrailsByUserId] = useState<Record<string, LaserTrailState>>({});
+	const [reactionsById, setReactionsById] = useState<Record<string, CanvasReactionState>>({});
 	const [presenceNow, setPresenceNow] = useState(() => Date.now());
 	const dispatch = useDispatch<AppDispatch>();
 	const userId = useSelector((state: RootState) => state.user.myUser?.username ?? "unknown");
@@ -68,6 +78,7 @@ export function useCanvasDrawing({
 
 	const remoteCursors = useMemo(() => Object.values(remoteCursorsByUserId), [remoteCursorsByUserId]);
 	const laserTrails = useMemo(() => Object.values(laserTrailsByUserId), [laserTrailsByUserId]);
+	const reactions = useMemo(() => Object.values(reactionsById), [reactionsById]);
 
 	const publishEvent = useCallback((event: CanvasDrawEventDto, applyLocally = true) => {
 		if (applyLocally) {
@@ -75,6 +86,19 @@ export function useCanvasDrawing({
 		}
 		dispatch(canvasActions.sendCanvasDrawEvent({ callId, boardId: board.id, event }));
 	}, [board.id, callId, dispatch]);
+
+	const updateLocalCursor = useCallback((nextCursor: LocalCanvasCursorState) => {
+		pendingLocalCursorRef.current = nextCursor;
+		if (localCursorFrameRef.current !== null) return;
+
+		localCursorFrameRef.current = window.requestAnimationFrame(() => {
+			localCursorFrameRef.current = null;
+			const pendingCursor = pendingLocalCursorRef.current;
+			if (!pendingCursor) return;
+			pendingLocalCursorRef.current = null;
+			setLocalCursor(pendingCursor);
+		});
+	}, []);
 
 	const addLaserPoint = useCallback((event: CanvasDrawEventDto, fallbackUserId: string) => {
 		if (event.x === null || event.y === null || event.x === undefined || event.y === undefined) return;
@@ -103,6 +127,23 @@ export function useCanvasDrawing({
 		});
 	}, []);
 
+	const addReaction = useCallback((event: CanvasDrawEventDto) => {
+		if (!event.reaction || event.x === null || event.y === null || event.x === undefined || event.y === undefined) return;
+		const createdAt = event.timestamp ? Date.parse(event.timestamp) : Date.now();
+		const id = `${event.boardId}-${event.userId ?? "user"}-${createdAt}-${event.reaction}`;
+
+		setReactionsById((current) => ({
+			...current,
+			[id]: {
+				id,
+				x: event.x ?? 0,
+				y: event.y ?? 0,
+				reaction: event.reaction!,
+				createdAt,
+			},
+		}));
+	}, []);
+
 	const sendCursorLeave = useCallback(() => {
 		publishEvent({
 			type: "CURSOR_LEAVE",
@@ -116,8 +157,12 @@ export function useCanvasDrawing({
 	useEffect(() => {
 		dispatch(fetchCanvasSnapshot({ callId, boardId: board.id }));
 		dispatch(canvasActions.subscribeCanvasDrawEvents({ callId, boardId: board.id }));
+		endedStrokeIdsRef.current.clear();
 
 		return () => {
+			if (localCursorFrameRef.current !== null) {
+				window.cancelAnimationFrame(localCursorFrameRef.current);
+			}
 			sendCursorLeave();
 			dispatch(canvasActions.unsubscribeCanvasDrawEvents({ callId, boardId: board.id }));
 		};
@@ -172,8 +217,13 @@ export function useCanvasDrawing({
 					},
 				};
 			});
+			return;
 		}
-	}, [addLaserPoint, presenceEventState, userId]);
+
+		if (event.type === "REACTION") {
+			addReaction(event);
+		}
+	}, [addLaserPoint, addReaction, presenceEventState, userId]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;
@@ -211,6 +261,10 @@ export function useCanvasDrawing({
 						.filter(([, trail]) => trail.active || trail.points.length > 0)
 				);
 				return next;
+			});
+			setReactionsById((current) => {
+				const entries = Object.entries(current).filter(([, item]) => now - item.createdAt <= 1800);
+				return Object.fromEntries(entries);
 			});
 		}, 120);
 
@@ -281,17 +335,33 @@ export function useCanvasDrawing({
 		}, false);
 	}, [board.id, publishEvent, userId]);
 
+	const sendReaction = useCallback((point: CanvasPointDto) => {
+		const event: CanvasDrawEventDto = {
+			type: "REACTION",
+			boardId: board.id,
+			userId,
+			x: point.x,
+			y: point.y,
+			reaction,
+			timestamp: new Date().toISOString(),
+		};
+		addReaction(event);
+		publishEvent(event, false);
+	}, [addReaction, board.id, publishEvent, reaction, userId]);
+
 	const finishStroke = useCallback(() => {
-		if (!activeStrokeIdRef.current) return;
+		const strokeId = activeStrokeIdRef.current;
+		if (!strokeId || endedStrokeIdsRef.current.has(strokeId)) return;
 
 		const drawEvent: CanvasDrawEventDto = {
 			type: "STROKE_END",
 			boardId: board.id,
-			strokeId: activeStrokeIdRef.current,
+			strokeId,
 			userId,
 			timestamp: new Date().toISOString(),
 		};
 
+		endedStrokeIdsRef.current.add(strokeId);
 		activeStrokeIdRef.current = null;
 		lastPointRef.current = null;
 		setIsDrawing(false);
@@ -300,19 +370,29 @@ export function useCanvasDrawing({
 
 	useEffect(() => {
 		if (canDraw) return;
-		setLocalCursor((current) => ({ ...current, visible: false }));
+		updateLocalCursor({ ...localCursor, visible: false });
 		sendLaserEnd();
 		finishStroke();
-	}, [canDraw, finishStroke, sendLaserEnd]);
+	}, [canDraw, finishStroke, localCursor, sendLaserEnd, updateLocalCursor]);
 
 	const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
 		if (event.button !== 0) return;
 
 		event.currentTarget.setPointerCapture(event.pointerId);
 		const point = getNormalizedPoint(event, event.currentTarget);
-		setLocalCursor({ ...point, visible: canDraw });
+		updateLocalCursor({ ...point, visible: canDraw });
 		sendCursorMove(point);
 		if (!canDraw) return;
+
+		if (tool === "STICKY") {
+			onCreateStickyNote?.(point);
+			return;
+		}
+
+		if (tool === "REACTION") {
+			sendReaction(point);
+			return;
+		}
 
 		if (tool === "LASER") {
 			isLaserActiveRef.current = true;
@@ -322,6 +402,7 @@ export function useCanvasDrawing({
 		}
 
 		const strokeId = crypto.randomUUID();
+		endedStrokeIdsRef.current.delete(strokeId);
 		const drawEvent: CanvasDrawEventDto = {
 			type: "STROKE_START",
 			boardId: board.id,
@@ -340,12 +421,15 @@ export function useCanvasDrawing({
 		lastPointRef.current = point;
 		setIsDrawing(true);
 		publishEvent(drawEvent);
-	}, [board.id, canDraw, color, publishEvent, sendCursorMove, sendLaserPoint, tool, userId, width]);
+	}, [board.id, canDraw, color, onCreateStickyNote, publishEvent, sendCursorMove, sendLaserPoint, sendReaction, tool, updateLocalCursor, userId, width]);
 
 	const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
 		const point = getNormalizedPoint(event, event.currentTarget);
-		setLocalCursor({ ...point, visible: canDraw });
-		sendCursorMove(point);
+		updateLocalCursor({ ...point, visible: canDraw });
+		const isActivelyDrawing = Boolean(activeStrokeIdRef.current) || isLaserActiveRef.current;
+		if (!isActivelyDrawing) {
+			sendCursorMove(point);
+		}
 		if (!canDraw) return;
 
 		if (tool === "LASER") {
@@ -355,7 +439,8 @@ export function useCanvasDrawing({
 			return;
 		}
 
-		if (!activeStrokeIdRef.current) return;
+		const strokeId = activeStrokeIdRef.current;
+		if (!strokeId || endedStrokeIdsRef.current.has(strokeId)) return;
 		const now = performance.now();
 
 		if (!shouldSendCanvasPoint(lastSentAtRef.current, lastPointRef.current, point, now)) {
@@ -365,7 +450,7 @@ export function useCanvasDrawing({
 		const drawEvent: CanvasDrawEventDto = {
 			type: "STROKE_POINT",
 			boardId: board.id,
-			strokeId: activeStrokeIdRef.current,
+			strokeId,
 			userId,
 			x: point.x,
 			y: point.y,
@@ -375,7 +460,7 @@ export function useCanvasDrawing({
 		lastSentAtRef.current = now;
 		lastPointRef.current = point;
 		publishEvent(drawEvent);
-	}, [board.id, canDraw, publishEvent, sendCursorMove, sendLaserPoint, tool, userId]);
+	}, [board.id, canDraw, publishEvent, sendCursorMove, sendLaserPoint, tool, updateLocalCursor, userId]);
 
 	const handlePointerEnd = useCallback(() => {
 		if (tool === "LASER" || isLaserActiveRef.current) {
@@ -387,10 +472,10 @@ export function useCanvasDrawing({
 	}, [finishStroke, sendLaserEnd, tool]);
 
 	const handlePointerLeave = useCallback(() => {
-		setLocalCursor((current) => ({ ...current, visible: false }));
+		updateLocalCursor({ ...localCursor, visible: false });
 		sendCursorLeave();
 		handlePointerEnd();
-	}, [handlePointerEnd, sendCursorLeave]);
+	}, [handlePointerEnd, localCursor, sendCursorLeave, updateLocalCursor]);
 
 	return {
 		canvasRef,
@@ -398,6 +483,7 @@ export function useCanvasDrawing({
 		localCursor,
 		remoteCursors,
 		laserTrails,
+		reactions,
 		presenceNow,
 		handlePointerDown,
 		handlePointerMove,

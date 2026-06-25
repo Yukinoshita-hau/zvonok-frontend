@@ -62,7 +62,7 @@ export function CallUi({
 	const isWebSocketConnected = useSelector((s: RootState) => s.websocket.isConnected);
 	const whiteboard = useSelector((s: RootState) => selectWhiteboardByCallId(s, s.call.callId));
 	const screenOverlayBoard = useSelector((s: RootState) => selectScreenOverlayBoardByCallId(s, s.call.callId));
-	const focusedBoard = useSelector((s: RootState) => selectFocusedCanvasBoard(s));
+	const focusedBoard = useSelector((s: RootState) => selectFocusedCanvasBoard(s, s.call.callId));
 
 	const {
 		participantCards,
@@ -222,6 +222,12 @@ export function CallUi({
 			}
 		};
 	}, [call.callId, dispatch, isWebSocketConnected]);
+
+	useEffect(() => {
+		if (call.callId) return;
+		dispatch(canvasActions.clearFocusedCanvasBoard());
+		dispatch(callActions.setCallFocusMode(false));
+	}, [call.callId, dispatch]);
 
 	useEffect(() => {
 		if (!isCinemaMode) return;
@@ -462,6 +468,7 @@ export function CallUi({
 								<ScreenShareOverlayCanvas
 									callId={call.callId}
 									board={screenOverlayBoard}
+									permissionBoard={whiteboard}
 									canDraw
 									currentUsername={myUser?.username}
 									isCurrentUserHost={isCurrentUserHost}
@@ -502,6 +509,7 @@ export function CallUi({
 							<ScreenShareOverlayCanvas
 								callId={call.callId}
 								board={screenOverlayBoard}
+								permissionBoard={whiteboard}
 								canDraw
 								currentUsername={myUser?.username}
 								isCurrentUserHost={isCurrentUserHost}

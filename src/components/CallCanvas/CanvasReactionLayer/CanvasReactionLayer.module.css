@@ -1,0 +1,30 @@
+.layer {
+	position: absolute;
+	inset: 0;
+	z-index: 6;
+	pointer-events: none;
+	overflow: hidden;
+}
+
+.reaction {
+	position: absolute;
+	transform: translate(-50%, -50%);
+	font-size: 30px;
+	line-height: 1;
+	filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.32));
+	animation: reaction-pop 1.8s ease-out both;
+}
+
+@keyframes reaction-pop {
+	0% {
+		transform: translate(-50%, -50%) scale(0.72);
+	}
+
+	16% {
+		transform: translate(-50%, -60%) scale(1.12);
+	}
+
+	100% {
+		transform: translate(-50%, -96%) scale(0.92);
+	}
+}

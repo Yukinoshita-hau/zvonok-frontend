@@ -40,6 +40,7 @@
 .overlay {
 	background: transparent;
 	box-shadow: none;
+	overflow: visible;
 }
 
 .overlay .canvas {
@@ -122,6 +123,39 @@
 	box-shadow:
 		0 0 0 4px color-mix(in srgb, var(--local-cursor-color) 16%, transparent),
 		0 0 18px color-mix(in srgb, var(--local-cursor-color) 68%, transparent);
+}
+
+.presenterBadge {
+	position: absolute;
+	left: 14px;
+	bottom: 14px;
+	z-index: 13;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	max-width: calc(100% - 28px);
+	min-height: 34px;
+	padding: 6px 9px;
+	border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+	color: var(--text-primary);
+	box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+	backdrop-filter: blur(16px);
+	font-size: 12px;
+	font-weight: 850;
+}
+
+.presenterBadge button {
+	height: 24px;
+	padding: 0 8px;
+	border: none;
+	border-radius: 999px;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 850;
 }
 
 .confirmBackdrop {

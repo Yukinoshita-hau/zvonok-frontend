@@ -1,0 +1,87 @@
+.layer {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	overflow: hidden;
+	border-radius: inherit;
+}
+
+.backgroundImage {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	opacity: 0.5;
+	filter: saturate(0.92) contrast(0.96);
+}
+
+.clean {
+	background: transparent;
+}
+
+.dots {
+	background:
+		radial-gradient(circle, color-mix(in srgb, var(--text-secondary) 22%, transparent) 1px, transparent 1.5px) 0 0 / 22px 22px;
+}
+
+.grid,
+.architecture {
+	background:
+		linear-gradient(90deg, color-mix(in srgb, var(--text-secondary) 13%, transparent) 1px, transparent 1px),
+		linear-gradient(color-mix(in srgb, var(--text-secondary) 13%, transparent) 1px, transparent 1px);
+	background-size: 34px 34px;
+}
+
+.columns {
+	position: absolute;
+	inset: 8% 5%;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 18px;
+}
+
+.column {
+	border: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+	border-radius: 18px;
+	background: color-mix(in srgb, var(--bg-secondary) 12%, transparent);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.column span {
+	display: inline-flex;
+	margin: 12px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+	color: color-mix(in srgb, var(--text-primary) 84%, transparent);
+	font-size: 13px;
+	font-weight: 850;
+}
+
+.brainstorm .columns {
+	inset: 12% 8%;
+	grid-template-columns: 1fr 1.15fr 1fr;
+	align-items: center;
+}
+
+.brainstorm .column:nth-child(2) {
+	min-height: 36%;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
+.retrospective .column:nth-child(1) {
+	background: color-mix(in srgb, #22c55e 10%, transparent);
+}
+
+.retrospective .column:nth-child(2),
+.bug_triage .column:nth-child(1) {
+	background: color-mix(in srgb, #ef4444 9%, transparent);
+}
+
+.retrospective .column:nth-child(3),
+.bug_triage .column:nth-child(3) {
+	background: color-mix(in srgb, #38bdf8 9%, transparent);
+}

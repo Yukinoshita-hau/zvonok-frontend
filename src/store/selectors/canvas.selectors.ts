@@ -1,5 +1,10 @@
 import type { RootState } from "../store";
-import type { CanvasBoardSessionDto, StrokeRenderState } from "../../api/interfaces/CanvasDtos";
+import type {
+	CanvasBoardSessionDto,
+	CanvasNoteVoteDto,
+	CanvasStickyNoteDto,
+	StrokeRenderState,
+} from "../../api/interfaces/CanvasDtos";
 
 export function selectCanvasBoardsByCallId(
 	state: RootState,
@@ -27,12 +32,18 @@ export function selectScreenOverlayBoardByCallId(
 	);
 }
 
-export function selectFocusedCanvasBoard(state: RootState): CanvasBoardSessionDto | undefined {
+export function selectFocusedCanvasBoard(
+	state: RootState,
+	callId?: number | null
+): CanvasBoardSessionDto | undefined {
 	const focusedBoardId = state.canvas.focusedBoardId;
 	if (!focusedBoardId) return undefined;
 
-	return Object.values(state.canvas.boardsByCallId)
-		.flat()
+	const boards = callId
+		? state.canvas.boardsByCallId[callId] ?? []
+		: Object.values(state.canvas.boardsByCallId).flat();
+
+	return boards
 		.find((board) => board.id === focusedBoardId && board.active);
 }
 
@@ -48,4 +59,18 @@ export function selectCanvasPresenceEventByBoardId(
 	boardId: number
 ) {
 	return state.canvas.presenceEventByBoardId[boardId] ?? null;
+}
+
+export function selectCanvasNotesByBoardId(
+	state: RootState,
+	boardId: number
+): CanvasStickyNoteDto[] {
+	return state.canvas.notesByBoardId[boardId] ?? [];
+}
+
+export function selectCanvasVotesByBoardId(
+	state: RootState,
+	boardId: number
+): CanvasNoteVoteDto[] {
+	return state.canvas.votesByBoardId[boardId] ?? [];
 }

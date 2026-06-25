@@ -20,7 +20,7 @@ export function WhiteboardFocus({
 	participantOptions,
 }: WhiteboardFocusProps) {
 	const dispatch = useDispatch<AppDispatch>();
-	const board = useSelector((state: RootState) => selectFocusedCanvasBoard(state));
+	const board = useSelector((state: RootState) => selectFocusedCanvasBoard(state, callId));
 
 	if (!board) {
 		return (
