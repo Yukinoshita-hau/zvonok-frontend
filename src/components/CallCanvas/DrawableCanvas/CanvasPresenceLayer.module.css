@@ -17,6 +17,26 @@
 	filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.28));
 }
 
+.presenterCursor {
+	z-index: 2;
+	filter:
+		drop-shadow(0 10px 24px rgba(0, 0, 0, 0.36))
+		drop-shadow(0 0 16px color-mix(in srgb, var(--cursor-color) 58%, transparent));
+}
+
+.presenterCursor::before {
+	content: "";
+	position: absolute;
+	left: -13px;
+	top: -13px;
+	width: 34px;
+	height: 34px;
+	border: 2px solid color-mix(in srgb, var(--cursor-color) 72%, #fff);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--cursor-color) 12%, transparent);
+	animation: presenter-pulse 1.5s ease-out infinite;
+}
+
 .cursorPointer {
 	width: 13px;
 	height: 17px;
@@ -41,6 +61,13 @@
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
+.presenterCursor .cursorLabel {
+	background: linear-gradient(135deg, color-mix(in srgb, var(--cursor-color) 88%, #000), #111827);
+	box-shadow:
+		inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+		0 0 0 3px color-mix(in srgb, var(--cursor-color) 18%, transparent);
+}
+
 .laserPoint {
 	position: absolute;
 	width: 13px;
@@ -53,6 +80,27 @@
 		0 0 18px 5px var(--laser-color),
 		0 0 42px 10px color-mix(in srgb, var(--laser-color) 48%, transparent);
 	animation: laser-fade 1.2s ease-out both;
+}
+
+.presenterLaserPoint {
+	width: 17px;
+	height: 17px;
+	box-shadow:
+		0 0 0 5px color-mix(in srgb, var(--laser-color) 28%, transparent),
+		0 0 24px 7px var(--laser-color),
+		0 0 58px 14px color-mix(in srgb, var(--laser-color) 55%, transparent);
+}
+
+@keyframes presenter-pulse {
+	from {
+		opacity: 0.82;
+		transform: scale(0.78);
+	}
+
+	to {
+		opacity: 0;
+		transform: scale(1.35);
+	}
 }
 
 @keyframes laser-fade {

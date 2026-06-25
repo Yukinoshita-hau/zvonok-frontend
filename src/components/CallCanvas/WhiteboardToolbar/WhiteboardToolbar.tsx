@@ -17,6 +17,7 @@ import {
 	Smile,
 	Sparkles,
 	StickyNote,
+	Moon,
 	Timer,
 	Trash2,
 	Undo2,
@@ -34,7 +35,7 @@ import type {
 } from "../../../api/interfaces/CanvasDtos";
 import type { CanvasParticipantOption } from "../CallCanvas.types";
 
-type CanvasBackgroundMode = "grid" | "dots" | "clean";
+type CanvasBackgroundMode = "grid" | "dots" | "clean" | "dark";
 
 interface WhiteboardToolbarProps {
 	color: string;
@@ -59,6 +60,9 @@ interface WhiteboardToolbarProps {
 	backgroundMode: CanvasBackgroundMode;
 	isOverlayHidden: boolean;
 	overlayOpacity: number;
+	drawingOpacity: number;
+	backgroundImageOpacity: number;
+	hasBackgroundImage: boolean;
 	onColorChange: (color: string) => void;
 	onWidthChange: (width: number) => void;
 	onToolChange: (tool: CanvasInteractionTool) => void;
@@ -77,6 +81,8 @@ interface WhiteboardToolbarProps {
 	onBackgroundModeChange: (mode: CanvasBackgroundMode) => void;
 	onToggleOverlayHidden: () => void;
 	onOverlayOpacityChange: (opacity: number) => void;
+	onDrawingOpacityChange: (opacity: number) => void;
+	onBackgroundImageOpacityChange: (opacity: number) => void;
 }
 
 const BASE_COLORS = ["#111827", "#f8fafc", "#ef4444", "#f97316", "#22c55e", "#38bdf8", "#a855f7"];
@@ -123,6 +129,9 @@ export function WhiteboardToolbar({
 	backgroundMode,
 	isOverlayHidden,
 	overlayOpacity,
+	drawingOpacity,
+	backgroundImageOpacity,
+	hasBackgroundImage,
 	onColorChange,
 	onWidthChange,
 	onToolChange,
@@ -141,6 +150,8 @@ export function WhiteboardToolbar({
 	onBackgroundModeChange,
 	onToggleOverlayHidden,
 	onOverlayOpacityChange,
+	onDrawingOpacityChange,
+	onBackgroundImageOpacityChange,
 }: WhiteboardToolbarProps) {
 	const permissionsRef = useRef<HTMLDetailsElement>(null);
 	const moreRef = useRef<HTMLDetailsElement>(null);
@@ -249,6 +260,15 @@ export function WhiteboardToolbar({
 					>
 						<span className={styles.cleanDot} />
 					</button>
+					<button
+						type="button"
+						className={backgroundMode === "dark" ? styles.segmentActive : styles.segment}
+						onClick={() => onBackgroundModeChange("dark")}
+						title="Чёрный фон"
+						aria-label="Чёрный фон"
+					>
+						<Moon size={15} />
+					</button>
 				</div>
 			)}
 
@@ -348,6 +368,19 @@ export function WhiteboardToolbar({
 									aria-label="Прозрачность разметки"
 								/>
 							</label>
+							{canManage && (
+								<button
+									type="button"
+									className={styles.permissionItem}
+									onClick={() => {
+										onCaptureBackground();
+										closeMore();
+									}}
+								>
+									<Image size={15} />
+									<span>Снимок экрана в доску</span>
+								</button>
+							)}
 						</div>
 					)}
 
@@ -387,6 +420,32 @@ export function WhiteboardToolbar({
 
 							<div className={styles.moreSection}>
 								<div className={styles.moreTitle}><Sparkles size={14} /> Доска</div>
+								{hasBackgroundImage && (
+									<label className={styles.menuSlider}>
+										<span>Снимок {Math.round(backgroundImageOpacity * 100)}%</span>
+										<input
+											type="range"
+											min={0.15}
+											max={1}
+											step={0.05}
+											value={backgroundImageOpacity}
+											onChange={(event) => onBackgroundImageOpacityChange(Number(event.target.value))}
+											aria-label="Прозрачность снимка"
+										/>
+									</label>
+								)}
+								<label className={styles.menuSlider}>
+									<span>Рисунок {Math.round(drawingOpacity * 100)}%</span>
+									<input
+										type="range"
+										min={0.2}
+										max={1}
+										step={0.05}
+										value={drawingOpacity}
+										onChange={(event) => onDrawingOpacityChange(Number(event.target.value))}
+										aria-label="Прозрачность рисунка"
+									/>
+								</label>
 								<div className={styles.templateGrid}>
 									{TEMPLATES.map((item) => (
 										<button
@@ -402,17 +461,6 @@ export function WhiteboardToolbar({
 										</button>
 									))}
 								</div>
-								<button
-									type="button"
-									className={styles.permissionItem}
-									onClick={() => {
-										onCaptureBackground();
-										closeMore();
-									}}
-								>
-									<Image size={15} />
-									<span>Снимок экрана в доску</span>
-								</button>
 							</div>
 						</>
 					)}
@@ -429,7 +477,7 @@ export function WhiteboardToolbar({
 										closeMore();
 									}}
 								>
-									Стать ведущим
+									Вести и взять маркер
 								</button>
 								<button
 									type="button"
@@ -453,7 +501,7 @@ export function WhiteboardToolbar({
 										<Users size={15} /><span>Все</span>
 									</button>
 									<button type="button" className={drawingAccess === "HOSTS_ONLY" ? styles.permissionActive : styles.permissionItem} onClick={() => applyPermission("HOSTS_ONLY", null)}>
-										<ShieldCheck size={15} /><span>Орги</span>
+										<ShieldCheck size={15} /><span>Главный</span>
 									</button>
 									<button type="button" className={drawingAccess === "VIEW_ONLY" ? styles.permissionActive : styles.permissionItem} onClick={() => applyPermission("VIEW_ONLY", null)}>
 										<Lock size={15} /><span>Просмотр</span>
@@ -489,7 +537,7 @@ export function WhiteboardToolbar({
 							className={styles.button}
 							onClick={onClear}
 							disabled={isBusy || !canManage}
-							title={canManage ? "Очистить доску" : "Очищать доску может только организатор"}
+							title={canManage ? "Очистить доску" : "Очищать может только главный"}
 							aria-label="Очистить доску"
 						>
 							<RotateCcw size={17} />
@@ -500,7 +548,7 @@ export function WhiteboardToolbar({
 								className={styles.dangerButton}
 								onClick={onClose}
 								disabled={isBusy || !canManage}
-								title={canManage ? "Закрыть доску для всех" : "Закрывать доску может только организатор"}
+								title={canManage ? "Закрыть доску для всех" : "Закрывать может только главный"}
 								aria-label="Закрыть доску для всех"
 							>
 								<Trash2 size={17} />
@@ -598,7 +646,7 @@ function getAccessTitle(
 	drawingAccess: CanvasDrawingAccess,
 	selectedDrawerUsername: string | null
 ): string {
-	if (drawingAccess === "HOSTS_ONLY") return "Орги";
+	if (drawingAccess === "HOSTS_ONLY") return "Главный";
 	if (drawingAccess === "SELECTED_PARTICIPANT") return selectedDrawerUsername ? `Маркер: ${selectedDrawerUsername}` : "Маркер";
 	if (drawingAccess === "VIEW_ONLY") return "Просмотр";
 	return "Все";
@@ -608,7 +656,7 @@ function getCollapsedAccessText(
 	drawingAccess: CanvasDrawingAccess,
 	selectedDrawerUsername: string | null
 ): string {
-	if (drawingAccess === "HOSTS_ONLY") return "Орги";
+	if (drawingAccess === "HOSTS_ONLY") return "Главный";
 	if (drawingAccess === "SELECTED_PARTICIPANT") return selectedDrawerUsername ? `Маркер: ${selectedDrawerUsername}` : "Маркер";
 	if (drawingAccess === "VIEW_ONLY") return "Просмотр";
 	return "Все";

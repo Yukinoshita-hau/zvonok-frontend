@@ -9,14 +9,12 @@ import styles from "./WhiteboardFocus.module.css";
 interface WhiteboardFocusProps {
 	callId: number;
 	currentUsername?: string | null;
-	isCurrentUserHost?: boolean;
 	participantOptions?: CanvasParticipantOption[];
 }
 
 export function WhiteboardFocus({
 	callId,
 	currentUsername,
-	isCurrentUserHost,
 	participantOptions,
 }: WhiteboardFocusProps) {
 	const dispatch = useDispatch<AppDispatch>();
@@ -45,7 +43,6 @@ export function WhiteboardFocus({
 				board={board}
 				canDraw
 				currentUsername={currentUsername}
-				isCurrentUserHost={isCurrentUserHost}
 				participantOptions={participantOptions}
 				variant="whiteboard"
 				onExit={() => dispatch(canvasActions.clearFocusedCanvasBoard())}

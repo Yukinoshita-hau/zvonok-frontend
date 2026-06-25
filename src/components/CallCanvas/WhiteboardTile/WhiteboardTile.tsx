@@ -12,6 +12,7 @@ interface WhiteboardTileProps {
 
 export function WhiteboardTile({ board, className, isFocused = false, onOpen }: WhiteboardTileProps) {
 	const creatorColor = StringToColor(board.createdBy || "board");
+	const hasSnapshot = Boolean(board.backgroundImageUrl);
 
 	return (
 		<button
@@ -21,13 +22,17 @@ export function WhiteboardTile({ board, className, isFocused = false, onOpen }: 
 			title="Открыть совместную доску"
 		>
 			<div className={styles.preview}>
-				<div className={styles.paper}>
-					<span className={styles.line} />
-					<span className={styles.lineShort} />
-					<span className={styles.curve} />
-					<span className={styles.dotOne} />
-					<span className={styles.dotTwo} />
-				</div>
+				{board.backgroundImageUrl ? (
+					<img className={styles.snapshot} src={board.backgroundImageUrl} alt="" draggable={false} />
+				) : (
+					<div className={styles.paper}>
+						<span className={styles.line} />
+						<span className={styles.lineShort} />
+						<span className={styles.curve} />
+						<span className={styles.dotOne} />
+						<span className={styles.dotTwo} />
+					</div>
+				)}
 				<div className={styles.badge}>
 					<Brush size={14} />
 				</div>
@@ -36,7 +41,7 @@ export function WhiteboardTile({ board, className, isFocused = false, onOpen }: 
 				</div>
 			</div>
 			<div className={styles.name}>
-				<span className={styles.title}>Доска</span>
+				<span className={styles.title}>{hasSnapshot ? "Снимок" : "Доска"}</span>
 				<span className={styles.owner}>
 					<span className={styles.ownerDot} style={{ backgroundColor: creatorColor }} />
 					{board.createdBy}

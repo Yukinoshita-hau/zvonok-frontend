@@ -72,6 +72,19 @@ export const createWhiteboard = createAsyncThunk(
 	}
 );
 
+export const createSnapshotWhiteboard = createAsyncThunk(
+	"canvas/createSnapshotWhiteboard",
+	async ({ callId, file }: { callId: number; file: File }) => {
+		const board = await canvasApi.createCanvasBoard(callId, {
+			mode: "WHITEBOARD",
+			background: "BLACK",
+		});
+		const boardWithSnapshot = await canvasApi.uploadCanvasBackgroundImage(callId, board.id, file);
+
+		return { callId, board: boardWithSnapshot };
+	}
+);
+
 export const createScreenOverlayBoard = createAsyncThunk(
 	"canvas/createScreenOverlayBoard",
 	async (callId: number) => {
@@ -296,6 +309,14 @@ export const canvasSlice = createSlice({
 				return;
 			}
 
+			if (isCanvasCursorSyncEvent(event.type)) {
+				state.presenceEventSequence += 1;
+				state.presenceEventByBoardId[boardId] = {
+					event,
+					sequence: state.presenceEventSequence,
+				};
+			}
+
 			if (event.type === "BOARD_CLEAR") {
 				state.strokesByBoardId[boardId] = [];
 				return;
@@ -410,6 +431,10 @@ export const canvasSlice = createSlice({
 				upsertBoard(state.boardsByCallId, callId, board);
 				state.focusedBoardId = board.id;
 			})
+			.addCase(createSnapshotWhiteboard.fulfilled, (state, action) => {
+				const { callId, board } = action.payload;
+				upsertBoard(state.boardsByCallId, callId, board);
+			})
 			.addCase(createScreenOverlayBoard.fulfilled, (state, action) => {
 				const { callId, board } = action.payload;
 				upsertBoard(state.boardsByCallId, callId, board);
@@ -504,6 +529,11 @@ function isCanvasPresenceEvent(type: CanvasDrawEventDto["type"]): boolean {
 		type === "LASER_END" ||
 		type === "REACTION" ||
 		type === "VIEWPORT_CHANGED";
+}
+
+function isCanvasCursorSyncEvent(type: CanvasDrawEventDto["type"]): boolean {
+	return type === "STROKE_START" ||
+		type === "STROKE_POINT";
 }
 
 function isBoardUpsertEvent(type: CanvasBoardEventDto["type"]): boolean {

@@ -29,21 +29,31 @@ interface CanvasPresenceLayerProps {
 	laserTrails: LaserTrailState[];
 	now: number;
 	opacity?: number;
+	presenterUsername?: string | null;
+	isFollowingPresenter?: boolean;
 }
 
 const LASER_POINT_TTL_MS = 1200;
 
-export function CanvasPresenceLayer({ cursors, laserTrails, now, opacity = 1 }: CanvasPresenceLayerProps) {
+export function CanvasPresenceLayer({
+	cursors,
+	laserTrails,
+	now,
+	opacity = 1,
+	presenterUsername,
+	isFollowingPresenter = false,
+}: CanvasPresenceLayerProps) {
 	return (
 		<div className={styles.layer} style={{ opacity }} aria-hidden="true">
 			{laserTrails.flatMap((trail) => trail.points.map((point) => {
 				const age = now - point.createdAt;
 				const opacity = Math.max(0, 1 - age / LASER_POINT_TTL_MS);
+				const isPresenterLaser = Boolean(isFollowingPresenter && presenterUsername && point.userId === presenterUsername);
 
 				return (
 					<span
 						key={point.id}
-						className={styles.laserPoint}
+						className={`${styles.laserPoint} ${isPresenterLaser ? styles.presenterLaserPoint : ""}`}
 						style={{
 							left: `${point.x * 100}%`,
 							top: `${point.y * 100}%`,
@@ -55,20 +65,26 @@ export function CanvasPresenceLayer({ cursors, laserTrails, now, opacity = 1 }: 
 				);
 			}))}
 
-			{cursors.map((cursor) => (
-				<div
-					key={cursor.userId}
-					className={styles.cursor}
-					style={{
-						left: `${cursor.x * 100}%`,
-						top: `${cursor.y * 100}%`,
-						"--cursor-color": cursor.color,
-					} as CSSProperties}
-				>
-					<span className={styles.cursorPointer} />
-					<span className={styles.cursorLabel}>{shortenName(cursor.userId)}</span>
-				</div>
-			))}
+			{cursors.map((cursor) => {
+				const isPresenterCursor = Boolean(isFollowingPresenter && presenterUsername && cursor.userId === presenterUsername);
+
+				return (
+					<div
+						key={cursor.userId}
+						className={`${styles.cursor} ${isPresenterCursor ? styles.presenterCursor : ""}`}
+						style={{
+							left: `${cursor.x * 100}%`,
+							top: `${cursor.y * 100}%`,
+							"--cursor-color": cursor.color,
+						} as CSSProperties}
+					>
+						<span className={styles.cursorPointer} />
+						<span className={styles.cursorLabel}>
+							{isPresenterCursor ? `Ведущий: ${shortenName(cursor.userId)}` : shortenName(cursor.userId)}
+						</span>
+					</div>
+				);
+			})}
 		</div>
 	);
 }

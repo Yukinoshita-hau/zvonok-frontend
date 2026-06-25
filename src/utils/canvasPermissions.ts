@@ -11,16 +11,17 @@ export interface CanvasPermissionState {
 export function getCanvasPermissionState({
 	board,
 	currentUsername,
-	isCurrentUserHost,
+	managerUsername,
 }: {
 	board: CanvasBoardSessionDto;
 	currentUsername: string | null | undefined;
-	isCurrentUserHost: boolean;
+	managerUsername?: string | null;
 }): CanvasPermissionState {
 	const drawingAccess = board.drawingAccess ?? "EVERYONE";
 	const selectedDrawerUsername = board.selectedDrawerUsername ?? null;
 	const isCreator = Boolean(currentUsername && currentUsername === board.createdBy);
-	const canManageCanvas = isCreator || isCurrentUserHost;
+	const isManager = Boolean(currentUsername && managerUsername && currentUsername === managerUsername);
+	const canManageCanvas = isCreator || isManager;
 
 	if (drawingAccess === "VIEW_ONLY") {
 		return {
@@ -75,7 +76,7 @@ function getReadOnlyReason(
 	drawingAccess: CanvasDrawingAccess,
 	selectedDrawerUsername: string | null
 ): string {
-	if (drawingAccess === "HOSTS_ONLY") return "Рисуют только ведущие";
+	if (drawingAccess === "HOSTS_ONLY") return "Рисует только главный";
 	if (drawingAccess === "SELECTED_PARTICIPANT") {
 		return selectedDrawerUsername
 			? `Маркер у ${selectedDrawerUsername}`

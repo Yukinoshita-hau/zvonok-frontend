@@ -7,10 +7,9 @@ import styles from "./ScreenShareOverlayCanvas.module.css";
 interface ScreenShareOverlayCanvasProps {
 	callId: number;
 	board: CanvasBoardSessionDto;
-	permissionBoard?: CanvasBoardSessionDto;
 	canDraw: boolean;
 	currentUsername?: string | null;
-	isCurrentUserHost?: boolean;
+	managerUsername?: string | null;
 	participantOptions?: CanvasParticipantOption[];
 	onExit: () => void;
 }
@@ -25,10 +24,9 @@ interface OverlayRect {
 export function ScreenShareOverlayCanvas({
 	callId,
 	board,
-	permissionBoard,
 	canDraw,
 	currentUsername,
-	isCurrentUserHost,
+	managerUsername,
 	participantOptions,
 	onExit,
 }: ScreenShareOverlayCanvasProps) {
@@ -84,10 +82,9 @@ export function ScreenShareOverlayCanvas({
 			<DrawableCanvas
 				callId={callId}
 				board={board}
-				permissionBoard={permissionBoard}
 				canDraw={canDraw}
 				currentUsername={currentUsername}
-				isCurrentUserHost={isCurrentUserHost}
+				managerUsername={managerUsername}
 				participantOptions={participantOptions}
 				variant="overlay"
 				onExit={onExit}

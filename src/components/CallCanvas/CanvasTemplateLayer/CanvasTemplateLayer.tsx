@@ -4,6 +4,7 @@ import styles from "./CanvasTemplateLayer.module.css";
 interface CanvasTemplateLayerProps {
 	templateType?: CanvasTemplateType;
 	backgroundImageUrl?: string | null;
+	backgroundImageOpacity: number;
 }
 
 const TEMPLATE_LABELS: Record<Exclude<CanvasTemplateType, "CLEAN" | "DOTS" | "GRID">, string[]> = {
@@ -14,7 +15,11 @@ const TEMPLATE_LABELS: Record<Exclude<CanvasTemplateType, "CLEAN" | "DOTS" | "GR
 	BRAINSTORM: ["Ideas", "Topic", "Next"],
 };
 
-export function CanvasTemplateLayer({ templateType = "DOTS", backgroundImageUrl }: CanvasTemplateLayerProps) {
+export function CanvasTemplateLayer({
+	templateType = "DOTS",
+	backgroundImageUrl,
+	backgroundImageOpacity,
+}: CanvasTemplateLayerProps) {
 	const labels = templateType in TEMPLATE_LABELS
 		? TEMPLATE_LABELS[templateType as keyof typeof TEMPLATE_LABELS]
 		: null;
@@ -22,7 +27,13 @@ export function CanvasTemplateLayer({ templateType = "DOTS", backgroundImageUrl 
 	return (
 		<div className={`${styles.layer} ${styles[templateType.toLowerCase()]}`} aria-hidden="true">
 			{backgroundImageUrl && (
-				<img className={styles.backgroundImage} src={backgroundImageUrl} alt="" draggable={false} />
+				<img
+					className={styles.backgroundImage}
+					src={backgroundImageUrl}
+					alt=""
+					draggable={false}
+					style={{ opacity: backgroundImageOpacity }}
+				/>
 			)}
 			{labels && (
 				<div className={styles.columns}>

@@ -18,18 +18,29 @@ export function selectWhiteboardByCallId(
 	state: RootState,
 	callId: number | null | undefined
 ): CanvasBoardSessionDto | undefined {
-	return selectCanvasBoardsByCallId(state, callId).find(
+	return selectWhiteboardsByCallId(state, callId)[0];
+}
+
+export function selectWhiteboardsByCallId(
+	state: RootState,
+	callId: number | null | undefined
+): CanvasBoardSessionDto[] {
+	return selectCanvasBoardsByCallId(state, callId).filter(
 		(board) => board.mode === "WHITEBOARD" && board.active
 	);
 }
 
 export function selectScreenOverlayBoardByCallId(
 	state: RootState,
-	callId: number | null | undefined
+	callId: number | null | undefined,
+	ownerUsername?: string | null
 ): CanvasBoardSessionDto | undefined {
-	return selectCanvasBoardsByCallId(state, callId).find(
-		(board) => board.mode === "SCREEN_OVERLAY" && board.active
-	);
+	const boards = selectCanvasBoardsByCallId(state, callId);
+	const activeOverlayBoards = boards.filter((board) => board.mode === "SCREEN_OVERLAY" && board.active);
+
+	if (!ownerUsername) return activeOverlayBoards[0];
+
+	return activeOverlayBoards.find((board) => board.createdBy === ownerUsername);
 }
 
 export function selectFocusedCanvasBoard(

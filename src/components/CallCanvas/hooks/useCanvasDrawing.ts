@@ -144,6 +144,21 @@ export function useCanvasDrawing({
 		}));
 	}, []);
 
+	const syncRemoteCursor = useCallback((event: CanvasDrawEventDto, eventUserId: string) => {
+		if (event.x === null || event.y === null || event.x === undefined || event.y === undefined) return;
+
+		setRemoteCursorsByUserId((current) => ({
+			...current,
+			[eventUserId]: {
+				userId: eventUserId,
+				x: event.x ?? 0,
+				y: event.y ?? 0,
+				color: StringToColor(eventUserId),
+				updatedAt: Date.now(),
+			},
+		}));
+	}, []);
+
 	const sendCursorLeave = useCallback(() => {
 		publishEvent({
 			type: "CURSOR_LEAVE",
@@ -176,18 +191,12 @@ export function useCanvasDrawing({
 		if (!eventUserId || eventUserId === userId) return;
 
 		if (event.type === "CURSOR_MOVE") {
-			if (event.x === null || event.y === null || event.x === undefined || event.y === undefined) return;
+			syncRemoteCursor(event, eventUserId);
+			return;
+		}
 
-			setRemoteCursorsByUserId((current) => ({
-				...current,
-				[eventUserId]: {
-					userId: eventUserId,
-					x: event.x ?? 0,
-					y: event.y ?? 0,
-					color: StringToColor(eventUserId),
-					updatedAt: Date.now(),
-				},
-			}));
+		if (event.type === "STROKE_START" || event.type === "STROKE_POINT") {
+			syncRemoteCursor(event, eventUserId);
 			return;
 		}
 
@@ -201,6 +210,7 @@ export function useCanvasDrawing({
 		}
 
 		if (event.type === "LASER_POINT") {
+			syncRemoteCursor(event, eventUserId);
 			addLaserPoint(event, eventUserId);
 			return;
 		}
@@ -223,7 +233,7 @@ export function useCanvasDrawing({
 		if (event.type === "REACTION") {
 			addReaction(event);
 		}
-	}, [addLaserPoint, addReaction, presenceEventState, userId]);
+	}, [addLaserPoint, addReaction, presenceEventState, syncRemoteCursor, userId]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;
