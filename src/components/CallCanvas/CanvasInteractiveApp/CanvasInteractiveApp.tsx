@@ -7,6 +7,7 @@ import {
 	createWhiteboard,
 	fetchCanvasBoards,
 } from "../../../store/slices/canvas.slice";
+import { codeSessionActions, fetchActiveCodeSession } from "../../../store/slices/codeSession.slice";
 import {
 	selectFocusedCanvasBoard,
 	selectScreenOverlayBoardByCallId,
@@ -75,6 +76,17 @@ export function CanvasInteractiveApp({
 
 		return () => {
 			dispatch(canvasActions.unsubscribeCanvasBoardLifecycle(callId));
+		};
+	}, [callId, dispatch, isWebSocketConnected]);
+
+	useEffect(() => {
+		if (!callId || !isWebSocketConnected) return;
+
+		void dispatch(fetchActiveCodeSession(callId));
+		dispatch(codeSessionActions.subscribeCodeSession({ callSessionId: callId }));
+
+		return () => {
+			dispatch(codeSessionActions.unsubscribeCodeSession({ callSessionId: callId }));
 		};
 	}, [callId, dispatch, isWebSocketConnected]);
 
@@ -195,17 +207,18 @@ export function CanvasInteractiveApp({
 	}, [dispatch, focusedBoard?.id, onRequestFocusMode, whiteboardTileClassName, whiteboards]);
 
 	const interactiveTiles = useMemo(() => {
-		const codeSessionTile = (
+		if (!activeCodeSession?.active) return whiteboardTiles;
+
+		return [
+			...whiteboardTiles,
 			<CodeSessionTile
-				key="code-session"
+				key={`code-session-${activeCodeSession.id}`}
 				session={activeCodeSession}
 				className={whiteboardTileClassName}
 				isFocused={isCodeSessionOpen}
 				onOpen={openCodeSession}
-			/>
-		);
-
-		return [...whiteboardTiles, codeSessionTile];
+			/>,
+		];
 	}, [activeCodeSession, isCodeSessionOpen, openCodeSession, whiteboardTileClassName, whiteboardTiles]);
 
 	const renderWhiteboardFocus = useCallback(() => {

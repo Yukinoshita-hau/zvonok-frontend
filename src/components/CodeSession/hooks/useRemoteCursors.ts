@@ -5,8 +5,8 @@ import { StringToColor } from "../../../utils/stringHelpers";
 import type { RemoteCursorState } from "../../../store/slices/codeSession.slice";
 
 type MonacoEditor = Parameters<OnMount>[0];
-const CURSOR_VISIBLE_MS = 4200;
-const CURSOR_LABEL_VISIBLE_MS = 1800;
+const CURSOR_VISIBLE_MS = 3200;
+const CURSOR_LABEL_VISIBLE_MS = 1200;
 
 export function useRemoteCursors(
 	editorInstance: MonacoEditor | null,
@@ -58,6 +58,8 @@ export function useRemoteCursors(
 					range: selectionRange,
 					options: {
 						className: `codeRemoteSelection codeRemoteSelection-${classSuffix}`,
+						inlineClassName: `codeRemoteSelection codeRemoteSelection-${classSuffix}`,
+						inlineClassNameAffectsLetterSpacing: false,
 						stickiness: 1,
 					},
 				});
@@ -88,12 +90,12 @@ function injectCursorStyles(remoteCursors: Record<string, RemoteCursorState>, no
 		const color = StringToColor(cursor.username || cursor.userId);
 		const label = cssEscapeContent(cursor.displayName || cursor.username || cursor.userId);
 		const age = now - cursor.updatedAt;
-		const cursorOpacity = Math.max(0.18, 1 - age / CURSOR_VISIBLE_MS);
+		const cursorOpacity = Math.max(0.08, 1 - age / CURSOR_VISIBLE_MS);
 		const labelOpacity = age <= CURSOR_LABEL_VISIBLE_MS ? 1 : 0;
 		return `
 .codeRemoteCursorLine-${suffix} { color: ${color}; border-left-color: ${color}; opacity: ${cursorOpacity.toFixed(2)}; }
 .codeRemoteCursorLabel-${suffix}::after { content: "${label}"; background: ${color}; opacity: ${labelOpacity}; }
-.codeRemoteSelection-${suffix} { background: ${hexToRgba(color, 0.24)}; }
+.codeRemoteSelection-${suffix} { background: ${colorWithAlpha(color, 0.3)} !important; background-color: ${colorWithAlpha(color, 0.3)} !important; outline: 1px solid ${colorWithAlpha(color, 0.38)}; }
 `;
 	}).join("\n");
 }
@@ -106,12 +108,20 @@ function cssEscapeContent(value: string): string {
 	return value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
 }
 
-function hexToRgba(hex: string, alpha: number): string {
-	const normalized = hex.replace("#", "");
-	const red = Number.parseInt(normalized.slice(0, 2), 16);
-	const green = Number.parseInt(normalized.slice(2, 4), 16);
-	const blue = Number.parseInt(normalized.slice(4, 6), 16);
-	return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+function colorWithAlpha(color: string, alpha: number): string {
+	if (color.startsWith("hsl(")) {
+		return color.replace(/^hsl\((.*)\)$/u, `hsla($1, ${alpha})`);
+	}
+
+	if (color.startsWith("#")) {
+		const normalized = color.replace("#", "");
+		const red = Number.parseInt(normalized.slice(0, 2), 16);
+		const green = Number.parseInt(normalized.slice(2, 4), 16);
+		const blue = Number.parseInt(normalized.slice(4, 6), 16);
+		if ([red, green, blue].every(Number.isFinite)) return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+	}
+
+	return color;
 }
 
 function isCollapsedSelection(cursor: RemoteCursorState["cursor"]): boolean {

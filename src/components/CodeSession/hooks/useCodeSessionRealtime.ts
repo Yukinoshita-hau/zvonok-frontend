@@ -18,7 +18,7 @@ import type {
 	CodeSessionUserDto,
 } from "../../../api/interfaces/codeSessionTypes";
 
-const CONTENT_SYNC_DELAY_MS = 350;
+const CONTENT_SYNC_INTERVAL_MS = 100;
 const CURSOR_SYNC_DELAY_MS = 120;
 
 const CODE_TEMPLATES: Record<string, string> = {
@@ -90,17 +90,22 @@ export function useCodeSessionRealtime({
 	const contentTimerRef = useRef<number | null>(null);
 	const stdinTimerRef = useRef<number | null>(null);
 	const cursorTimerRef = useRef<number | null>(null);
+	const lastContentSyncAtRef = useRef(0);
+	const lastStdinSyncAtRef = useRef(0);
+	const pendingContentRef = useRef<string | null>(null);
+	const pendingStdinRef = useRef<string | null>(null);
 	const pendingCursorRef = useRef<CodeCursorDto | null>(null);
 
 	useEffect(() => {
 		void dispatch(fetchActiveCodeSession(callSessionId));
-		dispatch(codeSessionActions.subscribeCodeSession({ callSessionId, sessionId: session?.id }));
 
 		return () => {
-			dispatch(codeSessionActions.unsubscribeCodeSession({ callSessionId, sessionId: session?.id }));
 			if (contentTimerRef.current) window.clearTimeout(contentTimerRef.current);
 			if (stdinTimerRef.current) window.clearTimeout(stdinTimerRef.current);
 			if (cursorTimerRef.current) window.clearTimeout(cursorTimerRef.current);
+			pendingContentRef.current = null;
+			pendingStdinRef.current = null;
+			pendingCursorRef.current = null;
 			if (session?.id) dispatch(codeSessionActions.clearRemoteCursors(session.id));
 		};
 	}, [callSessionId, dispatch, session?.id]);
@@ -128,26 +133,60 @@ export function useCodeSessionRealtime({
 		if (!session || !canEdit) return;
 		dispatch(codeSessionActions.setLocalContent({ sessionId: session.id, code: nextCode }));
 
-		if (contentTimerRef.current) window.clearTimeout(contentTimerRef.current);
-		contentTimerRef.current = window.setTimeout(() => {
+		pendingContentRef.current = nextCode;
+		const sendContent = () => {
+			if (pendingContentRef.current == null) return;
+			lastContentSyncAtRef.current = Date.now();
 			dispatch(codeSessionActions.sendCodeContentSync({
 				sessionId: session.id,
-				payload: { code: nextCode },
+				payload: { code: pendingContentRef.current },
 			}));
-		}, CONTENT_SYNC_DELAY_MS);
+			pendingContentRef.current = null;
+			contentTimerRef.current = null;
+		};
+
+		const elapsed = Date.now() - lastContentSyncAtRef.current;
+		if (elapsed >= CONTENT_SYNC_INTERVAL_MS) {
+			if (contentTimerRef.current) {
+				window.clearTimeout(contentTimerRef.current);
+				contentTimerRef.current = null;
+			}
+			sendContent();
+			return;
+		}
+
+		if (contentTimerRef.current) return;
+		contentTimerRef.current = window.setTimeout(sendContent, CONTENT_SYNC_INTERVAL_MS - elapsed);
 	}, [canEdit, dispatch, session]);
 
 	const changeStdin = useCallback((nextStdin: string) => {
 		if (!session || !canEdit) return;
 		dispatch(codeSessionActions.setLocalStdin({ sessionId: session.id, stdin: nextStdin }));
 
-		if (stdinTimerRef.current) window.clearTimeout(stdinTimerRef.current);
-		stdinTimerRef.current = window.setTimeout(() => {
+		pendingStdinRef.current = nextStdin;
+		const sendStdin = () => {
+			if (pendingStdinRef.current == null) return;
+			lastStdinSyncAtRef.current = Date.now();
 			dispatch(codeSessionActions.sendCodeStdinSync({
 				sessionId: session.id,
-				payload: { stdin: nextStdin },
+				payload: { stdin: pendingStdinRef.current },
 			}));
-		}, CONTENT_SYNC_DELAY_MS);
+			pendingStdinRef.current = null;
+			stdinTimerRef.current = null;
+		};
+
+		const elapsed = Date.now() - lastStdinSyncAtRef.current;
+		if (elapsed >= CONTENT_SYNC_INTERVAL_MS) {
+			if (stdinTimerRef.current) {
+				window.clearTimeout(stdinTimerRef.current);
+				stdinTimerRef.current = null;
+			}
+			sendStdin();
+			return;
+		}
+
+		if (stdinTimerRef.current) return;
+		stdinTimerRef.current = window.setTimeout(sendStdin, CONTENT_SYNC_INTERVAL_MS - elapsed);
 	}, [canEdit, dispatch, session]);
 
 	const changeLanguage = useCallback((nextLanguage: string) => {
@@ -161,6 +200,25 @@ export function useCodeSessionRealtime({
 
 	const sendCursor = useCallback((cursor: CodeCursorDto) => {
 		if (!session) return;
+		const hasSelection = hasCodeSelection(cursor);
+
+		if (hasSelection) {
+			if (cursorTimerRef.current) {
+				window.clearTimeout(cursorTimerRef.current);
+				cursorTimerRef.current = null;
+			}
+			pendingCursorRef.current = null;
+			dispatch(codeSessionActions.sendCodeCursorSync({
+				sessionId: session.id,
+				payload: cursor,
+			}));
+			return;
+		}
+
+		if (pendingCursorRef.current && hasCodeSelection(pendingCursorRef.current)) {
+			return;
+		}
+
 		pendingCursorRef.current = cursor;
 		if (cursorTimerRef.current) return;
 
@@ -215,6 +273,11 @@ export function useCodeSessionRealtime({
 		grantEditor,
 		revokeEditor,
 	};
+}
+
+function hasCodeSelection(cursor: CodeCursorDto): boolean {
+	return cursor.selectionStartLineNumber !== cursor.selectionEndLineNumber ||
+		cursor.selectionStartColumn !== cursor.selectionEndColumn;
 }
 
 function normalizeUser(user: CodeSessionDto["activeEditor"]): CodeSessionUserDto | null {

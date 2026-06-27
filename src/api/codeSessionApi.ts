@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { api } from "./api";
 import type {
 	CodeRunResultDto,
@@ -12,10 +13,17 @@ export const codeSessionApi = {
 	},
 
 	getActiveSession: async (callSessionId: number): Promise<CodeSessionDto | null> => {
-		const { data } = await api.get<CodeSessionDto | null>("/code-sessions/active", {
-			params: { callSessionId },
-		});
-		return data;
+		try {
+			const { data } = await api.get<CodeSessionDto | null>("/code-sessions/active", {
+				params: { callSessionId },
+			});
+			return data;
+		} catch (error) {
+			if (error instanceof AxiosError && error.response?.status === 404) {
+				return null;
+			}
+			throw error;
+		}
 	},
 
 	grantEditor: async (sessionId: number, username: string): Promise<CodeSessionDto> => {

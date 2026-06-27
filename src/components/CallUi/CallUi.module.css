@@ -62,10 +62,13 @@
 .tile {
 	position: relative;
 	width: 100%;
+	min-width: 0;
+	min-height: 0;
 	aspect-ratio: 16 / 9;
 	background-color: var(--bg-active);
 	border-radius: 12px;
 	overflow: hidden;
+	contain: layout paint;
 }
 
 
@@ -125,6 +128,14 @@
 	overflow-y: hidden;
 	padding-bottom: 4px;
 	max-height: 110px;
+}
+
+.participants-strip > .tile,
+.participants-strip > .participant-tile {
+	flex: 0 0 clamp(116px, 14vw, 150px);
+	width: clamp(116px, 14vw, 150px);
+	min-width: clamp(116px, 14vw, 150px);
+	max-width: clamp(116px, 14vw, 150px);
 }
 
 .participants-strip-shell {
@@ -364,7 +375,7 @@
 }
 
 .tile-animated {
-	animation: tile-page-in 0.18s ease-out both;
+	animation: tile-page-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 
@@ -976,6 +987,14 @@
 		min-width: clamp(112px, 20vw, 150px);
 	}
 
+	.participants-strip > .tile,
+	.participants-strip > .participant-tile {
+		flex-basis: clamp(112px, 20vw, 150px);
+		width: clamp(112px, 20vw, 150px);
+		min-width: clamp(112px, 20vw, 150px);
+		max-width: clamp(112px, 20vw, 150px);
+	}
+
 	.participant-tile .mic-indicator {
 		top: 8px;
 		right: 8px;
@@ -1006,6 +1025,14 @@
 	.participant-tile {
 		width: clamp(104px, 28vw, 150px);
 		min-width: clamp(104px, 28vw, 150px);
+	}
+
+	.participants-strip > .tile,
+	.participants-strip > .participant-tile {
+		flex-basis: clamp(104px, 28vw, 150px);
+		width: clamp(104px, 28vw, 150px);
+		min-width: clamp(104px, 28vw, 150px);
+		max-width: clamp(104px, 28vw, 150px);
 	}
 
 	.focused-volume {

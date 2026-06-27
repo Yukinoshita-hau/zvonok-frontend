@@ -357,16 +357,35 @@ function isRunResult(value: unknown): value is CodeRunResultDto {
 
 function resolveCursor(event: CodeSessionEventDto): CodeCursorDto | null {
 	const payload = event.payload ?? null;
-	return event.cursor ?? payload?.cursor ?? buildCursor(event) ?? (payload ? buildCursor(payload) : null);
+	return (
+		buildCursor(event.cursor, payload, event) ??
+		buildCursor(payload?.cursor, payload, event) ??
+		(payload ? buildCursor(payload, event) : null) ??
+		buildCursor(event, payload)
+	);
 }
 
-function buildCursor(source: CodeSessionEventDto | CodeSessionEventPayloadDto): CodeCursorDto | null {
-	const lineNumber = source.lineNumber;
-	const column = source.column;
-	const selectionStartLineNumber = source.selectionStartLineNumber;
-	const selectionStartColumn = source.selectionStartColumn;
-	const selectionEndLineNumber = source.selectionEndLineNumber;
-	const selectionEndColumn = source.selectionEndColumn;
+interface CursorFields {
+	lineNumber?: number | null;
+	column?: number | null;
+	selectionStartLineNumber?: number | null;
+	selectionStartColumn?: number | null;
+	selectionEndLineNumber?: number | null;
+	selectionEndColumn?: number | null;
+}
+
+function buildCursor(
+	source: CursorFields | null | undefined,
+	...fallbackSources: Array<CursorFields | null | undefined>
+): CodeCursorDto | null {
+	if (!source) return null;
+	const sources = [source, ...fallbackSources];
+	const lineNumber = resolveCursorNumber(sources, "lineNumber");
+	const column = resolveCursorNumber(sources, "column");
+	const selectionStartLineNumber = resolveCursorNumber(sources, "selectionStartLineNumber") ?? lineNumber;
+	const selectionStartColumn = resolveCursorNumber(sources, "selectionStartColumn") ?? column;
+	const selectionEndLineNumber = resolveCursorNumber(sources, "selectionEndLineNumber") ?? lineNumber;
+	const selectionEndColumn = resolveCursorNumber(sources, "selectionEndColumn") ?? column;
 
 	if (
 		lineNumber == null ||
@@ -387,6 +406,14 @@ function buildCursor(source: CodeSessionEventDto | CodeSessionEventPayloadDto): 
 		selectionEndLineNumber,
 		selectionEndColumn,
 	};
+}
+
+function resolveCursorNumber(sources: CursorFields[], field: keyof CursorFields): number | null {
+	for (const source of sources) {
+		const value = source?.[field];
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return null;
 }
 
 function updateActiveEditor(

@@ -23,7 +23,7 @@ export function CodeOutputPanel({ result, error, isRunning }: CodeOutputPanelPro
 	const hasOutput = stdout.trim().length > 0;
 	const outputText = result
 		? (hasOutput ? stdout : "(пустой вывод)")
-		: (isRunning ? "Выполняем код..." : "Нажмите «Запустить», чтобы увидеть результат выполнения");
+		: (isRunning ? "Выполняем код..." : "Нажмите Run, чтобы увидеть результат выполнения");
 	const [isCopied, setIsCopied] = useState(false);
 
 	useEffect(() => {

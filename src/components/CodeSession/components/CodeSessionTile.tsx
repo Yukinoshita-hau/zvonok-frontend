@@ -4,7 +4,7 @@ import { StringToColor } from "../../../utils/stringHelpers";
 import styles from "./CodeSessionTile.module.css";
 
 interface CodeSessionTileProps {
-	session: CodeSessionDto | null;
+	session: CodeSessionDto;
 	className?: string;
 	isFocused?: boolean;
 	onOpen: () => void;
@@ -67,7 +67,7 @@ export function CodeSessionTile({ session, className, isFocused = false, onOpen 
 	);
 }
 
-function getOwner(session: CodeSessionDto | null): string {
+function getOwner(session: CodeSessionDto): string {
 	const editor = session?.activeEditor ?? session?.createdBy ?? null;
 	if (!editor) return "";
 	return typeof editor === "string" ? editor : editor.username;

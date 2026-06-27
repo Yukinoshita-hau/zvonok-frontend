@@ -7,6 +7,9 @@ interface CodeEditorSettingsPanelProps {
 	onChange: (settings: CodeEditorSettings) => void;
 }
 
+const ACCENT_COLORS = ["#38bdf8", "#22c55e", "#a78bfa", "#f97316", "#ef4444"];
+const TERMINAL_COLORS = ["#22c55e", "#38bdf8", "#f59e0b", "#a78bfa", "#f43f5e"];
+
 export function CodeEditorSettingsPanel({ settings, onChange }: CodeEditorSettingsPanelProps) {
 	const update = <Key extends keyof CodeEditorSettings,>(key: Key, value: CodeEditorSettings[Key]) => {
 		onChange({ ...settings, [key]: value });
@@ -14,110 +17,245 @@ export function CodeEditorSettingsPanel({ settings, onChange }: CodeEditorSettin
 
 	return (
 		<div className={styles.editorSettingsPanel}>
-			<div className={styles.settingStepper}>
-				<span>Размер</span>
-				<div className={styles.stepperControls}>
-					<button
-						type="button"
-						onClick={() => update("fontSize", Math.max(12, settings.fontSize - 1))}
-						aria-label="Уменьшить шрифт"
-					>
-						<Minus size={13} />
-					</button>
-					<strong>{settings.fontSize}px</strong>
-					<button
-						type="button"
-						onClick={() => update("fontSize", Math.min(20, settings.fontSize + 1))}
-						aria-label="Увеличить шрифт"
-					>
-						<Plus size={13} />
-					</button>
+			<div className={styles.settingsGroup}>
+				<div className={styles.settingsGroupTitle}>Вид</div>
+				<div className={styles.settingStepper}>
+					<span>Размер</span>
+					<div className={styles.stepperControls}>
+						<button
+							type="button"
+							onClick={() => update("fontSize", Math.max(12, settings.fontSize - 1))}
+							aria-label="Уменьшить шрифт"
+						>
+							<Minus size={13} />
+						</button>
+						<strong>{settings.fontSize}px</strong>
+						<button
+							type="button"
+							onClick={() => update("fontSize", Math.min(24, settings.fontSize + 1))}
+							aria-label="Увеличить шрифт"
+						>
+							<Plus size={13} />
+						</button>
+					</div>
 				</div>
+
+				<SegmentedSetting
+					label="Шрифт"
+					value={settings.fontFamily}
+					options={[
+						{ value: "default", label: "Default" },
+						{ value: "mono", label: "Mono" },
+						{ value: "system", label: "System" },
+					]}
+					onChange={(value) => update("fontFamily", value)}
+				/>
+
+				<ColorSetting
+					label="Акцент"
+					value={settings.accentColor}
+					colors={ACCENT_COLORS}
+					onChange={(value) => update("accentColor", value)}
+				/>
+
+				<ColorSetting
+					label="Терминал"
+					value={settings.terminalAccent}
+					colors={TERMINAL_COLORS}
+					onChange={(value) => update("terminalAccent", value)}
+				/>
 			</div>
 
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
-					checked={settings.wordWrap}
-					onChange={(event) => update("wordWrap", event.target.checked)}
+			<div className={styles.settingsGroup}>
+				<div className={styles.settingsGroupTitle}>Курсор</div>
+				<SegmentedSetting
+					label="Форма"
+					value={settings.cursorStyle}
+					options={[
+						{ value: "line", label: "Линия" },
+						{ value: "block", label: "Блок" },
+						{ value: "underline", label: "Низ" },
+					]}
+					onChange={(value) => update("cursorStyle", value)}
 				/>
-				<span><Check size={13} /> Перенос строк</span>
-			</label>
-
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
-					checked={settings.minimap}
-					onChange={(event) => update("minimap", event.target.checked)}
-				/>
-				<span><Check size={13} /> Миникарта</span>
-			</label>
-
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
-					checked={settings.lineNumbers}
-					onChange={(event) => update("lineNumbers", event.target.checked)}
-				/>
-				<span><Check size={13} /> Номера</span>
-			</label>
-
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
-					checked={settings.renderWhitespace}
-					onChange={(event) => update("renderWhitespace", event.target.checked)}
-				/>
-				<span><Check size={13} /> Пробелы</span>
-			</label>
-
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
-					checked={settings.bracketPairs}
-					onChange={(event) => update("bracketPairs", event.target.checked)}
-				/>
-				<span><Check size={13} /> Скобки</span>
-			</label>
-
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
+				<label className={styles.rangeSetting}>
+					<span>Толщина</span>
+					<input
+						type="range"
+						min={1}
+						max={5}
+						value={settings.cursorWidth}
+						onChange={(event) => update("cursorWidth", Number(event.target.value))}
+					/>
+					<strong>{settings.cursorWidth}</strong>
+				</label>
+				<SettingToggle
 					checked={settings.smoothCursor}
-					onChange={(event) => update("smoothCursor", event.target.checked)}
+					label="Плавный курсор"
+					onChange={(checked) => update("smoothCursor", checked)}
 				/>
-				<span><Check size={13} /> Плавный курсор</span>
-			</label>
+			</div>
 
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
+			<div className={styles.settingsGroup}>
+				<div className={styles.settingsGroupTitle}>Навигация</div>
+				<label className={styles.tabSizeSelect}>
+					<span>Tab</span>
+					<select
+						value={settings.tabSize}
+						onChange={(event) => update("tabSize", Number(event.target.value))}
+					>
+						<option value={2}>2</option>
+						<option value={4}>4</option>
+						<option value={8}>8</option>
+					</select>
+				</label>
+				<SettingToggle
+					checked={settings.wordWrap}
+					label="Перенос строк"
+					onChange={(checked) => update("wordWrap", checked)}
+				/>
+				<SettingToggle
+					checked={settings.smoothScrolling}
+					label="Плавный скролл"
+					onChange={(checked) => update("smoothScrolling", checked)}
+				/>
+				<SettingToggle
+					checked={settings.folding}
+					label="Сворачивание"
+					onChange={(checked) => update("folding", checked)}
+				/>
+			</div>
+
+			<div className={styles.settingsGroup}>
+				<div className={styles.settingsGroupTitle}>Подсветка</div>
+				<SettingToggle
+					checked={settings.lineNumbers}
+					label="Номера строк"
+					onChange={(checked) => update("lineNumbers", checked)}
+				/>
+				<SettingToggle
+					checked={settings.renderLineHighlight}
+					label="Текущая строка"
+					onChange={(checked) => update("renderLineHighlight", checked)}
+				/>
+				<SettingToggle
+					checked={settings.selectionHighlight}
+					label="Похожие выделения"
+					onChange={(checked) => update("selectionHighlight", checked)}
+				/>
+				<SettingToggle
+					checked={settings.renderWhitespace}
+					label="Пробелы"
+					onChange={(checked) => update("renderWhitespace", checked)}
+				/>
+				<SettingToggle
+					checked={settings.indentGuides}
+					label="Линии отступов"
+					onChange={(checked) => update("indentGuides", checked)}
+				/>
+				<SettingToggle
+					checked={settings.bracketPairs}
+					label="Парные скобки"
+					onChange={(checked) => update("bracketPairs", checked)}
+				/>
+			</div>
+
+			<div className={styles.settingsGroup}>
+				<div className={styles.settingsGroupTitle}>Помощники</div>
+				<SettingToggle
+					checked={settings.quickSuggestions}
+					label="Быстрые подсказки"
+					onChange={(checked) => update("quickSuggestions", checked)}
+				/>
+				<SettingToggle
 					checked={settings.formatOnPaste}
-					onChange={(event) => update("formatOnPaste", event.target.checked)}
+					label="Формат вставки"
+					onChange={(checked) => update("formatOnPaste", checked)}
 				/>
-				<span><Check size={13} /> Формат вставки</span>
-			</label>
-
-			<label className={styles.settingToggle}>
-				<input
-					type="checkbox"
+				<SettingToggle
 					checked={settings.fontLigatures}
-					onChange={(event) => update("fontLigatures", event.target.checked)}
+					label="Лигатуры"
+					onChange={(checked) => update("fontLigatures", checked)}
 				/>
-				<span><Check size={13} /> Лигатуры</span>
-			</label>
+				<SettingToggle
+					checked={settings.minimap}
+					label="Миникарта"
+					onChange={(checked) => update("minimap", checked)}
+				/>
+			</div>
+		</div>
+	);
+}
 
-			<label className={styles.tabSizeSelect}>
-				<span>Tab</span>
-				<select
-					value={settings.tabSize}
-					onChange={(event) => update("tabSize", Number(event.target.value))}
-				>
-					<option value={2}>2</option>
-					<option value={4}>4</option>
-					<option value={8}>8</option>
-				</select>
-			</label>
+interface SettingToggleProps {
+	checked: boolean;
+	label: string;
+	onChange: (checked: boolean) => void;
+}
+
+function SettingToggle({ checked, label, onChange }: SettingToggleProps) {
+	return (
+		<label className={styles.settingToggle}>
+			<input
+				type="checkbox"
+				checked={checked}
+				onChange={(event) => onChange(event.target.checked)}
+			/>
+			<span><Check size={13} /> {label}</span>
+		</label>
+	);
+}
+
+interface SegmentedSettingProps<Value extends string> {
+	label: string;
+	value: Value;
+	options: Array<{ value: Value; label: string }>;
+	onChange: (value: Value) => void;
+}
+
+function SegmentedSetting<Value extends string>({ label, value, options, onChange }: SegmentedSettingProps<Value>) {
+	return (
+		<div className={styles.segmentedSetting}>
+			<span>{label}</span>
+			<div className={styles.segmentedOptions}>
+				{options.map((option) => (
+					<button
+						key={option.value}
+						type="button"
+						data-active={option.value === value ? "true" : undefined}
+						onClick={() => onChange(option.value)}
+					>
+						{option.label}
+					</button>
+				))}
+			</div>
+		</div>
+	);
+}
+
+interface ColorSettingProps {
+	label: string;
+	value: string;
+	colors: string[];
+	onChange: (value: string) => void;
+}
+
+function ColorSetting({ label, value, colors, onChange }: ColorSettingProps) {
+	return (
+		<div className={styles.colorSetting}>
+			<span>{label}</span>
+			<div className={styles.colorSwatches}>
+				{colors.map((color) => (
+					<button
+						key={color}
+						type="button"
+						style={{ backgroundColor: color }}
+						data-active={color === value ? "true" : undefined}
+						onClick={() => onChange(color)}
+						aria-label={`Цвет ${color}`}
+					/>
+				))}
+			</div>
 		</div>
 	);
 }

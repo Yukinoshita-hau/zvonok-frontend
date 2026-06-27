@@ -12,9 +12,9 @@ interface CodeParticipantsBarProps {
 }
 
 const ROLE_LABELS: Record<CodeAccessRole, string> = {
-	HOST: "HOST",
-	EDITOR: "EDITOR",
-	VIEWER: "VIEWER",
+	HOST: "Host",
+	EDITOR: "Редактор",
+	VIEWER: "Просмотр",
 };
 
 export function CodeParticipantsBar({
@@ -25,14 +25,16 @@ export function CodeParticipantsBar({
 	onGrantEditor,
 	onRevokeEditor,
 }: CodeParticipantsBarProps) {
+	const editorName = activeEditor?.displayName || activeEditor?.username || "никто";
+
 	return (
 		<div className={styles.participantsBar}>
-			<span className={styles.liveBadge}>Live</span>
-			<span className={styles.roleBadge}>{ROLE_LABELS[role]}</span>
-			{role === "VIEWER" && <span className={styles.viewOnlyBadge}>Only view</span>}
-			<span className={styles.editorLabel}>
-				Editing: {activeEditor?.displayName || activeEditor?.username || "никто"}
-			</span>
+			<div className={styles.accessSummary}>
+				<span className={styles.liveBadge}>Live</span>
+				<span className={styles.roleBadge}>{ROLE_LABELS[role]}</span>
+				{role === "VIEWER" && <span className={styles.viewOnlyBadge}>Только просмотр</span>}
+				<span className={styles.editorLabel}>Пишет: {editorName}</span>
+			</div>
 
 			{canManageAccess && (
 				<div className={styles.accessControls}>
