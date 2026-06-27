@@ -17,6 +17,12 @@ import {
 	WS_SEND_MESSAGE_PATH,
 	WS_SEND_PRIVATE_MESSAGE_PATH,
 	WS_UPDATE_READ_MESSAGE_PATH,
+	getCodeSessionContentSyncPublishPath,
+	getCodeSessionCursorSyncPublishPath,
+	getCodeSessionEventsPath,
+	getCodeSessionLanguageChangePublishPath,
+	getCodeSessionLifecyclePath,
+	getCodeSessionStdinSyncPublishPath,
 	getCanvasBoardDrawPath,
 	getCanvasBoardDrawPublishPath,
 	getCanvasBoardLifecyclePath
@@ -28,6 +34,8 @@ import type {
 	CanvasBoardObjectEventDto,
 	CanvasDrawEventDto,
 } from "../../../api/interfaces/CanvasDtos";
+import { codeSessionActions } from "../../slices/codeSession.slice";
+import type { CodeSessionEventDto } from "../../../api/interfaces/codeSessionTypes";
 import type { PublishActionResult, WebSocketPublishContext } from "./types";
 
 export function handleWebSocketPublishAction(
@@ -303,9 +311,111 @@ export function handleWebSocketPublishAction(
 
 			return "handled";
 		}
+		case "codeSession/subscribeCodeSession": {
+			if (!context.client?.connected) return blockPublish();
+
+			const lifecyclePath = getCodeSessionLifecyclePath(action.payload.callSessionId);
+			subscribeCodeSessionPath(context, lifecyclePath, {
+				callSessionId: action.payload.callSessionId,
+			});
+
+			if (action.payload.sessionId) {
+				subscribeCodeSessionPath(context, getCodeSessionEventsPath(action.payload.sessionId), {
+					callSessionId: action.payload.callSessionId,
+					sessionId: action.payload.sessionId,
+				});
+			}
+
+			return "handled";
+		}
+		case "codeSession/unsubscribeCodeSession": {
+			const lifecyclePath = getCodeSessionLifecyclePath(action.payload.callSessionId);
+			context.subscriptions[lifecyclePath]?.unsubscribe();
+			delete context.subscriptions[lifecyclePath];
+
+			if (action.payload.sessionId) {
+				const eventPath = getCodeSessionEventsPath(action.payload.sessionId);
+				context.subscriptions[eventPath]?.unsubscribe();
+				delete context.subscriptions[eventPath];
+			}
+
+			return "handled";
+		}
+		case "codeSession/sendCodeContentSync": {
+			if (!context.client?.connected) return blockPublish();
+			context.client.publish({
+				destination: getCodeSessionContentSyncPublishPath(action.payload.sessionId),
+				body: JSON.stringify(action.payload.payload),
+			});
+			return "handled";
+		}
+		case "codeSession/sendCodeStdinSync": {
+			if (!context.client?.connected) return blockPublish();
+			context.client.publish({
+				destination: getCodeSessionStdinSyncPublishPath(action.payload.sessionId),
+				body: JSON.stringify(action.payload.payload),
+			});
+			return "handled";
+		}
+		case "codeSession/sendCodeLanguageChange": {
+			if (!context.client?.connected) return blockPublish();
+			context.client.publish({
+				destination: getCodeSessionLanguageChangePublishPath(action.payload.sessionId),
+				body: JSON.stringify(action.payload.payload),
+			});
+			return "handled";
+		}
+		case "codeSession/sendCodeCursorSync": {
+			if (!context.client?.connected) return blockPublish();
+			context.client.publish({
+				destination: getCodeSessionCursorSyncPublishPath(action.payload.sessionId),
+				body: JSON.stringify(action.payload.payload),
+			});
+			return "handled";
+		}
 		default:
 			return "not-handled";
 	}
+}
+
+function subscribeCodeSessionPath(
+	context: WebSocketPublishContext,
+	path: string,
+	fallback?: { callSessionId?: number | null; sessionId?: number | null }
+) {
+	if (context.subscriptions[path]) return;
+
+	const sub = context.client.subscribe(path, (message) => {
+		const parsed = JSON.parse(message.body) as CodeSessionEventDto;
+		const data: CodeSessionEventDto = {
+			...parsed,
+			sessionId: parsed.sessionId ??
+				parsed.codeSessionId ??
+				parsed.payload?.sessionId ??
+				parsed.payload?.codeSessionId ??
+				fallback?.sessionId,
+			callSessionId: parsed.callSessionId ??
+				parsed.payload?.callSessionId ??
+				fallback?.callSessionId,
+		};
+		const currentUser = context.storeApi.getState().user.myUser;
+		const senderId = data.senderId ?? data.payload?.senderId ?? data.userId ?? data.payload?.userId;
+		const normalizedSenderId = senderId ? String(senderId) : null;
+		const currentUserId = currentUser?.id ? String(currentUser.id) : null;
+		const senderUsername = data.senderUsername ??
+			data.payload?.senderUsername ??
+			data.username ??
+			data.payload?.username;
+		const isSameUsername = Boolean(currentUser?.username && senderUsername === currentUser.username);
+
+		if (((currentUserId && normalizedSenderId === currentUserId) || isSameUsername) && isLocalEchoCodeSessionEvent(data)) {
+			return;
+		}
+
+		context.storeApi.dispatch(codeSessionActions.applySessionEvent(data));
+	});
+
+	context.subscriptions[path] = sub;
 }
 
 function isEndedCanvasStrokePoint(
@@ -333,6 +443,14 @@ function isOptimisticCanvasStrokeEvent(event: CanvasDrawEventDto): boolean {
 	return event.type === "STROKE_START" ||
 		event.type === "STROKE_POINT" ||
 		event.type === "STROKE_END";
+}
+
+function isLocalEchoCodeSessionEvent(event: CodeSessionEventDto): boolean {
+	const type = event.eventType ?? event.type;
+	return type === "CODE_CONTENT_SYNC" ||
+		type === "CODE_STDIN_SYNC" ||
+		type === "CODE_LANGUAGE_CHANGED" ||
+		type === "CODE_CURSOR_SYNC";
 }
 
 function blockPublish(): PublishActionResult {

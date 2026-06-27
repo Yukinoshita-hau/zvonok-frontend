@@ -16,6 +16,7 @@ export interface CallControlsProps {
 	screenSharePublishOptions: ReturnType<typeof getScreenSharePublishOptions>;
 	onOpenChat: () => void;
 	onOpenWhiteboard: () => void;
+	onOpenCodeSession: () => void;
 	onToggleScreenOverlay: () => void;
 	onToggleFocus: () => void;
 	onToggleCinema: () => void;
@@ -24,6 +25,7 @@ export interface CallControlsProps {
 	onLeave: () => void;
 	canUseWhiteboard?: boolean;
 	isWhiteboardOpen?: boolean;
+	isCodeSessionOpen?: boolean;
 	canUseScreenOverlay?: boolean;
 	isScreenOverlayOpen?: boolean;
 }

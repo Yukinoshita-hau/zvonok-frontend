@@ -1,10 +1,11 @@
 import React from "react";
-import { Brush, MessageSquare, MonitorUp, PenLine, PhoneOff, Video, VideoOff } from "lucide-react";
+import { MessageSquare, MonitorUp, PhoneOff, Video, VideoOff } from "lucide-react";
 import { MicrophoneToggleButton } from "./MicrophoneToggleButton";
 import { CallControlButton } from "./CallControlButton";
 import { CallTrackToggleButton } from "./CallTrackToggleButton";
 import { CallViewModeMenu } from "./CallViewModeMenu";
 import { CallMoreMenu } from "./CallMoreMenu";
+import { CallInteractiveMenu } from "./CallInteractiveMenu";
 import styles from "./CallUi.module.css";
 import type { CallControlsProps } from "./CallControls.props";
 
@@ -19,6 +20,7 @@ export const CallControls = React.memo(function CallControls({
 	screenSharePublishOptions,
 	onOpenChat,
 	onOpenWhiteboard,
+	onOpenCodeSession,
 	onToggleScreenOverlay,
 	onToggleFocus,
 	onToggleCinema,
@@ -27,6 +29,7 @@ export const CallControls = React.memo(function CallControls({
 	onLeave,
 	canUseWhiteboard = true,
 	isWhiteboardOpen = false,
+	isCodeSessionOpen = false,
 	canUseScreenOverlay = false,
 	isScreenOverlayOpen = false,
 }: CallControlsProps) {
@@ -72,24 +75,15 @@ export const CallControls = React.memo(function CallControls({
 					/>
 				)}
 
-				<CallControlButton
-					icon={<Brush size={18} />}
-					label="Доска"
-					isActive={isWhiteboardOpen}
-					onClick={onOpenWhiteboard}
-					disabled={!canUseWhiteboard}
-					title={canUseWhiteboard ? "Открыть доску" : "Доска доступна после подключения к звонку"}
-				/>
-
-				<CallControlButton
-					icon={<PenLine size={18} />}
-					label="Разметка"
-					isActive={isScreenOverlayOpen}
-					onClick={onToggleScreenOverlay}
-					disabled={!canUseScreenOverlay}
-					title={canUseScreenOverlay
-						? (isScreenOverlayOpen ? "Скрыть инструменты" : "Открыть инструменты")
-						: "Сначала откройте трансляцию экрана в фокусе"}
+				<CallInteractiveMenu
+					canUseWhiteboard={canUseWhiteboard}
+					isWhiteboardOpen={isWhiteboardOpen}
+					isCodeSessionOpen={isCodeSessionOpen}
+					canUseScreenOverlay={canUseScreenOverlay}
+					isScreenOverlayOpen={isScreenOverlayOpen}
+					onOpenWhiteboard={onOpenWhiteboard}
+					onOpenCodeSession={onOpenCodeSession}
+					onToggleScreenOverlay={onToggleScreenOverlay}
 				/>
 			</div>
 

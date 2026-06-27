@@ -16,6 +16,7 @@ import channelMessageSlice from "./slices/channelMessage.slice";
 import usersSlice from "./slices/users.slice";
 import activeCallSlice from "./slices/activeCall.slice";
 import canvasSlice from "./slices/canvas.slice";
+import codeSessionSlice from "./slices/codeSession.slice";
 
 
 const appReducer = combineReducers({
@@ -30,6 +31,7 @@ const appReducer = combineReducers({
 	call: callSlice,
 	activeCall: activeCallSlice,
 	canvas: canvasSlice,
+	codeSession: codeSessionSlice,
 	notification: notificationSlice,
 	toast: toastSlice,
 	device: deviceSlice,

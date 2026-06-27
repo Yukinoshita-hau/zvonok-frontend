@@ -7,6 +7,7 @@ import type serverSlice from "../slices/server.slice";
 import type userSlice from "../slices/user.slice";
 import type websocketSlice from "../slices/websocket.slice";
 import type canvasSlice from "../slices/canvas.slice";
+import type codeSessionSlice from "../slices/codeSession.slice";
 
 
 export interface RootState {
@@ -17,7 +18,8 @@ export interface RootState {
 	friend: ReturnType<typeof friendSlice>,
 	websocket: ReturnType<typeof websocketSlice>,
 	call: ReturnType<typeof callSlice>,
-	canvas: ReturnType<typeof canvasSlice>
+	canvas: ReturnType<typeof canvasSlice>,
+	codeSession: ReturnType<typeof codeSessionSlice>
 }
 
 export type AppDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;

@@ -17,6 +17,8 @@ import { toastActions } from "../../../store/slices/toast.slice";
 import { ScreenShareOverlayCanvas } from "../ScreenShareOverlayCanvas/ScreenShareOverlayCanvas";
 import { WhiteboardFocus } from "../WhiteboardFocus/WhiteboardFocus";
 import { WhiteboardTile } from "../WhiteboardTile/WhiteboardTile";
+import { CodeSessionPanel } from "../../CodeSession/components/CodeSessionPanel";
+import { CodeSessionTile } from "../../CodeSession/components/CodeSessionTile";
 import type {
 	CanvasInteractiveAppContext,
 	CanvasInteractiveAppProps,
@@ -28,6 +30,8 @@ export function CanvasInteractiveApp({
 	isFocusMode,
 	focusedMediaCardId,
 	currentUsername,
+	currentUserId,
+	isCurrentUserHost = false,
 	focusedScreenShareCard,
 	participantOptions,
 	whiteboardTileClassName,
@@ -36,8 +40,10 @@ export function CanvasInteractiveApp({
 	children,
 }: CanvasInteractiveAppProps) {
 	const [isScreenOverlayEnabled, setIsScreenOverlayEnabled] = useState(false);
+	const [isCodeSessionOpen, setIsCodeSessionOpen] = useState(false);
 	const dispatch = useDispatch<AppDispatch>();
 	const whiteboards = useSelector((state: RootState) => selectWhiteboardsByCallId(state, callId));
+	const activeCodeSession = useSelector((state: RootState) => callId ? state.codeSession.activeSessionByCallId[callId] ?? null : null);
 	const primaryWhiteboard = whiteboards.find((board) => !board.backgroundImageUrl);
 	const focusedBoard = useSelector((state: RootState) => selectFocusedCanvasBoard(state, callId));
 	const screenShareOwnerUsername = focusedScreenShareCard?.participant.identity ||
@@ -104,6 +110,7 @@ export function CanvasInteractiveApp({
 
 	const openWhiteboard = useCallback(async () => {
 		if (!callId) return;
+		setIsCodeSessionOpen(false);
 
 		if (primaryWhiteboard) {
 			dispatch(canvasActions.focusCanvasBoard(primaryWhiteboard.id));
@@ -122,6 +129,18 @@ export function CanvasInteractiveApp({
 			);
 		}
 	}, [callId, dispatch, onRequestFocusMode, primaryWhiteboard, showCanvasToast]);
+
+	const openCodeSession = useCallback(() => {
+		if (!callId) return;
+		dispatch(canvasActions.clearFocusedCanvasBoard());
+		setIsCodeSessionOpen(true);
+		onRequestFocusMode();
+	}, [callId, dispatch, onRequestFocusMode]);
+
+	const closeCodeSession = useCallback(() => {
+		setIsCodeSessionOpen(false);
+		onResetFocusMode();
+	}, [onResetFocusMode]);
 
 	const toggleScreenOverlay = useCallback(async () => {
 		if (!callId || !focusedScreenShareCard?.isScreenShareCard) {
@@ -175,6 +194,20 @@ export function CanvasInteractiveApp({
 		));
 	}, [dispatch, focusedBoard?.id, onRequestFocusMode, whiteboardTileClassName, whiteboards]);
 
+	const interactiveTiles = useMemo(() => {
+		const codeSessionTile = (
+			<CodeSessionTile
+				key="code-session"
+				session={activeCodeSession}
+				className={whiteboardTileClassName}
+				isFocused={isCodeSessionOpen}
+				onOpen={openCodeSession}
+			/>
+		);
+
+		return [...whiteboardTiles, codeSessionTile];
+	}, [activeCodeSession, isCodeSessionOpen, openCodeSession, whiteboardTileClassName, whiteboardTiles]);
+
 	const renderWhiteboardFocus = useCallback(() => {
 		if (!callId) return null;
 
@@ -186,6 +219,28 @@ export function CanvasInteractiveApp({
 			/>
 		);
 	}, [callId, currentUsername, participantOptions]);
+
+	const renderCodeSession = useCallback(() => {
+		if (!isCodeSessionOpen || !callId) return null;
+		return (
+			<CodeSessionPanel
+				callSessionId={callId}
+				currentUserId={currentUserId}
+				currentUsername={currentUsername}
+				isCurrentUserHost={isCurrentUserHost}
+				participantOptions={participantOptions}
+				onClose={closeCodeSession}
+			/>
+		);
+	}, [
+		callId,
+		closeCodeSession,
+		currentUserId,
+		currentUsername,
+		isCodeSessionOpen,
+		isCurrentUserHost,
+		participantOptions,
+	]);
 
 	const renderScreenShareOverlay = useCallback(() => {
 		if (!isScreenOverlayOpen || !callId || !screenOverlayBoard) return null;
@@ -216,18 +271,28 @@ export function CanvasInteractiveApp({
 		canUseWhiteboard,
 		canUseScreenOverlay,
 		isScreenOverlayOpen,
+		isCodeSessionOpen,
 		whiteboardTiles,
+		interactiveTiles,
 		openWhiteboard,
+		openCodeSession,
+		closeCodeSession,
 		toggleScreenOverlay,
 		renderWhiteboardFocus,
+		renderCodeSession,
 		renderScreenShareOverlay,
 	}), [
 		canUseScreenOverlay,
 		canUseWhiteboard,
+		closeCodeSession,
 		hasWhiteboard,
+		isCodeSessionOpen,
 		isScreenOverlayOpen,
 		isWhiteboardFocused,
+		interactiveTiles,
+		openCodeSession,
 		openWhiteboard,
+		renderCodeSession,
 		renderScreenShareOverlay,
 		renderWhiteboardFocus,
 		toggleScreenOverlay,

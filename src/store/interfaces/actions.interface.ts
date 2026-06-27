@@ -147,6 +147,47 @@ interface CanvasDrawSendAction {
 		};
 	}
 }
+
+interface CodeSessionSubscribeAction {
+	type: "codeSession/subscribeCodeSession";
+	payload: { callSessionId: number; sessionId?: number | null };
+}
+
+interface CodeSessionUnsubscribeAction {
+	type: "codeSession/unsubscribeCodeSession";
+	payload: { callSessionId: number; sessionId?: number | null };
+}
+
+interface CodeSessionContentSyncAction {
+	type: "codeSession/sendCodeContentSync";
+	payload: { sessionId: number; payload: { code: string } };
+}
+
+interface CodeSessionStdinSyncAction {
+	type: "codeSession/sendCodeStdinSync";
+	payload: { sessionId: number; payload: { stdin: string } };
+}
+
+interface CodeSessionLanguageChangeAction {
+	type: "codeSession/sendCodeLanguageChange";
+	payload: { sessionId: number; payload: { language: string; code?: string | null } };
+}
+
+interface CodeSessionCursorSyncAction {
+	type: "codeSession/sendCodeCursorSync";
+	payload: {
+		sessionId: number;
+		payload: {
+			lineNumber: number;
+			column: number;
+			selectionStartLineNumber: number;
+			selectionStartColumn: number;
+			selectionEndLineNumber: number;
+			selectionEndColumn: number;
+		};
+	};
+}
+
 export type Actions =
 	| WsConnectAction
 	| SendMessageAction
@@ -170,4 +211,10 @@ export type Actions =
 	| CanvasLifecycleUnsubscribeAction
 	| CanvasDrawSubscribeAction
 	| CanvasDrawUnsubscribeAction
-	| CanvasDrawSendAction;
+	| CanvasDrawSendAction
+	| CodeSessionSubscribeAction
+	| CodeSessionUnsubscribeAction
+	| CodeSessionContentSyncAction
+	| CodeSessionStdinSyncAction
+	| CodeSessionLanguageChangeAction
+	| CodeSessionCursorSyncAction;

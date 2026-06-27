@@ -8,10 +8,15 @@ export interface CanvasInteractiveAppContext {
 	canUseWhiteboard: boolean;
 	canUseScreenOverlay: boolean;
 	isScreenOverlayOpen: boolean;
+	isCodeSessionOpen: boolean;
 	whiteboardTiles: ReactNode[];
+	interactiveTiles: ReactNode[];
 	openWhiteboard: () => void;
+	openCodeSession: () => void;
+	closeCodeSession: () => void;
 	toggleScreenOverlay: () => void;
 	renderWhiteboardFocus: () => ReactNode;
+	renderCodeSession: () => ReactNode;
 	renderScreenShareOverlay: () => ReactNode;
 }
 
@@ -21,6 +26,8 @@ export interface CanvasInteractiveAppProps {
 	isFocusMode: boolean;
 	focusedMediaCardId: string | null;
 	currentUsername?: string | null;
+	currentUserId?: number | string | null;
+	isCurrentUserHost?: boolean;
 	focusedScreenShareCard: ParticipantCard | null;
 	participantOptions: CanvasParticipantOption[];
 	whiteboardTileClassName?: string;

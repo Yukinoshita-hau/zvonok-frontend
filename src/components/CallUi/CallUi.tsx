@@ -349,6 +349,8 @@ export function CallUi({
 				isFocusMode={isFocusMode}
 				focusedMediaCardId={focusedCardId}
 				currentUsername={myUser?.username}
+				currentUserId={myUser?.id}
+				isCurrentUserHost={isCurrentUserHost}
 				focusedScreenShareCard={focusedCard?.isScreenShareCard ? focusedCard : null}
 				participantOptions={canvasParticipantOptions}
 				whiteboardTileClassName={[
@@ -384,6 +386,8 @@ export function CallUi({
 						<div className={styles["empty-subtitle"]}>Сначала выберите камеру или трансляцию экрана.</div>
 					</div>
 				)
+			) : isFocusMode && interactive.isCodeSessionOpen ? (
+				interactive.renderCodeSession()
 			) : isFocusMode && interactive.isWhiteboardFocused && call.callId ? (
 				interactive.renderWhiteboardFocus()
 			) : isFocusMode && focusedCard?.videoTrack ? (
@@ -424,7 +428,7 @@ export function CallUi({
 					<div className={styles["participants-strip-shell"]}>
 						<ParticipantsGrid
 							participantCards={participantCards}
-							extraTiles={interactive.whiteboardTiles}
+							extraTiles={interactive.interactiveTiles}
 							focusedCardId={focusedCard.id}
 							onOpenCard={openCardInFocus}
 							onOpenContextMenu={openParticipantMenu}
@@ -439,7 +443,7 @@ export function CallUi({
 				<div className={styles["grid-container"]}>
 					<ParticipantsGrid
 						participantCards={participantCards}
-						extraTiles={interactive.whiteboardTiles}
+						extraTiles={interactive.interactiveTiles}
 						focusedCardId={focusedCardId}
 						onOpenCard={openCardInFocus}
 						onOpenContextMenu={openParticipantMenu}
@@ -449,7 +453,7 @@ export function CallUi({
 			) : isSingleParticipantView ? (
 				<ParticipantsGrid
 					participantCards={participantCards}
-					extraTiles={interactive.whiteboardTiles}
+					extraTiles={interactive.interactiveTiles}
 					focusedCardId={focusedCardId}
 					onOpenCard={openCardInFocus}
 					onOpenContextMenu={openParticipantMenu}
@@ -460,7 +464,7 @@ export function CallUi({
 				<div className={styles["grid-container"]}>
 					<ParticipantsGrid
 						participantCards={participantCards}
-						extraTiles={interactive.whiteboardTiles}
+						extraTiles={interactive.interactiveTiles}
 						focusedCardId={focusedCardId}
 						onOpenCard={openCardInFocus}
 						onOpenContextMenu={openParticipantMenu}
@@ -486,6 +490,7 @@ export function CallUi({
 					screenSharePublishOptions={screenSharePublishOptions}
 					onOpenChat={onOpenChat}
 					onOpenWhiteboard={interactive.openWhiteboard}
+					onOpenCodeSession={interactive.openCodeSession}
 					onToggleScreenOverlay={interactive.toggleScreenOverlay}
 					onToggleFocus={onToggleFocus}
 					onToggleCinema={onToggleCinema}
@@ -494,6 +499,7 @@ export function CallUi({
 					onLeave={onLeave}
 					canUseWhiteboard={interactive.canUseWhiteboard}
 					isWhiteboardOpen={interactive.isWhiteboardFocused}
+					isCodeSessionOpen={interactive.isCodeSessionOpen}
 					canUseScreenOverlay={interactive.canUseScreenOverlay}
 					isScreenOverlayOpen={interactive.isScreenOverlayOpen}
 				/>

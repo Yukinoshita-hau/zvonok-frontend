@@ -37,3 +37,10 @@ export const WS_REMOVE_FRIEND_REQUEST_PATH = `${APP_FRIEND_REQUESTS_PREFIX}/remo
 export const getCanvasBoardLifecyclePath = (callId: number) => `${TOPIC_CALL_PREFIX}/${callId}/boards`;
 export const getCanvasBoardDrawPath = (callId: number, boardId: number) => `${TOPIC_CALL_PREFIX}/${callId}/boards/${boardId}`;
 export const getCanvasBoardDrawPublishPath = (callId: number, boardId: number) => `${APP_CALLS_PREFIX}/${callId}/boards/${boardId}/draw`;
+
+export const getCodeSessionLifecyclePath = (callSessionId: number) => `${TOPIC_CALL_PREFIX}/${callSessionId}/code-sessions`;
+export const getCodeSessionEventsPath = (sessionId: number) => `/topic/code-sessions/${sessionId}`;
+export const getCodeSessionContentSyncPublishPath = (sessionId: number) => `/app/code-sessions/${sessionId}/content-sync`;
+export const getCodeSessionStdinSyncPublishPath = (sessionId: number) => `/app/code-sessions/${sessionId}/stdin-sync`;
+export const getCodeSessionLanguageChangePublishPath = (sessionId: number) => `/app/code-sessions/${sessionId}/language-change`;
+export const getCodeSessionCursorSyncPublishPath = (sessionId: number) => `/app/code-sessions/${sessionId}/cursor-sync`;

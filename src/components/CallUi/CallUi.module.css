@@ -886,6 +886,11 @@
 	border-radius: 12px;
 }
 
+.control-menu-summary[data-active="true"] {
+	background: color-mix(in srgb, var(--accent) 28%, var(--bg-active));
+	color: var(--text-primary);
+}
+
 .control-menu-summary:active {
 	transform: scale(0.96);
 }

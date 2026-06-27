@@ -7,6 +7,8 @@ export function InteractiveHost({
 	isFocusMode,
 	focusedMediaCardId,
 	currentUsername,
+	currentUserId,
+	isCurrentUserHost,
 	focusedScreenShareCard,
 	participantOptions,
 	whiteboardTileClassName,
@@ -21,6 +23,8 @@ export function InteractiveHost({
 			isFocusMode={isFocusMode}
 			focusedMediaCardId={focusedMediaCardId}
 			currentUsername={currentUsername}
+			currentUserId={currentUserId}
+			isCurrentUserHost={isCurrentUserHost}
 			focusedScreenShareCard={focusedScreenShareCard}
 			participantOptions={participantOptions}
 			whiteboardTileClassName={whiteboardTileClassName}
