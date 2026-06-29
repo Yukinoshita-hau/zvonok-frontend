@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RecorderStatus } from "./useVoiceRecorder";
 
 const MAX_VIDEO_NOTE_DURATION_MS = 60 * 1000;
-const MAX_VIDEO_NOTE_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_VIDEO_NOTE_SIZE_BYTES = 5 * 1024 * 1024;
+const VIDEO_NOTE_SIZE_LABEL = "5 MB";
+const VIDEO_NOTE_WIDTH = 360;
+const VIDEO_NOTE_HEIGHT = 360;
+const VIDEO_NOTE_FRAME_RATE = 24;
+const VIDEO_NOTE_BITS_PER_SECOND = 560_000;
+const VIDEO_NOTE_AUDIO_BITS_PER_SECOND = 64_000;
+const VIDEO_NOTE_VIDEO_BITS_PER_SECOND = 480_000;
 
 function getSupportedVideoMimeType(): string {
 	const preferredTypes = ["video/webm;codecs=vp8,opus", "video/webm"];
@@ -103,12 +110,18 @@ export function useVideoNoteRecorder() {
 			const stream = await navigator.mediaDevices.getUserMedia({
 				audio: true,
 				video: {
-					width: { ideal: 720 },
-					height: { ideal: 720 },
+					width: { ideal: VIDEO_NOTE_WIDTH, max: VIDEO_NOTE_WIDTH },
+					height: { ideal: VIDEO_NOTE_HEIGHT, max: VIDEO_NOTE_HEIGHT },
+					frameRate: { ideal: VIDEO_NOTE_FRAME_RATE, max: VIDEO_NOTE_FRAME_RATE },
 					facingMode: "user",
 				},
 			});
-			const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+			const recorder = new MediaRecorder(stream, {
+				...(mimeType ? { mimeType } : {}),
+				audioBitsPerSecond: VIDEO_NOTE_AUDIO_BITS_PER_SECOND,
+				videoBitsPerSecond: VIDEO_NOTE_VIDEO_BITS_PER_SECOND,
+				bitsPerSecond: VIDEO_NOTE_BITS_PER_SECOND,
+			});
 
 			streamRef.current = stream;
 			setLiveStream(stream);
@@ -145,7 +158,7 @@ export function useVideoNoteRecorder() {
 
 				if (blob.size > MAX_VIDEO_NOTE_SIZE_BYTES) {
 					setStatus("error");
-					setError("Видео-кружок больше 25 MB.");
+					setError(`Видео-кружок больше ${VIDEO_NOTE_SIZE_LABEL}. Запишите короче.`);
 					return;
 				}
 
