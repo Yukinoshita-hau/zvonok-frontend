@@ -8,7 +8,7 @@ export function normalizeMessage(messageResponse: ShortMessageResponse): {
 	return {
 		message: {
 			id: messageResponse.id,
-			content: messageResponse.content,
+			content: messageResponse.content ?? "",
 			type: messageResponse.type,
 			eventType: messageResponse.eventType,
 			sentAt: messageResponse.sentAt,
@@ -18,6 +18,7 @@ export function normalizeMessage(messageResponse: ShortMessageResponse): {
 			replyToMessageId: messageResponse.replyToMessageId,
 			replyPreview: messageResponse.replyPreview,
 			readBy: messageResponse.readBy,
+			attachments: messageResponse.attachments ?? [],
 		},
 		user: messageResponse.sender,
 	};

@@ -10,6 +10,7 @@ import { formatTime, isSameDay } from "../../utils/timeHelpers";
 import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
 import { markRoomAsRead } from "../../store/slices/room.slice";
 import { StringToColor } from "../../utils/stringHelpers";
+import { MessageAttachments } from "../MessageAttachments/MessageAttachments";
 
 type ContextMenuState = {
 	x: number;
@@ -208,7 +209,8 @@ export function DmItemsList() {
 
 	const getReplySnippet = (msg: ShortMessage) => {
 		if (msg.replyPreview?.deleted) return "Original message was deleted";
-		const source = msg.replyPreview?.snippet || msg.content || "";
+		const fallback = msg.attachments.length > 0 ? "Вложение" : "";
+		const source = msg.replyPreview?.snippet || msg.content || fallback;
 		return source.replace(/\s+/g, " ").trim().slice(0, 120);
 	}
 
@@ -399,9 +401,13 @@ export function DmItemsList() {
 										</button>
 									)}
 
-									<div className={styles["msg-text"]}>
-										{item.payload.content}
-									</div>
+									{item.payload.content && (
+										<div className={styles["msg-text"]}>
+											{item.payload.content}
+										</div>
+									)}
+
+									<MessageAttachments attachments={item.payload.attachments} />
 								</>
 							)}
 

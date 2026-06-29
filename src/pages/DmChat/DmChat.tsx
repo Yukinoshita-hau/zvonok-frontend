@@ -3,7 +3,7 @@ import styles from "./DmChat.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { useEffect, useMemo, useState } from "react";
-import { fetchRoomMessages, messageActions } from "../../store/slices/message.slice";
+import { fetchRoomMessages, messageActions, sendMessageWithAttachments } from "../../store/slices/message.slice";
 import { DmItemsList } from "../../components/DmItemsList/DmItemsList";
 import { fetchMyRooms } from "../../store/slices/room.slice";
 import { callActions } from "../../store/slices/call.slice";
@@ -14,6 +14,11 @@ import { StringToColor } from "../../utils/stringHelpers";
 import { toastActions } from "../../store/slices/toast.slice";
 import { useActiveRoomCall } from "../../hooks/useActiveRoomCall";
 import { RoomActiveCallBanner } from "../../components/RoomActiveCallBanner/RoomActiveCallBanner";
+import { AttachmentPicker } from "../../components/MessageAttachments/AttachmentPicker";
+import { MessageRecorderControls } from "../../components/MessageAttachments/MessageRecorderControls";
+import { SelectedAttachmentsPreview } from "../../components/MessageAttachments/SelectedAttachmentsPreview";
+import { useSelectedAttachments } from "../../hooks/useSelectedAttachments";
+import type { AttachmentType } from "../../api/interfaces/MessageAttachmentDtos";
 
 export function DmChat() {
 	const navigate = useNavigate();
@@ -29,6 +34,15 @@ export function DmChat() {
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
+	const [isSendingAttachments, setIsSendingAttachments] = useState(false);
+	const {
+		attachments,
+		errors: attachmentErrors,
+		addFiles,
+		removeAttachment,
+		clearAttachments,
+		clearErrors: clearAttachmentErrors,
+	} = useSelectedAttachments();
 
 	const roomIdParam = searchParams.get("roomId");
 	const parsedRoomId = roomIdParam ? Number(roomIdParam) : null;
@@ -106,14 +120,43 @@ export function DmChat() {
 		return (currentRoom?.name?.[0] || "?").toUpperCase();
 	}, [currentRoom, interlocutor]);
 
-	const onSend = () => {
-		if (!text.trim() || !roomId) return;
+	const onSend = async () => {
+		const trimmedText = text.trim();
+		if ((!trimmedText && attachments.length === 0) || !roomId || isSendingAttachments) return;
+
+		if (attachments.length > 0) {
+			setIsSendingAttachments(true);
+			try {
+				await dispatch(sendMessageWithAttachments({
+					roomId,
+					content: trimmedText,
+					files: attachments.map((attachment) => attachment.file),
+					replyToMessageId: replyTarget?.messageId ?? null,
+				})).unwrap();
+
+				setText("");
+				clearAttachments();
+				dispatch(messageActions.cancelReply());
+			} catch (error) {
+				dispatch(toastActions.showToast({
+					id: crypto.randomUUID(),
+					type: "error",
+					title: "Вложения",
+					message: typeof error === "string"
+						? error
+						: error instanceof Error ? error.message : "Не удалось отправить файлы"
+				}));
+			} finally {
+				setIsSendingAttachments(false);
+			}
+			return;
+		}
 
 		dispatch(
 			messageActions.sendMessage({
 				roomId: roomId,
 				content: {
-					content: text.trim(),
+					content: trimmedText,
 					replyToMessageId: replyTarget?.messageId ?? null
 				}
 			})
@@ -124,7 +167,45 @@ export function DmChat() {
 	};
 
 	const handleKeyPress = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter") onSend();
+		if (e.key === "Enter") {
+			e.preventDefault();
+			void onSend();
+		}
+	};
+
+	const handleSendRecorded = async (payload: {
+		file: File;
+		attachmentType: Extract<AttachmentType, "AUDIO" | "VIDEO_NOTE">;
+		durationMs: number;
+	}) => {
+		if (!roomId || isSendingAttachments) return;
+
+		setIsSendingAttachments(true);
+		try {
+			await dispatch(sendMessageWithAttachments({
+				roomId,
+				content: text.trim(),
+				files: [payload.file],
+				replyToMessageId: replyTarget?.messageId ?? null,
+				attachmentType: payload.attachmentType,
+				durationMs: payload.durationMs,
+			})).unwrap();
+
+			setText("");
+			dispatch(messageActions.cancelReply());
+		} catch (error) {
+			dispatch(toastActions.showToast({
+				id: crypto.randomUUID(),
+				type: "error",
+				title: payload.attachmentType === "AUDIO" ? "Голосовое" : "Видео-кружок",
+				message: typeof error === "string"
+					? error
+					: error instanceof Error ? error.message : "Не удалось отправить запись"
+			}));
+			throw error;
+		} finally {
+			setIsSendingAttachments(false);
+		}
 	};
 
 	const handleStartCall = () => {
@@ -224,15 +305,34 @@ export function DmChat() {
 						</button>
 					</div>
 				)}
+				<SelectedAttachmentsPreview
+					attachments={attachments}
+					errors={attachmentErrors}
+					onRemove={removeAttachment}
+					onClearError={clearAttachmentErrors}
+				/>
 				<div className={styles["composer-row"]}>
+					<AttachmentPicker
+						disabled={isSendingAttachments}
+						onSelectFiles={addFiles}
+					/>
+					<MessageRecorderControls
+						disabled={isSendingAttachments || attachments.length > 0}
+						onSendRecorded={handleSendRecorded}
+					/>
 					<input
 						className={styles["input"]}
 						placeholder="Message @here"
 						value={text}
 						onChange={(e) => setText(e.target.value)}
 						onKeyDown={handleKeyPress}
+						disabled={isSendingAttachments}
 					/>
-					<button className={styles["message-button"]} onClick={onSend}>
+					<button
+						className={styles["message-button"]}
+						onClick={() => void onSend()}
+						disabled={isSendingAttachments || (!text.trim() && attachments.length === 0)}
+					>
 						<Send color="white" size={20} />
 					</button>
 				</div>

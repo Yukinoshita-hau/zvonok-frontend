@@ -1,10 +1,10 @@
 .messages {
 	flex: 1;
-	padding: 16px;
+	padding: 18px 18px 22px;
 	overflow-y: auto;
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 10px;
 	scrollbar-width: none;
 }
 
@@ -40,17 +40,21 @@
 	display: flex;
 	gap: 10px;
 	position: relative;
-	padding: 4px 6px;
-	border-radius: 8px;
-	transition: background 0.15s ease;
+	padding: 7px 8px;
+	border-radius: 14px;
+	transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+	animation: messageIn 0.18s ease;
 }
 
 .message-row:hover {
-	background: var(--bg-hover);
+	background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
+	transform: translateY(-1px);
+	box-shadow: 0 12px 34px rgba(0, 0, 0, 0.1);
 }
 
 .message-row-highlighted {
 	background: color-mix(in srgb, var(--accent) 18%, transparent);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 42%, transparent);
 }
 
 .msg-avatar {
@@ -61,6 +65,8 @@
 	align-items: center;
 	border-radius: 50%;
 	color: var(--text-primary);
+	flex-shrink: 0;
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 .msg-avatar img {
@@ -72,8 +78,9 @@
 .msg-body {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 5px;
 	max-width: 70%;
+	min-width: 0;
 }
 
 .msg-meta {
@@ -109,7 +116,8 @@
 	gap: 12px;
 	overflow-wrap: break-word;
 	word-break: break-word;
-	line-height: 20px;
+	line-height: 22px;
+	padding: 2px 0;
 }
 
 .reply-block {
@@ -117,10 +125,10 @@
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 2px;
-	padding: 6px 8px;
+	padding: 7px 9px;
 	border-left: 3px solid var(--accent);
-	border-radius: 8px;
-	background: var(--bg-secondary);
+	border-radius: 10px;
+	background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
 	cursor: pointer;
 	border-top: none;
 	border-right: none;
@@ -241,13 +249,15 @@
 
 .context-menu {
 	position: fixed;
-	background: var(--bg-secondary);
-	border: 1px solid var(--border);
-	border-radius: 10px;
+	background: color-mix(in srgb, var(--bg-secondary) 94%, black);
+	border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+	border-radius: 12px;
 	padding: 6px 0;
 	min-width: 170px;
 	z-index: 9999;
 	transform-origin: top left;
+	box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+	backdrop-filter: blur(14px);
 }
 
 .context-menu button {
@@ -317,5 +327,17 @@
 	to {
 		opacity: 1;
 		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes messageIn {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
 	}
 }

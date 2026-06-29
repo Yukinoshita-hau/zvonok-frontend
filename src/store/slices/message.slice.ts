@@ -6,6 +6,8 @@ import { messageApi } from "../../api/messageApi";
 import type { MessageReaderDto } from "../../api/interfaces/MessageReadersDto";
 import { normalizeMessages } from "../../utils/normalizeMessage";
 import { usersActions } from "./users.slice";
+import { messageAttachmentsApi } from "../../api/messageAttachmentsApi";
+import type { AttachmentType } from "../../api/interfaces/MessageAttachmentDtos";
 
 export interface MessageState {
 	messages: ShortMessage[];
@@ -59,8 +61,9 @@ export const fetchRoomMessages = createAsyncThunk<
 				messages,
 				beforeMessageId: params.beforeMessageId,
 			};
-		} catch (e: any) {
-			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load message");
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : "Failed to load message";
+			return thunkAPI.rejectWithValue(message);
 		}
 	}
 );
@@ -71,8 +74,40 @@ export const getMessagesReaders = createAsyncThunk(
 		try {
 			const { data } = await messageApi.getMessageReaders(body);
 			return data;
-		} catch (e: any) {
-			return thunkAPI.rejectWithValue(e?.message ?? "Failed to load message readers");
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : "Failed to load message readers";
+			return thunkAPI.rejectWithValue(message);
+		}
+	}
+);
+
+export const sendMessageWithAttachments = createAsyncThunk<
+	void,
+	{
+		roomId: number;
+		content?: string;
+		files: File[];
+		replyToMessageId?: number | null;
+		attachmentType?: AttachmentType;
+		durationMs?: number | null;
+	},
+	{
+		rejectValue: string;
+	}
+>(
+	"message/sendMessageWithAttachments",
+	async ({ roomId, content, files, replyToMessageId, attachmentType, durationMs }, thunkAPI) => {
+		try {
+			await messageAttachmentsApi.sendMessageWithAttachments(roomId, {
+				content,
+				files,
+				replyToMessageId,
+				attachmentType,
+				durationMs,
+			});
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : "Failed to send attachments";
+			return thunkAPI.rejectWithValue(message);
 		}
 	}
 );
@@ -116,6 +151,7 @@ export const messageSlice = createSlice({
 						message.eventType = incomingMessage.eventType;
 						message.editedAt = incomingMessage.editedAt;
 						message.replyPreview = incomingMessage.replyPreview;
+						message.attachments = incomingMessage.attachments;
 					}
 
 					break;

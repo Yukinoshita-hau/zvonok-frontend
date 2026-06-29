@@ -1,6 +1,7 @@
 import type { MessageType } from "./interfaces/MessageType";
 import type { UserMini } from "./user";
 import type { RoomType } from "./room";
+import type { MessageAttachment } from "../api/interfaces/MessageAttachmentDtos";
 
 export interface ShortMessageRoom {
 	id: number;
@@ -24,7 +25,7 @@ export interface ReplyPreviewDto {
  */
 export interface ShortMessageResponse {
 	id: number;
-	content: string;
+	content: string | null;
 	type: MessageType;
 	eventType: EventType;
 	sentAt: string;
@@ -34,6 +35,7 @@ export interface ShortMessageResponse {
 	replyToMessageId: number | null;
 	replyPreview: ReplyPreviewDto | null;
 	readBy?: string[];
+	attachments?: MessageAttachment[] | null;
 }
 
 /**
@@ -51,4 +53,5 @@ export interface ShortMessage {
 	replyToMessageId: number | null;
 	replyPreview: ReplyPreviewDto | null;
 	readBy?: string[];
+	attachments: MessageAttachment[];
 }
