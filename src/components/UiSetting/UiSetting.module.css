@@ -32,6 +32,94 @@
 	color: var(--text-secondary);
 }
 
+.customThemePanel {
+	display: grid;
+	gap: 14px;
+	padding: 14px;
+	border: 1px solid color-mix(in srgb, var(--border) 74%, var(--accent));
+	border-radius: 16px;
+	background:
+		linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 48%),
+		var(--bg-secondary);
+}
+
+.customThemePanel h4 {
+	margin: 0 0 4px;
+	font-size: 15px;
+}
+
+.customThemePanel p {
+	margin: 0;
+	color: var(--text-secondary);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.customThemeGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+	gap: 10px;
+}
+
+.colorControl {
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 9px 10px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--bg-primary) 78%, transparent);
+	color: var(--text-primary);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.colorControl input {
+	width: 28px;
+	height: 28px;
+	flex: 0 0 auto;
+	padding: 0;
+	border: 0;
+	border-radius: 9px;
+	background: transparent;
+	cursor: pointer;
+}
+
+.customThemeActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.customThemeActions button {
+	min-height: 36px;
+	padding: 0 13px;
+	border-radius: 12px;
+	font-weight: 800;
+	cursor: pointer;
+	transition:
+		transform 0.14s ease,
+		background 0.14s ease;
+}
+
+.customThemeActions button:first-child {
+	border: 0;
+	background: var(--accent);
+	color: var(--bg-tertiary);
+}
+
+.customThemeActions button:last-child {
+	border: 1px solid var(--border);
+	background: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+.customThemeActions button:hover {
+	transform: translateY(-1px);
+}
+
 .themeGrid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));

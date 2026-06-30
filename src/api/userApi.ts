@@ -2,6 +2,7 @@ import type { User } from "../entities/user";
 import { api } from "./api";
 import type { UpdateUserDto } from "./interfaces/UpdateUserDto";
 import type { UserApiInterface } from "./interfaces/UserApiInterface";
+import type { UserMiniProfileDto } from "./interfaces/UserMiniProfileDto";
 
 export const USER_API_PREFIX = "/users";
 
@@ -18,5 +19,6 @@ export const userApi: UserApiInterface = {
 				"Content-Type": "multipart/form-data"
 			}
 		})
-	}
+	},
+	getMiniProfile: (userId: number) => api.get<UserMiniProfileDto>(`${USER_API_PREFIX}/${userId}/mini-profile`)
 }

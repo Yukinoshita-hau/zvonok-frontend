@@ -19,13 +19,14 @@ import { MessageRecorderControls } from "../../components/MessageAttachments/Mes
 import { SelectedAttachmentsPreview } from "../../components/MessageAttachments/SelectedAttachmentsPreview";
 import { useSelectedAttachments } from "../../hooks/useSelectedAttachments";
 import type { AttachmentType } from "../../api/interfaces/MessageAttachmentDtos";
+import { UserMiniProfileModal } from "../../components/UserMiniProfileModal/UserMiniProfileModal";
 
 export function DmChat() {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const dispatch = useDispatch<AppDispatch>();
 
-	const { rooms } = useSelector((s: RootState) => s.room);
+	const { rooms, status: roomsStatus } = useSelector((s: RootState) => s.room);
 	const { myUser } = useSelector((s: RootState) => s.user);
 	const usersById = useSelector((s: RootState) => s.users.byId);
 	const { replyTarget } = useSelector((s: RootState) => s.message);
@@ -34,6 +35,7 @@ export function DmChat() {
 
 	const [text, setText] = useState("");
 	const [isRoomSettingOpen, setIsRoomSettingOpen] = useState<boolean>(false);
+	const [isHeaderProfileOpen, setIsHeaderProfileOpen] = useState(false);
 	const [isSendingAttachments, setIsSendingAttachments] = useState(false);
 	const {
 		attachments,
@@ -72,6 +74,14 @@ export function DmChat() {
 		if (!roomId) return null;
 		return rooms?.find((room: Room) => room.id === roomId) ?? null;
 	}, [rooms, roomId]);
+
+	useEffect(() => {
+		if (!roomId || roomsStatus !== "succeeded" || currentRoom) return;
+
+		dispatch(messageActions.setActiveRoom(null));
+		dispatch(messageActions.clearMessages());
+		navigate("/");
+	}, [currentRoom, dispatch, navigate, roomId, roomsStatus]);
 
 	const interlocutor = useMemo(() => {
 		if (!currentRoom || !myUser) return null;
@@ -242,10 +252,24 @@ export function DmChat() {
 		setIsRoomSettingOpen(true);
 	};
 
+	const handleOpenHeaderProfile = () => {
+		if (currentRoom?.type === "PRIVATE" && interlocutor) {
+			setIsHeaderProfileOpen(true);
+			return;
+		}
+
+		setIsRoomSettingOpen(true);
+	};
+
 	return (
 		<div className={styles["chat"]}>
 			<div className={styles["header"]}>
-				<div className={styles["header-left"]}>
+				<button
+					type="button"
+					className={styles["header-left"]}
+					onClick={handleOpenHeaderProfile}
+					title={currentRoom?.type === "PRIVATE" ? "Открыть профиль" : "Открыть настройки комнаты"}
+				>
 					<div className={styles["avatar"]} style={{ background: avatarBg }}>
 						{avatarSrc ? (
 							<img
@@ -260,7 +284,7 @@ export function DmChat() {
 					</div>
 
 					<span className={styles["title"]}>{roomTitle}</span>
-				</div>
+				</button>
 
 				<div className={styles["header-right"]}>
 					<button className={styles["btn"]} onClick={handleStartCall} disabled={wsStatus !== "connected"}>
@@ -279,6 +303,17 @@ export function DmChat() {
 				onClose={() => setIsRoomSettingOpen(false)}
 				onStartCall={handleStartCall}
 				room={currentRoom}
+			/>
+
+			<UserMiniProfileModal
+				userId={interlocutor?.id ?? null}
+				isOpen={isHeaderProfileOpen && Boolean(interlocutor)}
+				fallbackUser={interlocutor ? {
+					username: interlocutor.username,
+					displayName: interlocutor.displayName,
+					avatarUrl: interlocutor.avatarUrl,
+				} : undefined}
+				onClose={() => setIsHeaderProfileOpen(false)}
 			/>
 
 			<DmItemsList />

@@ -12,6 +12,20 @@ import { VoiceProcessingSection } from "./sections/VoiceProcessingSection";
 import { EqualizerSettingsSection } from "./sections/EqualizerSettingsSection";
 import { ScreenShareSettingsSection } from "./sections/ScreenShareSettingsSection";
 
+type VoiceVideoTab = "camera" | "microphone" | "processing" | "equalizer" | "screen";
+
+const VOICE_VIDEO_TABS: Array<{
+	id: VoiceVideoTab;
+	label: string;
+	description: string;
+}> = [
+	{ id: "camera", label: "Камера", description: "Устройство и качество видео" },
+	{ id: "microphone", label: "Микрофон", description: "Вход, тест и горячая клавиша" },
+	{ id: "processing", label: "Обработка", description: "Шумодав и голосовые пресеты" },
+	{ id: "equalizer", label: "Эквалайзер", description: "Тонкая настройка голоса" },
+	{ id: "screen", label: "Экран", description: "Параметры трансляции" },
+];
+
 export function VoiceVideoSetting() {
 	const dispatch = useDispatch<AppDispatch>();
 
@@ -49,6 +63,7 @@ export function VoiceVideoSetting() {
 	const [isListening, setIsListening] = useState(false);
 	const [showExperimentalScreenModes, setShowExperimentalScreenModes] =
 		useState(false);
+	const [activeTab, setActiveTab] = useState<VoiceVideoTab>("camera");
 
 	const streamRef = useRef<MediaStream | null>(null);
 	const audioGraphRef = useRef<ZvonokAudioGraph | null>(null);
@@ -296,56 +311,80 @@ export function VoiceVideoSetting() {
 	return (
 		<div className={styles["container"]}>
 			<div className={styles["content"]}>
-				<CameraSettingsSection
-					dispatch={dispatch}
-					selectedCameraId={selectedCameraId}
-					cameras={cameras}
-					cameraQuality={cameraQuality}
-					cameraTestEnable={cameraTestEnable}
-					onCameraTestToggle={() =>
-						setCameraTestEnable((previous) => !previous)
-					}
-				/>
+				<div className={styles["section-tabs"]}>
+					{VOICE_VIDEO_TABS.map((tab) => (
+						<button
+							key={tab.id}
+							type="button"
+							data-active={activeTab === tab.id}
+							onClick={() => setActiveTab(tab.id)}
+						>
+							<strong>{tab.label}</strong>
+							<span>{tab.description}</span>
+						</button>
+					))}
+				</div>
 
-				<MicrophoneSettingsSection
-					dispatch={dispatch}
-					selectedMicrophoneId={selectedMicrophoneId}
-					microphones={microphones}
-					micQualitySetting={micQualitySetting}
-					isNoiseSuppressionEnabled={isNoiseSuppressionEnabled}
-					isEchoCancellationEnabled={isEchoCancellationEnabled}
-					effectiveRnnoiseEnabled={effectiveRnnoiseEnabled}
-					volumeLevel={volumeLevel}
-					isListening={isListening}
-					isAutoInputSensitivity={isAutoInputSensitivity}
-					voiceActivityThreshold={voiceActivityThreshold}
-					muteMicrophoneHotkey={muteMicrophoneHotkey}
-					audioPreviewRef={audioPreviewRef}
-					onListeningToggle={() => setIsListening((previous) => !previous)}
-				/>
+				{activeTab === "camera" && (
+					<CameraSettingsSection
+						dispatch={dispatch}
+						selectedCameraId={selectedCameraId}
+						cameras={cameras}
+						cameraQuality={cameraQuality}
+						cameraTestEnable={cameraTestEnable}
+						onCameraTestToggle={() =>
+							setCameraTestEnable((previous) => !previous)
+						}
+					/>
+				)}
 
-				<VoiceProcessingSection
-					dispatch={dispatch}
-					voiceProcessingPreset={voiceProcessingPreset}
-					voiceProcessingConfig={voiceProcessingConfig}
-					inputVolumePercent={inputVolumePercent}
-					outputVolumePercent={outputVolumePercent}
-					onInputVolumePercentChange={setInputVolumePercent}
-					onOutputVolumePercentChange={setOutputVolumePercent}
-				/>
+				{activeTab === "microphone" && (
+					<MicrophoneSettingsSection
+						dispatch={dispatch}
+						selectedMicrophoneId={selectedMicrophoneId}
+						microphones={microphones}
+						micQualitySetting={micQualitySetting}
+						isNoiseSuppressionEnabled={isNoiseSuppressionEnabled}
+						isEchoCancellationEnabled={isEchoCancellationEnabled}
+						effectiveRnnoiseEnabled={effectiveRnnoiseEnabled}
+						volumeLevel={volumeLevel}
+						isListening={isListening}
+						isAutoInputSensitivity={isAutoInputSensitivity}
+						voiceActivityThreshold={voiceActivityThreshold}
+						muteMicrophoneHotkey={muteMicrophoneHotkey}
+						audioPreviewRef={audioPreviewRef}
+						onListeningToggle={() => setIsListening((previous) => !previous)}
+					/>
+				)}
 
-				<EqualizerSettingsSection
-					dispatch={dispatch}
-					voiceProcessingConfig={voiceProcessingConfig}
-				/>
+				{activeTab === "processing" && (
+					<VoiceProcessingSection
+						dispatch={dispatch}
+						voiceProcessingPreset={voiceProcessingPreset}
+						voiceProcessingConfig={voiceProcessingConfig}
+						inputVolumePercent={inputVolumePercent}
+						outputVolumePercent={outputVolumePercent}
+						onInputVolumePercentChange={setInputVolumePercent}
+						onOutputVolumePercentChange={setOutputVolumePercent}
+					/>
+				)}
 
-				<ScreenShareSettingsSection
-					dispatch={dispatch}
-					screenShareQuality={screenShareQuality}
-					showExperimentalScreenModes={showExperimentalScreenModes}
-					onShowExperimentalScreenModesChange={setShowExperimentalScreenModes}
-					screenShareRuntime={screenShareRuntime}
-				/>
+				{activeTab === "equalizer" && (
+					<EqualizerSettingsSection
+						dispatch={dispatch}
+						voiceProcessingConfig={voiceProcessingConfig}
+					/>
+				)}
+
+				{activeTab === "screen" && (
+					<ScreenShareSettingsSection
+						dispatch={dispatch}
+						screenShareQuality={screenShareQuality}
+						showExperimentalScreenModes={showExperimentalScreenModes}
+						onShowExperimentalScreenModesChange={setShowExperimentalScreenModes}
+						screenShareRuntime={screenShareRuntime}
+					/>
+				)}
 			</div>
 		</div>
 	);

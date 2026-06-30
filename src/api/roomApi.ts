@@ -16,5 +16,9 @@ export const roomApi: RoomApiInterface = {
 	}),
 	createGroup: (body: CreateGroupBody) => api.post(`${ROOM_API_PREFIX}/createGroup`, body),
 	markRoomRead: ({ roomId }) => api.post(`${ROOM_API_PREFIX}/${roomId}/read`),
-	getActiveCall: ({ roomId }) => api.get(`${ROOM_API_PREFIX}/${roomId}/active-call`)
+	getActiveCall: ({ roomId }) => api.get(`${ROOM_API_PREFIX}/${roomId}/active-call`),
+	clearRoomMessages: ({ roomId }) => api.delete(`${ROOM_API_PREFIX}/${roomId}/messages`),
+	addRoomMembers: (roomId, body) => api.post(`${ROOM_API_PREFIX}/${roomId}/members`, body),
+	createInvite: (roomId) => api.post(`${ROOM_API_PREFIX}/${roomId}/invites`),
+	leaveRoom: (roomId) => api.post(`${ROOM_API_PREFIX}/${roomId}/leave`)
 }

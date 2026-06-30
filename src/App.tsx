@@ -13,6 +13,7 @@ import { ServerLayout } from './pages/ServerLayout/ServerLayout'
 import { ChannelChat } from './components/ChannelChat/ChannelChat'
 import { MyServers } from './pages/MyServers/MyServers'
 import { ConferenceJoin } from './pages/ConferenceJoin/ConferenceJoin'
+import { InviteJoinPage } from './pages/InviteJoin/InviteJoinPage'
 
 export function App() {
 
@@ -89,6 +90,10 @@ export function App() {
 				{
 					path: "conference/:code",
 					element: <ConferenceJoin />
+				},
+				{
+					path: "invite/:token",
+					element: <InviteJoinPage />
 				}
 			]
 		}

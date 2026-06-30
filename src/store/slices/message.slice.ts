@@ -81,6 +81,25 @@ export const getMessagesReaders = createAsyncThunk(
 	}
 );
 
+export const clearRoomMessages = createAsyncThunk<
+	number,
+	{ roomId: number },
+	{
+		rejectValue: string;
+	}
+>(
+	"message/clearRoomMessages",
+	async ({ roomId }, thunkAPI) => {
+		try {
+			await roomApi.clearRoomMessages({ roomId });
+			return roomId;
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : "Failed to clear room messages";
+			return thunkAPI.rejectWithValue(message);
+		}
+	}
+);
+
 export const sendMessageWithAttachments = createAsyncThunk<
 	void,
 	{
@@ -311,6 +330,17 @@ export const messageSlice = createSlice({
 						message.readBy = readers;
 					}
 				});
+			})
+
+			.addCase(clearRoomMessages.fulfilled, (state, action) => {
+				if (state.activeRoomId !== action.payload) return;
+
+				state.messages = [];
+				state.oldestMessageId = null;
+				state.hasMore = true;
+				state.status = "idle";
+				state.replyTarget = null;
+				state.newDividerMessageId = null;
 			});
 	},
 });

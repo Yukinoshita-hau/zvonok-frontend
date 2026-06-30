@@ -74,6 +74,12 @@ export const THEME_DETAILS: Record<typeof themes[number], ThemeDetails> = {
 		accent: "#88c0d0",
 		preview: ["#2e3440", "#3b4252", "#4c566a", "#88c0d0"]
 	},
+	custom: {
+		title: "Своя",
+		subtitle: "Собранная вручную палитра",
+		accent: "#58c7ff",
+		preview: ["#101722", "#172233", "#0b111a", "#58c7ff"]
+	},
 	coffee: {
 		title: "Кофе",
 		subtitle: "Тёплые кофейные оттенки",

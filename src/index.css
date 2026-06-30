@@ -271,3 +271,25 @@
 	--danger: #ff6b6b;
 	--danger-hover: #d45555;
 }
+
+[data-theme="custom"] {
+	--bg-primary: #101722;
+	--bg-secondary: #172233;
+	--bg-tertiary: #0b111a;
+	--bg-hover: #223047;
+	--bg-active: #2b3c58;
+	--bg-input: #111b29;
+
+	--accent: #58c7ff;
+	--accent-hover: #39aee8;
+	--accent-muted: rgba(88, 199, 255, 0.16);
+
+	--text-primary: #edf6ff;
+	--text-secondary: #9db0c8;
+	--text-muted: #667790;
+
+	--border: rgba(126, 156, 190, 0.34);
+	--online: #4cffb0;
+	--danger: #ff5b6a;
+	--danger-hover: #d74654;
+}

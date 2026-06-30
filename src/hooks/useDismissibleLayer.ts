@@ -4,12 +4,14 @@ interface UseDismissibleLayerParams {
 	isOpen: boolean;
 	onDismiss: () => void;
 	enabled?: boolean;
+	dismissOnScroll?: boolean;
 }
 
 export function useDismissibleLayer({
 	isOpen,
 	onDismiss,
 	enabled = true,
+	dismissOnScroll = true,
 }: UseDismissibleLayerParams) {
 	useEffect(() => {
 		if (!enabled || !isOpen) return;
@@ -25,13 +27,17 @@ export function useDismissibleLayer({
 		};
 
 		window.addEventListener("keydown", onKeyDown);
-		window.addEventListener("scroll", onWindowChange, true);
+		if (dismissOnScroll) {
+			window.addEventListener("scroll", onWindowChange, true);
+		}
 		window.addEventListener("resize", onWindowChange);
 
 		return () => {
 			window.removeEventListener("keydown", onKeyDown);
-			window.removeEventListener("scroll", onWindowChange, true);
+			if (dismissOnScroll) {
+				window.removeEventListener("scroll", onWindowChange, true);
+			}
 			window.removeEventListener("resize", onWindowChange);
 		};
-	}, [enabled, isOpen, onDismiss]);
+	}, [dismissOnScroll, enabled, isOpen, onDismiss]);
 }

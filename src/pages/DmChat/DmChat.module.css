@@ -24,6 +24,19 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	border-radius: 14px;
+	transition: background-color 0.16s ease, transform 0.16s ease;
+}
+
+.header-left:hover {
+	background: color-mix(in srgb, var(--bg-hover) 62%, transparent);
+	transform: translateY(-1px);
 }
 
 .header-right {

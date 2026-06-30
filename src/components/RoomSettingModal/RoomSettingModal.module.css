@@ -85,6 +85,198 @@
 	color: var(--text-secondary);
 }
 
+.section-tabs {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+	gap: 8px;
+	padding: 4px;
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+}
+
+.section-tabs button {
+	min-height: 36px;
+	border: 0;
+	border-radius: 10px;
+	background: transparent;
+	color: var(--text-secondary);
+	font-weight: 700;
+	cursor: pointer;
+	transition:
+		background 0.14s ease,
+		color 0.14s ease;
+}
+
+.section-tabs button[data-active="true"] {
+	background: color-mix(in srgb, var(--accent) 18%, var(--bg-secondary));
+	color: var(--text-primary);
+}
+
+.section-card {
+	min-height: 0;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 14px;
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	background: color-mix(in srgb, var(--bg-primary) 68%, transparent);
+	overflow: auto;
+}
+
+.section-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.info-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 10px;
+}
+
+.info-grid div {
+	padding: 12px;
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	background: var(--bg-secondary);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.info-grid span,
+.muted {
+	color: var(--text-secondary);
+	font-size: 13px;
+}
+
+.info-grid strong {
+	color: var(--text-primary);
+}
+
+.small-action,
+.primary-action,
+.danger-action {
+	min-height: 38px;
+	padding: 0 13px;
+	border-radius: 12px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.small-action:disabled,
+.primary-action:disabled,
+.danger-action:disabled {
+	cursor: not-allowed;
+	opacity: 0.58;
+}
+
+.small-action {
+	border: 1px solid var(--border);
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+}
+
+.primary-action {
+	width: fit-content;
+	border: 0;
+	background: var(--accent);
+	color: #fff;
+}
+
+.danger-card {
+	border-color: rgba(255, 94, 94, 0.35);
+	background:
+		linear-gradient(135deg, rgba(255, 94, 94, 0.08), transparent 45%),
+		color-mix(in srgb, var(--bg-primary) 68%, transparent);
+}
+
+.danger-action {
+	width: fit-content;
+	border: 1px solid rgba(255, 94, 94, 0.42);
+	background: rgba(255, 94, 94, 0.13);
+	color: #ff9b9b;
+}
+
+.invite-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 10px;
+}
+
+.invite-row input {
+	min-width: 0;
+	height: 40px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	padding: 0 12px;
+}
+
+.confirm-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 10030;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	background: rgba(8, 10, 18, 0.62);
+	backdrop-filter: blur(8px);
+}
+
+.confirm-modal {
+	width: min(420px, 100%);
+	padding: 18px;
+	border: 1px solid rgba(255, 94, 94, 0.38);
+	border-radius: 18px;
+	background: var(--bg-secondary);
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
+	color: var(--text-primary);
+}
+
+.confirm-modal h3 {
+	margin: 0 0 8px;
+}
+
+.confirm-modal p {
+	margin: 0;
+	color: var(--text-secondary);
+	line-height: 1.45;
+}
+
+.confirm-actions {
+	margin-top: 18px;
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+.confirm-actions button {
+	min-height: 38px;
+	padding: 0 14px;
+	border-radius: 12px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.confirm-actions button:first-child {
+	border: 1px solid var(--border);
+	background: var(--bg-primary);
+	color: var(--text-primary);
+}
+
+.confirm-actions button:last-child {
+	border: 0;
+	background: #e5484d;
+	color: #fff;
+}
+
 @keyframes fadeIn {
 	from {
 		opacity: 0;

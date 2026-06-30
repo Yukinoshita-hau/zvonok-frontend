@@ -20,13 +20,16 @@ import { callActions, getCallToken } from "../../slices/call.slice";
 import { fetchIncomingRequests, fetchMyFriends, fetchOutgoingRequests } from "../../slices/friend.slice";
 import { fetchRoomMessages, messageActions } from "../../slices/message.slice";
 import { notificationAction } from "../../slices/notification.slice";
-import { fetchMyRooms } from "../../slices/room.slice";
+import { fetchMyRooms, roomActions } from "../../slices/room.slice";
 import { toastActions } from "../../slices/toast.slice";
 import { userActions } from "../../slices/user.slice";
 import { usersActions } from "../../slices/users.slice";
 import { normalizeMessage } from "../../../utils/normalizeMessage";
+import { normalizeRoom } from "../../../utils/normalizeRoom";
 import { soundPlayer } from "../../../utils/soundPlayer";
 import type { SubscriptionRegistry, WebSocketStoreApi } from "./types";
+import type { RoomResponse } from "../../../entities/room";
+import type { UserMini } from "../../../entities/UserMini";
 
 export function registerWebSocketSubscriptions(
 	client: Client,
@@ -234,6 +237,69 @@ export function registerWebSocketSubscriptions(
 				storeApi.dispatch(fetchMyRooms());
 				break;
 			}
+
+			case "ROOM_MESSAGES_CLEARED": {
+				if (!data.roomId) return;
+
+				storeApi.dispatch(roomActions.clearRoomMessagesState({ roomId: data.roomId }));
+
+				const activeRoomId = storeApi.getState().message.activeRoomId;
+				if (activeRoomId === data.roomId) {
+					storeApi.dispatch(messageActions.clearMessages());
+				}
+
+				break;
+			}
+
+			case "ROOM_MEMBERS_ADDED": {
+				if (isRoomResponse(data.room)) {
+					const { room, users } = normalizeRoom(data.room);
+					storeApi.dispatch(usersActions.upsertUsers(users));
+					storeApi.dispatch(roomActions.upsertRoom(room));
+					break;
+				}
+
+				if (!data.roomId || !Array.isArray(data.members)) {
+					storeApi.dispatch(fetchMyRooms());
+					break;
+				}
+
+				const members = data.members.filter(isUserMini);
+				storeApi.dispatch(usersActions.upsertUsers(members));
+				storeApi.dispatch(roomActions.addMembersToRoomState({
+					roomId: data.roomId,
+					memberIds: members.map((member) => member.id),
+				}));
+				break;
+			}
+
+			case "ROOM_MEMBER_LEFT": {
+				const payload = data.payload;
+				if (!payload?.roomId || !payload.userId) {
+					storeApi.dispatch(fetchMyRooms());
+					break;
+				}
+
+				const state = storeApi.getState();
+				const myUserId = state.user.myUser?.id;
+
+				if (payload.userId === myUserId) {
+					storeApi.dispatch(roomActions.removeRoomState({ roomId: payload.roomId }));
+
+					if (state.message.activeRoomId === payload.roomId) {
+						storeApi.dispatch(messageActions.setActiveRoom(null));
+						storeApi.dispatch(messageActions.clearMessages());
+					}
+
+					break;
+				}
+
+				storeApi.dispatch(roomActions.removeMemberFromRoomState({
+					roomId: payload.roomId,
+					userId: payload.userId,
+				}));
+				break;
+			}
 		}
 	});
 	subscriptions[WS_ROOM_EVENTS_PATH] = messageRoomEventsSub;
@@ -263,4 +329,22 @@ export function registerWebSocketSubscriptions(
 		storeApi.dispatch(fetchMyRooms());
 	});
 	subscriptions[WS_USER_EVENTS_PATH] = userEventsSub;
+}
+
+function isRoomResponse(value: unknown): value is RoomResponse {
+	if (!value || typeof value !== "object") return false;
+
+	const candidate = value as Partial<RoomResponse>;
+	return (
+		typeof candidate.id === "number" &&
+		typeof candidate.type === "string" &&
+		Array.isArray(candidate.members)
+	);
+}
+
+function isUserMini(value: unknown): value is UserMini {
+	if (!value || typeof value !== "object") return false;
+
+	const candidate = value as Partial<UserMini>;
+	return typeof candidate.id === "number" && typeof candidate.username === "string";
 }

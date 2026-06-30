@@ -1,155 +1,191 @@
 .backdrop {
 	position: fixed;
 	inset: 0;
-	background: rgba(0, 0, 0, 0.6);
-	backdrop-filter: blur(2px);
+	z-index: 9999;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	z-index: 9999;
+	padding: 20px;
+	background: rgba(2, 6, 23, 0.66);
+	backdrop-filter: blur(10px);
 }
 
 .modal {
-	width: 360px;
-	max-width: 92vw;
-	background: var(--bg-secondary);
-	border-radius: 14px;
-	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-	display: flex;
-	flex-direction: column;
+	width: min(420px, 100%);
 	overflow: hidden;
-	border: 1px solid var(--border);
+	border: 1px solid color-mix(in srgb, var(--border) 75%, var(--accent) 25%);
+	border-radius: 18px;
+	background:
+		radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 34%),
+		var(--bg-secondary);
+	box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
 }
 
 .header {
-	padding: 16px 18px;
-	background: var(--bg-tertiary);
-	border-bottom: 1px solid var(--border);
-	font-size: 16px;
-	font-weight: 700;
-	color: var(--text-primary);
-	display: flex;
-	justify-content: center;
+	position: relative;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	gap: 12px;
 	align-items: center;
+	padding: 18px;
+	border-bottom: 1px solid var(--border);
+}
+
+.header h3 {
+	margin: 0;
+	color: var(--text-primary);
+	font-size: 18px;
+	font-weight: 800;
+}
+
+.header p {
+	margin: 3px 0 0;
+	color: var(--text-secondary);
+	font-size: 13px;
+	line-height: 1.35;
+}
+
+.headerIcon,
+.closeButton {
+	width: 38px;
+	height: 38px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--bg-tertiary) 82%, var(--accent) 18%);
+	color: var(--text-primary);
+}
+
+.closeButton {
+	cursor: pointer;
+	transition:
+		transform 0.16s ease,
+		border-color 0.16s ease,
+		background 0.16s ease;
+}
+
+.closeButton:hover {
+	transform: translateY(-1px);
+	border-color: var(--accent);
+	background: var(--bg-hover);
 }
 
 .body {
-	padding: 16px 18px;
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 10px;
+	padding: 18px;
 }
 
 .label {
+	color: var(--text-secondary);
 	font-size: 11px;
-	font-weight: 700;
-	color: var(--text-muted);
+	font-weight: 800;
+	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	letter-spacing: 0.06em;
+}
+
+.inputShell {
+	height: 46px;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 10px;
+	align-items: center;
+	padding: 0 13px;
+	border: 1px solid var(--border);
+	border-radius: 13px;
+	background: color-mix(in srgb, var(--bg-input) 82%, transparent);
+	color: var(--text-secondary);
+	transition:
+		border-color 0.16s ease,
+		box-shadow 0.16s ease,
+		background 0.16s ease;
+}
+
+.inputShell:focus-within {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+	background: var(--bg-input);
 }
 
 .input {
-	height: 40px;
-	border-radius: 8px;
-	border: 1px solid var(--border);
-	background: var(--bg-tertiary);
+	width: 100%;
+	min-width: 0;
+	border: 0;
+	outline: 0;
+	background: transparent;
 	color: var(--text-primary);
-	padding: 0 12px;
-	outline: none;
-	font-size: 14px;
-	transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.input:focus {
-	border-color: var(--accent);
-	box-shadow: 0 0 0 2px var(--accent-muted);
+	font-size: 15px;
 }
 
 .input::placeholder {
 	color: var(--text-muted);
 }
 
+.hint {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
 .footer {
 	display: flex;
 	justify-content: flex-end;
 	gap: 10px;
-	padding: 12px 18px 16px;
-	background: var(--bg-tertiary);
+	padding: 14px 18px 18px;
 	border-top: 1px solid var(--border);
+	background: color-mix(in srgb, var(--bg-tertiary) 72%, transparent);
 }
 
 .btn {
-	height: 36px;
+	height: 40px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
 	padding: 0 16px;
-	border-radius: 8px;
-	border: none;
+	border: 1px solid transparent;
+	border-radius: 12px;
 	cursor: pointer;
-	font-weight: 600;
-	font-size: 14px;
-	transition: background-color 0.15s ease;
+	font-weight: 800;
+	transition:
+		transform 0.16s ease,
+		opacity 0.16s ease,
+		background 0.16s ease,
+		border-color 0.16s ease;
 }
 
-.btn-secondary {
+.btn:hover:not(:disabled) {
+	transform: translateY(-1px);
+}
+
+.btn:disabled {
+	cursor: not-allowed;
+	opacity: 0.52;
+}
+
+.btnSecondary {
+	border-color: var(--border);
 	background: transparent;
 	color: var(--text-secondary);
 }
 
-.btn-secondary:hover {
+.btnSecondary:hover:not(:disabled) {
 	background: var(--bg-hover);
+	color: var(--text-primary);
 }
 
-/* кнопка Send — бирюзовая */
-.btn-primary {
+.btnPrimary {
 	background: var(--accent);
-	color: #0a0f12;
+	color: #06120f;
+	box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-.btn-primary:hover {
+.btnPrimary:hover:not(:disabled) {
 	background: var(--accent-hover);
-}
-
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-
-	to {
-		opacity: 1;
-	}
-}
-
-@keyframes fadeOut {
-	from {
-		opacity: 1;
-	}
-
-	to {
-		opacity: 0;
-	}
-}
-
-@keyframes scaleIn {
-	from {
-		opacity: 0;
-		transform: scale(0.96) translateY(8px);
-	}
-
-	to {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-	}
-}
-
-@keyframes scaleOut {
-	from {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-	}
-
-	to {
-		opacity: 0;
-		transform: scale(0.96) translateY(8px);
-	}
 }
 
 .backdrop[data-state="open"] {
@@ -161,9 +197,41 @@
 }
 
 .modal[data-state="open"] {
-	animation: scaleIn 0.2s ease forwards;
+	animation: scaleIn 0.22s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
 }
 
 .modal[data-state="close"] {
-	animation: scaleOut 0.18s ease forwards;
+	animation: scaleOut 0.16s ease forwards;
+}
+
+@keyframes fadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+	from { opacity: 1; }
+	to { opacity: 0; }
+}
+
+@keyframes scaleIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.97);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes scaleOut {
+	from {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(10px) scale(0.97);
+	}
 }

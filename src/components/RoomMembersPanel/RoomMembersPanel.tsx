@@ -8,11 +8,15 @@ export function RoomMembersPanel({ members, myUserId, onMemberSelect }: RoomMemb
 		return <div className={styles["empty-state"]}>No participants in this room yet.</div>;
 	}
 
+	const getMemberName = (member: UserMini) => (
+		member.displayName || member.username || `user-${member.id}`
+	);
+
 	const sortedMembers = [...members].sort((left, right) => {
 		if (left.id === myUserId) return -1;
 		if (right.id === myUserId) return 1;
 
-		return (left.displayName || left.username).localeCompare(right.displayName || right.username);
+		return getMemberName(left).localeCompare(getMemberName(right));
 	});
 
 	return (

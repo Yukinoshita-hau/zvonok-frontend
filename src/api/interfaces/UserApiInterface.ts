@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import type { User } from "../../entities/user";
 import type { UpdateUserDto } from "./UpdateUserDto";
+import type { UserMiniProfileDto } from "./UserMiniProfileDto";
 
 
 export interface UserApiInterface {
@@ -8,4 +9,5 @@ export interface UserApiInterface {
 	getMyUser: () => Promise<AxiosResponse<User>>;
 	updateMyUser: (body: UpdateUserDto) => Promise<AxiosResponse<User>>
 	uploadAvatar: (file: File) => Promise<AxiosResponse<void>>;
+	getMiniProfile: (userId: number) => Promise<AxiosResponse<UserMiniProfileDto>>;
 }

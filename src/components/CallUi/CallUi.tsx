@@ -45,6 +45,7 @@ export function CallUi({
 }: CallUiProps) {
 	const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
 	const [participantMenu, setParticipantMenu] = useState<ParticipantMenuState | null>(null);
+	const [elapsedCallMs, setElapsedCallMs] = useState(0);
 	const callRootRef = useRef<HTMLDivElement>(null);
 	const previousScreenTrackSidsRef = useRef<Set<string>>(new Set());
 	const dispatch = useDispatch<AppDispatch>();
@@ -62,6 +63,21 @@ export function CallUi({
 		remoteScreenAudioParticipants,
 		availableScreenTracks,
 	} = useCallParticipants();
+
+	useEffect(() => {
+		if (call.status !== "in_call" || !call.callStartedAtMs) {
+			setElapsedCallMs(0);
+			return;
+		}
+
+		const updateElapsed = () => {
+			setElapsedCallMs(Math.max(0, Date.now() - call.callStartedAtMs!));
+		};
+
+		updateElapsed();
+		const intervalId = window.setInterval(updateElapsed, 1000);
+		return () => window.clearInterval(intervalId);
+	}, [call.callStartedAtMs, call.status]);
 
 	const onLeave = () => {
 		if (call.conferenceCode) {
@@ -343,6 +359,12 @@ export function CallUi({
 
 	return (
 		<div ref={callRootRef} className={styles["call-root"]}>
+			{call.status === "in_call" && call.callStartedAtMs && (
+				<div className={styles["call-duration"]} title="Длительность звонка">
+					<span className={styles["call-duration-dot"]} />
+					{formatCallDuration(elapsedCallMs)}
+				</div>
+			)}
 			<InteractiveHost
 				callId={call.callId}
 				isWebSocketConnected={isWebSocketConnected}
@@ -538,4 +560,17 @@ export function CallUi({
 			</InteractiveHost>
 		</div>
 	);
+}
+
+function formatCallDuration(ms: number): string {
+	const totalSeconds = Math.floor(ms / 1000);
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+
+	if (hours > 0) {
+		return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+	}
+
+	return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }

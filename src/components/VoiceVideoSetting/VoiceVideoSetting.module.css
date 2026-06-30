@@ -250,6 +250,69 @@
 	padding-bottom: 24px;
 }
 
+.section-tabs {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 8px;
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	padding: 4px;
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+	backdrop-filter: blur(14px);
+}
+
+.section-tabs button {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 10px 9px;
+	border: 1px solid transparent;
+	border-radius: 11px;
+	background: transparent;
+	color: var(--text-secondary);
+	cursor: pointer;
+	text-align: left;
+	transition:
+		background 0.16s ease,
+		border-color 0.16s ease,
+		color 0.16s ease,
+		transform 0.16s ease;
+}
+
+.section-tabs button:hover {
+	transform: translateY(-1px);
+	background: var(--bg-hover);
+	color: var(--text-primary);
+}
+
+.section-tabs button[data-active="true"] {
+	border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+	background: color-mix(in srgb, var(--accent) 18%, var(--bg-tertiary));
+	color: var(--text-primary);
+	box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.section-tabs strong {
+	overflow: hidden;
+	font-size: 13px;
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.section-tabs span {
+	overflow: hidden;
+	font-size: 11px;
+	line-height: 1.25;
+	color: var(--text-muted);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .settings-card {
 	display: flex;
 	flex-direction: column;
@@ -297,6 +360,10 @@
 }
 
 @media (max-width: 720px) {
+	.section-tabs {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
 	.inline-grid {
 		grid-template-columns: 1fr;
 	}

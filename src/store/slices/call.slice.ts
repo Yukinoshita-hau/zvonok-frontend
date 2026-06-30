@@ -29,6 +29,7 @@ export interface CallState {
 	lastEventId: string | null;
 	processedEventIds: string[];
 	lastAcceptedCallId: number | null;
+	callStartedAtMs: number | null;
 	error: string | null;
 	selectedScreenTrackSid: string | null;
 	presentationMode: CallPresentationMode;
@@ -56,6 +57,7 @@ export const initialState: CallState = {
 	lastEventId: null,
 	processedEventIds: [],
 	lastAcceptedCallId: null,
+	callStartedAtMs: null,
 	error: null,
 	selectedScreenTrackSid: null,
 	presentationMode: "expanded",
@@ -160,6 +162,7 @@ const applyConferenceConnection = (
 	state.conferenceCode = data.code;
 	state.conferenceJoinUrl = "joinUrl" in data ? data.joinUrl : null;
 	state.isConferenceHost = isHost;
+	state.callStartedAtMs = Date.now();
 	state.error = null;
 	state.presentationMode = "expanded";
 	state.isCallFocusMode = false;
@@ -179,6 +182,7 @@ export const callSlice = createSlice({
 			state.participantToken = null;
 			state.tokenExpiresAt = null;
 			state.lastAcceptedCallId = null;
+			state.callStartedAtMs = null;
 		},
 		applyCallEvent: (state, action: PayloadAction<BaseCallEvent>) => {
 			const e = action.payload;
@@ -292,6 +296,7 @@ export const callSlice = createSlice({
 				state.callId = action.payload.callId;
 				state.tokenExpiresAt = action.payload.expiresAt ?? null;
 				state.status = "in_call";
+				state.callStartedAtMs = state.callStartedAtMs ?? Date.now();
 			})
 			.addCase(getCallToken.rejected, (state, action) => {
 				state.status = "error";
@@ -328,6 +333,7 @@ export const callSlice = createSlice({
 					state.serverUrl = data.serverUrl;
 					state.participantToken = data.participantToken;
 					state.tokenExpiresAt = data.expiresAt;
+					state.callStartedAtMs = Date.now();
 					state.error = null;
 					state.presentationMode = "expanded";
 				}

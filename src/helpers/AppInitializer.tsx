@@ -4,11 +4,39 @@ import type { AppDispatch, RootState } from "../store/store";
 import { AxiosError } from "axios";
 import authApi from "../api/authApi";
 import { getMyUser, userActions } from "../store/slices/user.slice";
+import type { CustomTheme } from "../store/slices/ui.slice";
 
+const CUSTOM_THEME_VARIABLES: Array<{
+	key: keyof CustomTheme;
+	cssVariable: string;
+}> = [
+	{ key: "bgPrimary", cssVariable: "--bg-primary" },
+	{ key: "bgSecondary", cssVariable: "--bg-secondary" },
+	{ key: "bgTertiary", cssVariable: "--bg-tertiary" },
+	{ key: "bgInput", cssVariable: "--bg-input" },
+	{ key: "accent", cssVariable: "--accent" },
+	{ key: "textPrimary", cssVariable: "--text-primary" },
+	{ key: "textSecondary", cssVariable: "--text-secondary" },
+	{ key: "border", cssVariable: "--border" },
+];
 
 export function AuthInitializator({ children }: { children: ReactNode }) {
 	const dispatch = useDispatch<AppDispatch>();
 	const { isAuthChecked } = useSelector((s: RootState) => s.user)
+	const theme = useSelector((s: RootState) => s.ui.theme);
+	const customTheme = useSelector((s: RootState) => s.ui.customTheme);
+
+	useEffect(() => {
+		document.documentElement.setAttribute("data-theme", theme);
+
+		for (const item of CUSTOM_THEME_VARIABLES) {
+			if (theme === "custom") {
+				document.documentElement.style.setProperty(item.cssVariable, customTheme[item.key]);
+			} else {
+				document.documentElement.style.removeProperty(item.cssVariable);
+			}
+		}
+	}, [customTheme, theme]);
 
 	useEffect(() => {
 		const run = async () => {
