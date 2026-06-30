@@ -6,6 +6,7 @@ import { CallTrackToggleButton } from "./CallTrackToggleButton";
 import { CallViewModeMenu } from "./CallViewModeMenu";
 import { CallMoreMenu } from "./CallMoreMenu";
 import { CallInteractiveMenu } from "./CallInteractiveMenu";
+import { CallDeviceSelectButton } from "./CallDeviceSelectButton";
 import styles from "./CallUi.module.css";
 import type { CallControlsProps } from "./CallControls.props";
 
@@ -14,6 +15,10 @@ export const CallControls = React.memo(function CallControls({
 	isFocusMode,
 	isCinemaMode,
 	canOpenCinema,
+	cameras,
+	microphones,
+	selectedCameraId,
+	selectedMicrophoneId,
 	cameraCaptureOptions,
 	cameraPublishOptions,
 	screenShareCaptureOptions,
@@ -36,24 +41,38 @@ export const CallControls = React.memo(function CallControls({
 	return (
 		<div className={styles["controls-bar"]} aria-label="Управление звонком">
 			<div className={styles["controls-primary-group"]}>
-				<MicrophoneToggleButton
-					className={styles["control-button"]}
-					enabledLabel=""
-					disabledLabel=""
-					showIcon
-					iconSize={18}
-				/>
+				<div className={styles["device-control"]}>
+					<CallDeviceSelectButton
+						kind="microphone"
+						devices={microphones}
+						selectedDeviceId={selectedMicrophoneId}
+					/>
+					<MicrophoneToggleButton
+						className={styles["control-button"]}
+						enabledLabel=""
+						disabledLabel=""
+						showIcon
+						iconSize={18}
+					/>
+				</div>
 
-				<CallTrackToggleButton
-					kind="camera"
-					enabledIcon={Video}
-					disabledIcon={VideoOff}
-					label="Камера"
-					enabledTitle="Камера включена"
-					disabledTitle="Камера выключена"
-					captureOptions={cameraCaptureOptions}
-					publishOptions={cameraPublishOptions}
-				/>
+				<div className={styles["device-control"]}>
+					<CallDeviceSelectButton
+						kind="camera"
+						devices={cameras}
+						selectedDeviceId={selectedCameraId}
+					/>
+					<CallTrackToggleButton
+						kind="camera"
+						enabledIcon={Video}
+						disabledIcon={VideoOff}
+						label="Камера"
+						enabledTitle="Камера включена"
+						disabledTitle="Камера выключена"
+						captureOptions={cameraCaptureOptions}
+						publishOptions={cameraPublishOptions}
+					/>
+				</div>
 
 				<CallTrackToggleButton
 					kind="screenShare"

@@ -6,6 +6,7 @@ import { type CallRoomType, type callStatus } from "../interfaces/call.types";
 import type { RestoreCallSessionResponse } from "../../api/interfaces/RestoreCallSessionResponse";
 import { conferenceApi } from "../../api/conferenceApi";
 import type { ConferenceCreateResponse, ConferenceJoinResponse } from "../../api/interfaces/ConferenceDtos";
+import { parseBackendDateMs } from "../../utils/timeHelpers";
 
 export type CallPresentationMode = "expanded" | "minimized" | "hidden";
 
@@ -75,6 +76,10 @@ const keepUi = (state: CallState) => ({
 const resetCallState = (state: CallState, status: callStatus = "idle") => {
 	const ui = keepUi(state);
 	Object.assign(state, initialState, ui, { status })
+}
+
+function parseCallStartedAtMs(value?: string | null): number | null {
+	return parseBackendDateMs(value);
 }
 
 export const getCallToken = createAsyncThunk("call/getCallToken", async (callId: number, thunkAPI) => {
@@ -296,7 +301,10 @@ export const callSlice = createSlice({
 				state.callId = action.payload.callId;
 				state.tokenExpiresAt = action.payload.expiresAt ?? null;
 				state.status = "in_call";
-				state.callStartedAtMs = state.callStartedAtMs ?? Date.now();
+				state.callStartedAtMs = state.callStartedAtMs
+					?? parseCallStartedAtMs(action.payload.startedAt)
+					?? parseCallStartedAtMs(action.payload.activatedAt)
+					?? Date.now();
 			})
 			.addCase(getCallToken.rejected, (state, action) => {
 				state.status = "error";
@@ -333,7 +341,9 @@ export const callSlice = createSlice({
 					state.serverUrl = data.serverUrl;
 					state.participantToken = data.participantToken;
 					state.tokenExpiresAt = data.expiresAt;
-					state.callStartedAtMs = Date.now();
+					state.callStartedAtMs = parseCallStartedAtMs(data.startedAt)
+						?? parseCallStartedAtMs(data.activatedAt)
+						?? Date.now();
 					state.error = null;
 					state.presentationMode = "expanded";
 				}

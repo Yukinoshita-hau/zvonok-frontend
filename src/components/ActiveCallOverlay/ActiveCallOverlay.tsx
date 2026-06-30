@@ -103,7 +103,6 @@ export function ActiveCallOverlay() {
 		navigate(`/dm?roomId=${call.chatRoomId}`);
 	};
 
-	console.log(import.meta.env.VITE_LIVEKIT_DEBUG)
 	return (
 		<>
 			<LiveKitRoom
@@ -142,7 +141,7 @@ export function ActiveCallOverlay() {
 							style={{ height: isCinemaMode ? "110%" : `${callHeight}vh` }}
 						>
 							<CallUi
-								hasChat={Boolean(call.chatRoomId)}
+								hasChat
 								isFocusMode={call.isCallFocusMode}
 								isCinemaMode={call.isTheaterMode}
 								onHide={() => dispatch(callActions.setPresentationMode("hidden"))}

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserMiniProfile } from "../../hooks/useUserMiniProfile";
 import { friendActions } from "../../store/slices/friend.slice";
 import type { AppDispatch, RootState } from "../../store/store";
+import { formatDateTime } from "../../utils/timeHelpers";
 import { StringToColor } from "../../utils/stringHelpers";
 import styles from "./UserMiniProfileModal.module.css";
 import type { UserMiniProfileModalProps } from "./UserMiniProfileModal.props";
@@ -38,7 +39,7 @@ export function UserMiniProfileModal({
 		if (isSelf) return "Это вы";
 		if (profile?.status === "ONLINE") return "В сети";
 		if (profile?.lastSeenAt) {
-			return `Был(а): ${new Date(profile.lastSeenAt).toLocaleString()}`;
+			return `Был(а): ${formatDateTime(profile.lastSeenAt)}`;
 		}
 
 		return status === "failed" ? "Краткий профиль" : "Не в сети";

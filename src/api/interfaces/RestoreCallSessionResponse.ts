@@ -18,4 +18,6 @@ export interface RestoreCallSessionResponse {
 	serverUrl: string | null;
 	participantToken: string | null;
 	expiresAt: string | null;
+	startedAt?: string | null;
+	activatedAt?: string | null;
 }

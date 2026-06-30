@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import type { FriendRequest } from "../../api/interfaces/FriendRequest";
 import { friendActions } from "../../store/slices/friend.slice";
 import type { AppDispatch } from "../../store/store";
+import { formatDate } from "../../utils/timeHelpers";
 import { StringToColor } from "../../utils/stringHelpers";
 import { UserMiniProfileModal } from "../UserMiniProfileModal/UserMiniProfileModal";
 import styles from "./FriendRequestsList.module.css";
@@ -73,7 +74,7 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 								</div>
 								<div className={styles.meta}>
 									<div className={styles.username}>{user.displayName}</div>
-									<div className={styles.date}>{new Date(request.createdAt).toLocaleDateString()}</div>
+									<div className={styles.date}>{formatDate(request.createdAt)}</div>
 								</div>
 							</div>
 

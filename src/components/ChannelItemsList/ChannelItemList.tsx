@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import styles from "./ChannelItemList.module.css";
 import type { AppDispatch, RootState } from "../../store/store";
-import { formatTime, isSameDay } from "../../utils/timeHelpers";
+import { formatDate, formatTime, isSameDay } from "../../utils/timeHelpers";
 import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
 import type { ChannelItemListProps } from "./ChannelItemList.props";
 import { channelMessageActions, fetchChannelMessages } from "../../store/slices/channelMessage.slice";
@@ -138,7 +138,7 @@ export function ChannelItemList({ serverId, channelFolderId, channelId }: Channe
 				} else if (isSameDay(yesterday, currentMsg.sentAt)) {
 					itemArr.push({ type: "divider", label: "Yesterday", rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
 				} else {
-					itemArr.push({ type: "divider", label: new Date(currentMsg.sentAt).toLocaleDateString(), rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
+					itemArr.push({ type: "divider", label: formatDate(currentMsg.sentAt), rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
 				}
 			}
 

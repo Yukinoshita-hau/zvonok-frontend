@@ -20,12 +20,15 @@ import { TheaterModeView } from "./TheaterMode/TheaterModeView";
 import { useCallParticipants } from "./hooks/useCallParticipants";
 import { ParticipantsGrid, type ParticipantContextMenuAnchor } from "./ParticipantsGrid";
 import { CallControls } from "./CallControls";
+import { CallChatPanel } from "./CallChatPanel";
+import { getCallDevices } from "./CallDeviceSelectButton";
 import type { ParticipantCard } from "./hooks/useCallParticipants";
 import { ParticipantContextMenu } from "./ParticipantContextMenu/ParticipantContextMenu";
 import { deviceActions, type ParticipantAudioSource } from "../../store/slices/device.slice";
 import { FocusedScreenShareVolume } from "./FocusedScreenShareVolume";
 import type { CanvasParticipantOption } from "../CallCanvas/CallCanvas.types";
 import { InteractiveHost } from "../InteractiveHost/InteractiveHost";
+import { parseBackendDateMs } from "../../utils/timeHelpers";
 
 interface ParticipantMenuState {
 	cardId: string;
@@ -38,7 +41,6 @@ export function CallUi({
 	isFocusMode,
 	isCinemaMode,
 	onHide,
-	onOpenChat,
 	onMinimize,
 	onToggleFocus,
 	onToggleCinema,
@@ -46,6 +48,9 @@ export function CallUi({
 	const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
 	const [participantMenu, setParticipantMenu] = useState<ParticipantMenuState | null>(null);
 	const [elapsedCallMs, setElapsedCallMs] = useState(0);
+	const [isCallChatOpen, setIsCallChatOpen] = useState(false);
+	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
 	const callRootRef = useRef<HTMLDivElement>(null);
 	const previousScreenTrackSidsRef = useRef<Set<string>>(new Set());
 	const dispatch = useDispatch<AppDispatch>();
@@ -53,6 +58,9 @@ export function CallUi({
 	const call = useSelector((s: RootState) => s.call);
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 	const device = useSelector((s: RootState) => s.device);
+	const activeCall = useSelector((s: RootState) => (
+		call.chatRoomId ? s.activeCall.activeCallsByRoomId[call.chatRoomId] ?? null : null
+	));
 	const participantVolumes = useSelector((s: RootState) => s.device.participantVolumes);
 	const isWebSocketConnected = useSelector((s: RootState) => s.websocket.isConnected);
 
@@ -65,19 +73,53 @@ export function CallUi({
 	} = useCallParticipants();
 
 	useEffect(() => {
-		if (call.status !== "in_call" || !call.callStartedAtMs) {
+		let isMounted = true;
+
+		const loadDevices = async () => {
+			try {
+				const [nextCameras, nextMicrophones] = await Promise.all([
+					getCallDevices("videoinput"),
+					getCallDevices("audioinput"),
+				]);
+				if (!isMounted) return;
+				setCameras(nextCameras);
+				setMicrophones(nextMicrophones);
+			} catch (error) {
+				console.error("Failed to load call devices", error);
+			}
+		};
+
+		void loadDevices();
+		navigator.mediaDevices?.addEventListener?.("devicechange", loadDevices);
+
+		return () => {
+			isMounted = false;
+			navigator.mediaDevices?.removeEventListener?.("devicechange", loadDevices);
+		};
+	}, []);
+
+	const activeCallStartedAtMs = useMemo(() => {
+		return parseDateMs(activeCall?.startedAt)
+			?? parseDateMs(activeCall?.activatedAt)
+			?? null;
+	}, [activeCall?.activatedAt, activeCall?.startedAt]);
+
+	const effectiveCallStartedAtMs = activeCallStartedAtMs ?? call.callStartedAtMs;
+
+	useEffect(() => {
+		if (call.status !== "in_call" || !effectiveCallStartedAtMs) {
 			setElapsedCallMs(0);
 			return;
 		}
 
 		const updateElapsed = () => {
-			setElapsedCallMs(Math.max(0, Date.now() - call.callStartedAtMs!));
+			setElapsedCallMs(Math.max(0, Date.now() - effectiveCallStartedAtMs));
 		};
 
 		updateElapsed();
 		const intervalId = window.setInterval(updateElapsed, 1000);
 		return () => window.clearInterval(intervalId);
-	}, [call.callStartedAtMs, call.status]);
+	}, [effectiveCallStartedAtMs, call.status]);
 
 	const onLeave = () => {
 		if (call.conferenceCode) {
@@ -359,7 +401,7 @@ export function CallUi({
 
 	return (
 		<div ref={callRootRef} className={styles["call-root"]}>
-			{call.status === "in_call" && call.callStartedAtMs && (
+			{call.status === "in_call" && effectiveCallStartedAtMs && (
 				<div className={styles["call-duration"]} title="Длительность звонка">
 					<span className={styles["call-duration-dot"]} />
 					{formatCallDuration(elapsedCallMs)}
@@ -506,11 +548,15 @@ export function CallUi({
 					isFocusMode={isFocusMode}
 					isCinemaMode={isCinemaMode}
 					canOpenCinema={canOpenCinemaMode}
+					cameras={cameras}
+					microphones={microphones}
+					selectedCameraId={device.selectedCameraId}
+					selectedMicrophoneId={device.selectedMicrophoneId}
 					cameraCaptureOptions={cameraCaptureOptions}
 					cameraPublishOptions={cameraPublishOptions}
 					screenShareCaptureOptions={screenShareCaptureOptions}
 					screenSharePublishOptions={screenSharePublishOptions}
-					onOpenChat={onOpenChat}
+					onOpenChat={() => setIsCallChatOpen((value) => !value)}
 					onOpenWhiteboard={interactive.openWhiteboard}
 					onOpenCodeSession={interactive.openCodeSession}
 					onToggleScreenOverlay={interactive.toggleScreenOverlay}
@@ -524,6 +570,12 @@ export function CallUi({
 					isCodeSessionOpen={interactive.isCodeSessionOpen}
 					canUseScreenOverlay={interactive.canUseScreenOverlay}
 					isScreenOverlayOpen={interactive.isScreenOverlayOpen}
+				/>
+			)}
+			{!isCinemaMode && (
+				<CallChatPanel
+					isOpen={isCallChatOpen}
+					onClose={() => setIsCallChatOpen(false)}
 				/>
 			)}
 			{participantMenu && contextMenuCard && !isCinemaMode && (
@@ -573,4 +625,8 @@ function formatCallDuration(ms: number): string {
 	}
 
 	return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function parseDateMs(value?: string | null): number | null {
+	return parseBackendDateMs(value);
 }

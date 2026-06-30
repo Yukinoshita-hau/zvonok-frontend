@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import type { ShortMessage } from "../../entities/shortMessage";
-import { formatTime, isSameDay } from "../../utils/timeHelpers";
+import { formatDate, formatTime, isSameDay } from "../../utils/timeHelpers";
 import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
 import { markRoomAsRead } from "../../store/slices/room.slice";
 import { StringToColor } from "../../utils/stringHelpers";
@@ -287,7 +287,7 @@ export function DmItemsList() {
 				} else if (isSameDay(yesterday, currentMsg.sentAt)) {
 					itemArr.push({ type: "divider", label: "Yesterday", rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
 				} else {
-					itemArr.push({ type: "divider", label: new Date(currentMsg.sentAt).toLocaleDateString(), rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
+					itemArr.push({ type: "divider", label: formatDate(currentMsg.sentAt), rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
 				}
 			}
 

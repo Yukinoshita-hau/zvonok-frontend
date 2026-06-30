@@ -10,6 +10,10 @@ export interface CallControlsProps {
 	isFocusMode: boolean;
 	isCinemaMode: boolean;
 	canOpenCinema: boolean;
+	cameras: MediaDeviceInfo[];
+	microphones: MediaDeviceInfo[];
+	selectedCameraId: string;
+	selectedMicrophoneId: string;
 	cameraCaptureOptions: ReturnType<typeof getCameraCaptureOptions>;
 	cameraPublishOptions: ReturnType<typeof getCameraPublishOptions>;
 	screenShareCaptureOptions: ReturnType<typeof getScreenShareCaptureOptions>;
