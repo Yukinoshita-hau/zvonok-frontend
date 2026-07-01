@@ -107,7 +107,7 @@
 	height: 28px;
 	border-radius: 6px;
 	flex-shrink: 6px;
-	opacity: 0;
+	opacity: 1;
 	transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 

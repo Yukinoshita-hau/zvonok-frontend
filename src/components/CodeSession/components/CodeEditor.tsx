@@ -8,7 +8,7 @@ import type { RemoteCursorState } from "../../../store/slices/codeSession.slice"
 export interface CodeEditorSettings {
 	fontSize: number;
 	tabSize: number;
-	fontFamily: "default" | "mono" | "system";
+	fontFamily: "default" | "jetbrains" | "fira" | "cascadia";
 	wordWrap: boolean;
 	minimap: boolean;
 	lineNumbers: boolean;
@@ -160,8 +160,18 @@ function toMonacoLanguage(language: string): string {
 }
 
 function getEditorFontFamily(fontFamily: CodeEditorSettings["fontFamily"]): string | undefined {
-	if (fontFamily === "mono") return "Consolas, 'SFMono-Regular', 'Courier New', monospace";
-	if (fontFamily === "system") return "ui-monospace, Menlo, Monaco, Consolas, monospace";
+	if (fontFamily === "jetbrains") {
+		return "'JetBrains Mono', Consolas, 'Courier New', monospace";
+	}
+
+	if (fontFamily === "fira") {
+		return "'Fira Code', Consolas, 'Courier New', monospace";
+	}
+
+	if (fontFamily === "cascadia") {
+		return "'Cascadia Code', Consolas, 'Courier New', monospace";
+	}
+
 	return undefined;
 }
 

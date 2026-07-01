@@ -6,6 +6,7 @@
 	background:
 		radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 20%, transparent), transparent 38%),
 		var(--bg-primary);
+	flex: 1;
 }
 
 .card {

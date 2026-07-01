@@ -4,7 +4,6 @@ import type { FriendListItemProps } from "./FriendListItem.props";
 import type { AppDispatch, RootState } from "../../store/store";
 import { friendActions } from "../../store/slices/friend.slice";
 import { StringToColor } from "../../utils/stringHelpers";
-import { normalizeRoom } from "../../utils/normalizeRoom";
 
 export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 	const dispatch = useDispatch<AppDispatch>();

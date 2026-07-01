@@ -45,8 +45,9 @@ export function CodeEditorSettingsPanel({ settings, onChange }: CodeEditorSettin
 					value={settings.fontFamily}
 					options={[
 						{ value: "default", label: "Default" },
-						{ value: "mono", label: "Mono" },
-						{ value: "system", label: "System" },
+						{ value: "jetbrains", label: "JetBrains" },
+						{ value: "fira", label: "Fira" },
+						{ value: "cascadia", label: "Cascadia" },
 					]}
 					onChange={(value) => update("fontFamily", value)}
 				/>
