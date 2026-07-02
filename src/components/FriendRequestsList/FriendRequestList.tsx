@@ -6,6 +6,7 @@ import { friendActions } from "../../store/slices/friend.slice";
 import type { AppDispatch } from "../../store/store";
 import { formatDate } from "../../utils/timeHelpers";
 import { StringToColor } from "../../utils/stringHelpers";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import { UserMiniProfileModal } from "../UserMiniProfileModal/UserMiniProfileModal";
 import styles from "./FriendRequestsList.module.css";
 import type { FriendRequestsListProps } from "./FriendRequestsList.props";
@@ -49,6 +50,7 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 
 				{requestsList.map((request) => {
 					const user = getRequestUser(request);
+					const avatarUrl = resolveMediaUrl(user.avatarUrl);
 
 					return (
 						<div
@@ -66,8 +68,8 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 									className={styles.avatar}
 									style={{ backgroundColor: StringToColor(user.username) }}
 								>
-									{user.avatarUrl ? (
-										<img src={user.avatarUrl} crossOrigin="anonymous" alt={user.displayName} />
+									{avatarUrl ? (
+										<img src={avatarUrl} alt={user.displayName} />
 									) : (
 										<div>{(user.displayName?.[0] || "?").toUpperCase()}</div>
 									)}

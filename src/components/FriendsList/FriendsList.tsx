@@ -4,6 +4,8 @@ import type { FriendsListProps } from "./FriendsList.props";
 import type { AppDispatch } from "../../store/store";
 import { friendActions } from "../../store/slices/friend.slice";
 
+const crossIconUrl = `${import.meta.env.BASE_URL}cross-icon.svg`;
+
 export function FriendsList({ friends, onClick }: FriendsListProps) {
 	const dispatch = useDispatch<AppDispatch>();
 console.log(friends)
@@ -44,7 +46,7 @@ console.log(friends)
 									e.stopPropagation();
 									removeHandle(friend.friendUsername);
 								}}>
-								<img src="/cross-icon.svg" />
+								<img src={crossIconUrl} />
 							</button>
 						</div>
 					</div>

@@ -1,5 +1,4 @@
 import {
-	SCREEN_SHARE_PRESET_GROUPS,
 	SCREEN_SHARE_QUALITY_PRESETS,
 	type ScreenShareManualQuality,
 	type ScreenSharePresetGroup,
@@ -20,20 +19,20 @@ const DEFAULT_QUALITY: ScreenShareManualQuality = "high";
 const WEB_SOURCES: ScreenShareSource[] = [
 	{
 		id: "web-screen-window",
-		name: "Choose screen or window",
+		name: "Выбрать экран или окно",
 		type: "screen",
 	},
 	{
 		id: "web-tab",
-		name: "Choose browser tab",
+		name: "Выбрать вкладку браузера",
 		type: "tab",
 	},
 ];
 
 export const SCREEN_SHARE_PICKER_QUALITY_GROUPS: ScreenShareQualityGroup[] = GROUP_ORDER.map((group) => ({
 	group,
-	label: SCREEN_SHARE_PRESET_GROUPS[group].label,
-	description: SCREEN_SHARE_PRESET_GROUPS[group].description,
+	label: getGroupLabel(group),
+	description: getGroupDescription(group),
 	presets: Object.values(SCREEN_SHARE_QUALITY_PRESETS).filter((preset) => preset.group === group),
 }));
 
@@ -69,4 +68,30 @@ export function getScreenShareQualityPreset(value: ScreenShareManualQuality) {
 
 export function getDefaultScreenShareQuality() {
 	return DEFAULT_QUALITY;
+}
+
+function getGroupLabel(group: ScreenSharePresetGroup) {
+	switch (group) {
+		case "base":
+			return "Базовые";
+		case "gaming":
+			return "Игры";
+		case "crystal":
+			return "Чёткость";
+		case "godlike":
+			return "Экстрим";
+	}
+}
+
+function getGroupDescription(group: ScreenSharePresetGroup) {
+	switch (group) {
+		case "base":
+			return "Стабильные пресеты на каждый день.";
+		case "gaming":
+			return "Приоритет плавности и движения.";
+		case "crystal":
+			return "Больше детализации и читаемости.";
+		case "godlike":
+			return "Только для тестов и очень мощного интернета.";
+	}
 }

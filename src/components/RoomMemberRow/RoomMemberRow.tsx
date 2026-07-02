@@ -1,4 +1,5 @@
 import { StringToColor } from "../../utils/stringHelpers";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import styles from "./RoomMemberRow.module.css";
 import type { RoomMemberRowProps } from "./RoomMemberRow.props";
 
@@ -17,12 +18,13 @@ export function RoomMemberRow({ member, isCurrentUser, onClick }: RoomMemberRowP
 	const statusLabel = STATUS_LABEL[status] ?? status;
 	const statusClass = styles[`status-${status.toLowerCase()}`] ?? styles["status-offline"];
 	const avatarBg = StringToColor(username || displayName || String(member.id));
+	const avatarUrl = resolveMediaUrl(member.avatarUrl);
 
 	return (
 		<button type="button" className={styles["member-item"]} onClick={onClick}>
-			<div className={styles["member-avatar"]} style={!member.avatarUrl ? { backgroundColor: avatarBg } : undefined}>
-				{member.avatarUrl ? (
-					<img src={member.avatarUrl} crossOrigin="anonymous" alt={`${displayName} avatar`} />
+			<div className={styles["member-avatar"]} style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}>
+				{avatarUrl ? (
+					<img src={avatarUrl} alt={`${displayName} avatar`} />
 				) : (
 					<span>{displayName.slice(0, 1).toUpperCase()}</span>
 				)}

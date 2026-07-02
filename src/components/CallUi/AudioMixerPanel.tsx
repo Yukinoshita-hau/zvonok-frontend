@@ -4,6 +4,7 @@ import type { AppDispatch, RootState } from "../../store/store";
 import { deviceActions } from "../../store/slices/device.slice";
 import styles from "./CallUi.module.css";
 import type { Participant } from "livekit-client";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 interface AudioMixerPanelProps {
 	sortedParticipants: Participant[];
@@ -45,13 +46,14 @@ export function AudioMixerPanel({
 					const card = participantCardByIdentity.get(participant.identity);
 					const displayName = card?.displayName || participant.identity;
 					const avatarLabel = displayName.slice(0, 1).toUpperCase();
+					const avatarUrl = resolveMediaUrl(card?.avatarUrl);
 
 					return (
 						<div key={participant.identity} className={styles["audio-row"]}>
 							<div className={styles["audio-header"]}>
 								<div className={styles["audio-avatar"]}>
-									{card?.avatarUrl ? (
-										<img src={card.avatarUrl} crossOrigin="anonymous" alt="" className={styles["audio-avatar-image"]} />
+									{avatarUrl ? (
+										<img src={avatarUrl} alt="" className={styles["audio-avatar-image"]} />
 									) : (
 										<span>{avatarLabel}</span>
 									)}

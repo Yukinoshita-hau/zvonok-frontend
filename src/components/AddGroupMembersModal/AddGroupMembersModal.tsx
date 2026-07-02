@@ -2,6 +2,7 @@ import { Search, UserPlus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { StringToColor } from "../../utils/stringHelpers";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import styles from "./AddGroupMembersModal.module.css";
 import type { AddGroupMembersModalProps } from "./AddGroupMembersModal.props";
 
@@ -96,6 +97,7 @@ export function AddGroupMembersModal({
 							const isSelected = selectedIds.includes(friend.friendId);
 							const username = friend.friendUsername ?? `user-${friend.friendId}`;
 							const displayName = friend.friendDisplayName ?? username;
+							const avatarUrl = resolveMediaUrl(friend.friendAvatarUrl);
 
 							return (
 								<button
@@ -109,8 +111,8 @@ export function AddGroupMembersModal({
 										className={styles.avatar}
 										style={{ backgroundColor: StringToColor(username) }}
 									>
-										{friend.friendAvatarUrl ? (
-											<img src={friend.friendAvatarUrl} alt={displayName} />
+										{avatarUrl ? (
+											<img src={avatarUrl} alt={displayName} />
 										) : (
 											<span>{displayName[0]?.toUpperCase()}</span>
 										)}

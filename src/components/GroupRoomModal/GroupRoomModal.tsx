@@ -2,6 +2,7 @@ import { Search, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useModalAnimation } from "../../hooks/useModalAnimation";
 import { StringToColor } from "../../utils/stringHelpers";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import styles from "./GroupRoomModal.module.css";
 import type { GroupRoomModalProps } from "./GroupRoomModal.props";
 
@@ -133,6 +134,7 @@ export function GroupRoomModal({
 								const username = getFriendUsername(friend.friendId, friend.friendUsername);
 								const displayName = friend.friendDisplayName ?? username;
 								const isSelected = selected.includes(username);
+								const avatarUrl = resolveMediaUrl(friend.friendAvatarUrl);
 
 								return (
 									<button
@@ -146,8 +148,8 @@ export function GroupRoomModal({
 											className={styles.avatar}
 											style={{ backgroundColor: StringToColor(username) }}
 										>
-											{friend.friendAvatarUrl ? (
-												<img src={friend.friendAvatarUrl} alt={displayName} />
+											{avatarUrl ? (
+												<img src={avatarUrl} alt={displayName} />
 											) : (
 												<span>{displayName[0]?.toUpperCase()}</span>
 											)}

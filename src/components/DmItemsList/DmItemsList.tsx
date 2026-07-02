@@ -11,6 +11,7 @@ import { MessagesSkeleton } from "../MessagesSkeleton/MessagesSkeleton";
 import { markRoomAsRead } from "../../store/slices/room.slice";
 import { StringToColor } from "../../utils/stringHelpers";
 import { MessageAttachments } from "../MessageAttachments/MessageAttachments";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 type ContextMenuState = {
 	x: number;
@@ -344,7 +345,7 @@ export function DmItemsList() {
 							style={{ background: StringToColor(sender.username) }}
 						>
 							{sender.avatarUrl ? (
-								<img src={sender.avatarUrl} crossOrigin="anonymous" />
+								<img src={resolveMediaUrl(sender.avatarUrl)} />
 							) : (
 								<div>{(sender.displayName?.[0] || "?").toUpperCase()}</div>
 							)}

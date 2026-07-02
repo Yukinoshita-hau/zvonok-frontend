@@ -45,15 +45,61 @@ export function ScreenShareQualitySelector({ value, onChange }: ScreenShareQuali
 							data-selected={preset.value === value}
 							data-experimental={preset.isExperimental ? "true" : undefined}
 							onClick={() => onChange(preset.value)}
-							title={preset.warning ?? preset.bandwidthHint ?? preset.description}
+							title={getPresetHint(preset.warning ?? preset.bandwidthHint ?? preset.description) ?? undefined}
 						>
-							<strong>{preset.label}</strong>
+							<strong>{getPresetLabel(preset.label)}</strong>
 							<span>{preset.width}x{preset.height} / {preset.frameRate}fps</span>
-							<small>{preset.bandwidthHint ?? `${preset.bandwidthMbps ?? 1}+ Mbps`}</small>
+							<small>{getPresetHint(preset.bandwidthHint) ?? `${preset.bandwidthMbps ?? 1}+ Мбит/с`}</small>
 						</button>
 					))}
 				</div>
 			</section>
 		</div>
 	);
+}
+
+function getPresetLabel(label: string) {
+	switch (label) {
+		case "Low":
+			return "Низкое";
+		case "Medium":
+			return "Среднее";
+		case "Medium+":
+			return "Среднее+";
+		case "High":
+			return "Высокое";
+		case "High+":
+			return "Высокое+";
+		default:
+			return label
+				.replace("Gaming", "Игры")
+				.replace("Crystal", "Чёткость")
+				.replace("Godlike", "Экстрим");
+	}
+}
+
+function getPresetHint(hint?: string) {
+	if (!hint) return null;
+	if (hint.includes("Experimental")) {
+		return "Экспериментально: браузер, источник или видеокарта могут снизить качество.";
+	}
+	if (hint.includes("Needs stable upload around 2.5+ Mbps")) return "Нужна стабильная отдача около 2.5+ Мбит/с";
+	if (hint.includes("Needs stable upload around 4+ Mbps")) return "Нужна стабильная отдача около 4+ Мбит/с";
+	if (hint.includes("Needs stable upload around 6+ Mbps")) return "Нужна стабильная отдача около 6+ Мбит/с";
+	if (hint.includes("Needs very stable upload around 9+ Mbps")) return "Нужна очень стабильная отдача около 9+ Мбит/с";
+	if (hint.includes("Requires very strong upload")) return "Нужна очень высокая скорость отдачи";
+	if (hint.includes("Requires extreme upload and hardware")) return "Нужны экстремальная скорость отдачи и мощное железо";
+	return hint
+		.replace("Mbps", "Мбит/с")
+		.replace("Low-latency motion-focused stream", "Низкая задержка и плавное движение")
+		.replace("Fast motion, very high upload required", "Быстрое движение, нужна высокая отдача")
+		.replace("Fast motion, high bandwidth", "Быстрое движение, высокий битрейт")
+		.replace("Extreme high FPS, best-effort only", "Экстремальный FPS, без гарантии")
+		.replace("Extreme FPS showcase", "Экстремальный FPS для тестов")
+		.replace("Extreme experimental, may fallback", "Экспериментально, возможен откат качества")
+		.replace("Sharper text and detail", "Более чёткий текст и детали")
+		.replace("Very high quality detail", "Очень высокая детализация")
+		.replace("Very high quality, strong upload", "Очень высокое качество, нужна сильная отдача")
+		.replace("Very high quality, requires very strong upload", "Очень высокое качество, нужна очень сильная отдача")
+		.replace("Absurd/experimental, for testing only", "Экстремально и только для тестов");
 }

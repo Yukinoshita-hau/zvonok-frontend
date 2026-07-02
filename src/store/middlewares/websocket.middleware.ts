@@ -28,16 +28,32 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 			}
 
 			client = createWebSocketClient(token);
-			client.onConnect = (frame) => {
+			const currentClient = client;
+
+			currentClient.onConnect = (frame) => {
 				console.log("CONNECTED:", frame.command);
 				storeApi.dispatch(websocketActions.connectSuccess());
 
-				if (client) {
-					registerWebSocketSubscriptions(client, storeApi, subscriptions);
+				if (currentClient === client) {
+					registerWebSocketSubscriptions(currentClient, storeApi, subscriptions);
 				}
 			};
 
-			client.activate();
+			currentClient.onStompError = (frame) => {
+				const message = frame.headers.message || "STOMP connection error";
+				storeApi.dispatch(websocketActions.connectError(message));
+			};
+
+			currentClient.onWebSocketError = () => {
+				storeApi.dispatch(websocketActions.connectError("WebSocket connection error"));
+			};
+
+			currentClient.onWebSocketClose = (event) => {
+				if (currentClient !== client || currentClient.connected) return;
+				storeApi.dispatch(websocketActions.connectError(`WebSocket closed: ${event.code || "unknown"}`));
+			};
+
+			currentClient.activate();
 			return;
 		}
 

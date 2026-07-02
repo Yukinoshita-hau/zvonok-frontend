@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "../../store/store";
 import { formatTime } from "../../utils/timeHelpers";
 import { StringToColor } from "../../utils/stringHelpers";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export function RoomListItem({ room }: RoomListItemProps) {
 	const navigate = useNavigate();
@@ -29,6 +30,7 @@ export function RoomListItem({ room }: RoomListItemProps) {
 	const avatarSrc = isPrivateRoom
 		? interlocutor?.avatarUrl ?? null
 		: room.avatarUrl ?? null;
+	const resolvedAvatarSrc = resolveMediaUrl(avatarSrc);
 
 	const avatarFallback = isPrivateRoom
 		? (interlocutor?.displayName?.[0] || "?").toUpperCase()
@@ -48,13 +50,12 @@ export function RoomListItem({ room }: RoomListItemProps) {
 			<div className={styles["avatar-wrapper"]}>
 				<div
 					className={styles["avatar"]}
-					style={!avatarSrc ? { backgroundColor: avatarBg } : undefined}
+					style={!resolvedAvatarSrc ? { backgroundColor: avatarBg } : undefined}
 				>
-					{avatarSrc ? (
+					{resolvedAvatarSrc ? (
 						<img
-							src={avatarSrc}
+							src={resolvedAvatarSrc}
 							alt={title}
-							crossOrigin="anonymous"
 							className={styles["avatar-image"]}
 						/>
 					) : (

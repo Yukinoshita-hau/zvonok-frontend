@@ -20,6 +20,7 @@ import { SelectedAttachmentsPreview } from "../../components/MessageAttachments/
 import { useSelectedAttachments } from "../../hooks/useSelectedAttachments";
 import type { AttachmentType } from "../../api/interfaces/MessageAttachmentDtos";
 import { UserMiniProfileModal } from "../../components/UserMiniProfileModal/UserMiniProfileModal";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export function DmChat() {
 	const navigate = useNavigate();
@@ -121,6 +122,7 @@ export function DmChat() {
 		}
 		return currentRoom?.avatarUrl || null;
 	}, [currentRoom, interlocutor]);
+	const resolvedAvatarSrc = resolveMediaUrl(avatarSrc);
 
 	const avatarFallback = useMemo(() => {
 		if (currentRoom?.type === "PRIVATE") {
@@ -271,11 +273,10 @@ export function DmChat() {
 					title={currentRoom?.type === "PRIVATE" ? "Открыть профиль" : "Открыть настройки комнаты"}
 				>
 					<div className={styles["avatar"]} style={{ background: avatarBg }}>
-						{avatarSrc ? (
+						{resolvedAvatarSrc ? (
 							<img
-								src={avatarSrc}
+								src={resolvedAvatarSrc}
 								alt={roomTitle}
-								crossOrigin="anonymous"
 								className={styles["avatar-image"]}
 							/>
 						) : (

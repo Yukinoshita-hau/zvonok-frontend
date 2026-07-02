@@ -65,7 +65,7 @@ export function MicrophoneSettingsSection({
 
 		const nextHotkey = createShortcutPreference(event.nativeEvent);
 		if (!nextHotkey) {
-			setHotkeyCaptureError("Use a modifier combo or an F-key.");
+			setHotkeyCaptureError("Нажмите обычную клавишу или сочетание клавиш.");
 			return;
 		}
 
@@ -110,7 +110,7 @@ export function MicrophoneSettingsSection({
 						ref={hotkeyInputRef}
 						className={styles["input"]}
 						readOnly
-						value={isCapturingMuteHotkey ? "Press shortcut..." : muteMicrophoneHotkey.label}
+						value={isCapturingMuteHotkey ? "Нажмите клавишу..." : muteMicrophoneHotkey.label}
 						onClick={startHotkeyCapture}
 						onKeyDown={onMuteHotkeyKeyDown}
 					/>
@@ -135,7 +135,7 @@ export function MicrophoneSettingsSection({
 				</div>
 
 				<span className={styles["help-text"]}>
-					По умолчанию - Ctrl+Alt+M. Нажмите Escape во время записи, чтобы отменить.
+					Можно назначить одну клавишу, например M или Space, либо сочетание. Escape отменяет запись.
 				</span>
 				{hotkeyCaptureError && (
 					<span className={styles["error-inline"]}>{hotkeyCaptureError}</span>
@@ -246,9 +246,6 @@ function getDeviceLabel(
 
 function createShortcutPreference(event: KeyboardEvent): KeyboardShortcutPreference | null {
 	if (isModifierKey(event.key)) return null;
-	const hasModifier = event.ctrlKey || event.altKey || event.shiftKey || event.metaKey;
-	const isFunctionKey = /^F([1-9]|1[0-9]|2[0-4])$/.test(event.code);
-	if (!hasModifier && !isFunctionKey) return null;
 
 	const keyLabel = getShortcutKeyLabel(event);
 	if (!keyLabel) return null;

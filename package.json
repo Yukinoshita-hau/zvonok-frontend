@@ -8,10 +8,10 @@
 		"dev": "vite",
 		"dev:web": "vite",
 		"build": "tsc -b && vite build",
-		"build:web": "vite build",
+		"build:web": "vite build --base=/",
 		"build:electron": "tsc -p electron/tsconfig.json",
 		"dev:desktop": "concurrently -k \"npm:dev:web\" \"wait-on http://localhost:3000 && npm run build:electron && electron .\"",
-		"dist:desktop": "npm run build:web && npm run build:electron && electron-builder",
+		"dist:desktop": "vite build --base=./ && npm run build:electron && electron-builder",
 		"lint": "eslint .",
 		"preview": "vite preview"
 	},

@@ -7,6 +7,7 @@ import type { InvitePreviewDto } from "../../api/interfaces/InviteDtos";
 import { fetchMyRooms } from "../../store/slices/room.slice";
 import { toastActions } from "../../store/slices/toast.slice";
 import type { AppDispatch } from "../../store/store";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import styles from "./InviteJoinPage.module.css";
 
 type PageStatus = "loading" | "ready" | "joining" | "joined" | "failed";
@@ -103,7 +104,7 @@ export function InviteJoinPage() {
 					<>
 						<div className={styles.roomAvatar}>
 							{preview.roomAvatarUrl ? (
-								<img src={preview.roomAvatarUrl} alt={preview.roomName} />
+								<img src={resolveMediaUrl(preview.roomAvatarUrl)} alt={preview.roomName} />
 							) : (
 								<span>{preview.roomName[0]?.toUpperCase()}</span>
 							)}

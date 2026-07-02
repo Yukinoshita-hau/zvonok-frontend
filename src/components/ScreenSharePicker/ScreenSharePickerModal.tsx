@@ -25,9 +25,9 @@ interface ScreenSharePickerModalProps {
 }
 
 const SOURCE_TABS: Array<{ type: ScreenShareSourceType; label: string }> = [
-	{ type: "screen", label: "Screens" },
-	{ type: "window", label: "Windows" },
-	{ type: "tab", label: "Tabs" },
+	{ type: "screen", label: "Экраны" },
+	{ type: "window", label: "Окна" },
+	{ type: "tab", label: "Вкладки" },
 ];
 
 export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSharePickerModalProps) {
@@ -87,10 +87,10 @@ export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSha
 			<section className={styles["modal"]} onMouseDown={(event) => event.stopPropagation()}>
 				<header className={styles["modal-header"]}>
 					<div>
-						<h2>Screen share</h2>
-						<p>{isDesktop ? "Choose a screen or window to share." : "Choose options, then pick the source in the browser prompt."}</p>
+						<h2>Демонстрация экрана</h2>
+						<p>{isDesktop ? "Выберите экран или окно для показа." : "Выберите параметры, затем укажите источник в окне браузера."}</p>
 					</div>
-					<button type="button" className={styles["close-button"]} onClick={onClose} aria-label="Close">
+					<button type="button" className={styles["close-button"]} onClick={onClose} aria-label="Закрыть">
 						<X size={20} />
 					</button>
 				</header>
@@ -119,8 +119,8 @@ export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSha
 							))}
 						</div>
 					)}
-					{status === "failed" && <div className={styles["empty-state"]}>Could not load share sources.</div>}
-					{status === "idle" && visibleSources.length === 0 && <div className={styles["empty-state"]}>No sources available.</div>}
+					{status === "failed" && <div className={styles["empty-state"]}>Не удалось загрузить источники показа.</div>}
+					{status === "idle" && visibleSources.length === 0 && <div className={styles["empty-state"]}>Нет доступных источников.</div>}
 					{status === "idle" && visibleSources.length > 0 && (
 						<div className={styles["source-grid"]}>
 							{visibleSources.map((source) => (
@@ -137,7 +137,7 @@ export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSha
 
 				<div className={styles["settings-row"]}>
 					<div className={styles["settings-block"]}>
-						<span className={styles["section-label"]}>Quality</span>
+						<span className={styles["section-label"]}>Качество</span>
 						<ScreenShareQualitySelector value={quality} onChange={setQuality} />
 					</div>
 					<label className={styles["audio-toggle"]} data-disabled={!isSystemAudioAvailable}>
@@ -147,16 +147,16 @@ export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSha
 							disabled={!isSystemAudioAvailable}
 							onChange={(event) => setIncludeSystemAudio(event.target.checked)}
 						/>
-						<span>System audio</span>
+						<span>Системный звук</span>
 					</label>
 				</div>
 
 				<footer className={styles["modal-footer"]}>
 					<button type="button" className={styles["secondary-button"]} onClick={onClose}>
-						Cancel
+						Отмена
 					</button>
 					<button type="button" className={styles["primary-button"]} disabled={!selectedSource} onClick={handleConfirm}>
-						Start sharing
+						Начать показ
 					</button>
 				</footer>
 			</section>

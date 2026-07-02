@@ -8,12 +8,14 @@ RUN npm ci
 COPY . .
 
 ARG VITE_API_URL=http://localhost:8080/api
+ARG VITE_WS_URL=ws://localhost:8080/api/ws-raw
 ARG VITE_LIVEKIT_URL=ws://localhost:7880
 
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
 ENV VITE_LIVEKIT_URL=$VITE_LIVEKIT_URL
 
-RUN npx vite build
+RUN npm run build:web
 
 
 FROM node:22-alpine

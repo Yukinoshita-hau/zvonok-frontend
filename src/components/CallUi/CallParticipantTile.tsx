@@ -5,6 +5,7 @@ import { StringToColor } from "../../utils/stringHelpers";
 import styles from "./CallUi.module.css";
 import type { CallParticipantTileProps } from "./CallParticipantTile.props";
 import type { RootState } from "../../store/store";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export function CallParticipantTile({
 	participant,
@@ -23,6 +24,7 @@ export function CallParticipantTile({
 	const identity = displayName || participant.name || "Участник";
 	const avatarLabel = identity.slice(0, 1).toUpperCase();
 	const avatarBg = StringToColor(identity);
+	const resolvedAvatarUrl = resolveMediaUrl(avatarUrl);
 	const micEnabled = participant.isMicrophoneEnabled;
 	const localThreshold = (isAutoInputSensitivity ? 30 : voiceActivityThreshold) / 100;
 	// На карточке трансляции не подсвечиваем речь: это экран, а не участник.
@@ -61,13 +63,12 @@ export function CallParticipantTile({
 				) : (
 					<div
 						className={styles["avatar-fallback"]}
-						style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}
+						style={!resolvedAvatarUrl ? { backgroundColor: avatarBg } : undefined}
 					>
-						{avatarUrl ? (
+						{resolvedAvatarUrl ? (
 							<img
 								className={styles["avatar-image"]}
-								src={avatarUrl}
-								crossOrigin="anonymous"
+								src={resolvedAvatarUrl}
 								alt={`Аватар ${identity}`}
 							/>
 						) : (

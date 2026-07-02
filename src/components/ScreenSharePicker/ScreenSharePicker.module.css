@@ -298,7 +298,7 @@
 }
 
 .quality-card[data-experimental="true"]::after {
-	content: "EXP";
+	content: "ЭКСП";
 	position: absolute;
 	right: 7px;
 	top: 7px;

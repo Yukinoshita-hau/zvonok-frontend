@@ -1,5 +1,6 @@
 import styles from "./AudioMixPanel.module.css";
 import { ParticipantVolumeRow } from "./ParticipantVolumeRow";
+import { resolveMediaUrl } from "../../../utils/mediaUrl";
 
 export interface AudioMixParticipantItem {
 	identity: string;
@@ -45,7 +46,7 @@ export function AudioMixPanel({
 					<div className={styles["header"]}>
 						<div className={styles["avatar"]}>
 							{participant.avatarUrl ? (
-								<img src={participant.avatarUrl} alt={`Аватар ${participant.displayName}`} className={styles["avatarImage"]} />
+								<img src={resolveMediaUrl(participant.avatarUrl)} alt={`Аватар ${participant.displayName}`} className={styles["avatarImage"]} />
 							) : (
 								<span>{participant.avatarLabel}</span>
 							)}

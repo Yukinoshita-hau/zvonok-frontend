@@ -12,6 +12,10 @@ import { callActions } from "../../store/slices/call.slice";
 import { StringToColor } from "../../utils/stringHelpers";
 import { SettingsIcon } from "lucide-react";
 import { ConferenceLauncher } from "../ConferenceLauncher/ConferenceLauncher";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+
+const messageNavIconUrl = `${import.meta.env.BASE_URL}message-nav-icon.png`;
+const notifyIconUrl = `${import.meta.env.BASE_URL}notify-icon.png`;
 
 export function NavigateBar({ servers }: NavigateBarProps) {
 	const navigate = useNavigate();
@@ -26,6 +30,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 	const requestsCount = friend.incomingRequests.length + friend.outgoingRequests.length;
 	const unreadNotification = notifications.filter(n => n.read === false).length;
 	const avatarBg = StringToColor(username);
+	const resolvedAvatarUrl = resolveMediaUrl(avatarUrl);
 
 	const goToDM = () => {
 		dispatch(callActions.setCallFocusMode(false))
@@ -40,7 +45,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 	return <div className={styles["navigate-bar"]}>
 		<div className={styles["top"]}>
 			<NavigateBarButton onClick={goToDM}>
-				<img src="/message-nav-icon.png" />
+				<img src={messageNavIconUrl} />
 				{requestsCount > 0 && (
 					<span className={styles["messages-badge"]}></span>
 				)}
@@ -62,7 +67,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 
 		<div className={styles["bottom"]}>
 			<NavigateBarButton onClick={notificationHandle}>
-				<img src="/notify-icon.png" />
+				<img src={notifyIconUrl} />
 
 				{unreadNotification > 0 && (
 					<span className={styles["messages-badge"]}/>
@@ -75,9 +80,9 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 				<SettingsIcon color="white" size={28} />
 			</NavigateBarButton>
 
-			<div className={styles["user"]} onClick={() => null} style={!avatarUrl ? { backgroundColor: avatarBg } : undefined}>
-				{!!avatarUrl ? (
-					<img src={avatarUrl} crossOrigin="anonymous" alt="avatar" />
+			<div className={styles["user"]} onClick={() => null} style={!resolvedAvatarUrl ? { backgroundColor: avatarBg } : undefined}>
+				{!!resolvedAvatarUrl ? (
+					<img src={resolvedAvatarUrl} alt="avatar" />
 				) : (
 					<div>{(displayName?.[0] || "U").toUpperCase()}</div>
 				)}

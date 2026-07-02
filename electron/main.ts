@@ -175,6 +175,41 @@ function setupNotifications() {
 	});
 }
 
+function setupDesktopWebSocketHeaders() {
+	session.defaultSession.webRequest.onBeforeSendHeaders(
+		{ urls: ["ws://*/*", "wss://*/*"] },
+		(details, callback) => {
+			const nextHeaders = { ...details.requestHeaders };
+			const currentOrigin = getHeader(nextHeaders, "Origin");
+
+			if (!currentOrigin || currentOrigin === "null" || currentOrigin.startsWith("file://")) {
+				const endpointOrigin = getWebSocketHttpOrigin(details.url);
+				if (endpointOrigin) {
+					nextHeaders.Origin = endpointOrigin;
+				}
+			}
+
+			callback({ requestHeaders: nextHeaders });
+		}
+	);
+}
+
+function getHeader(headers: Record<string, string | string[]>, headerName: string) {
+	const matchingKey = Object.keys(headers).find((key) => key.toLowerCase() === headerName.toLowerCase());
+	const value = matchingKey ? headers[matchingKey] : undefined;
+	return Array.isArray(value) ? value[0] : value;
+}
+
+function getWebSocketHttpOrigin(url: string) {
+	try {
+		const parsedUrl = new URL(url);
+		const protocol = parsedUrl.protocol === "wss:" ? "https:" : "http:";
+		return `${protocol}//${parsedUrl.host}`;
+	} catch {
+		return null;
+	}
+}
+
 function setupDisplayMediaRequestHandler() {
 	ipcMain.handle("screen-share:get-sources", async () => {
 		const sources = await desktopCapturer.getSources({
@@ -240,6 +275,7 @@ if (!gotSingleInstanceLock) {
 
 	void app.whenReady().then(() => {
 		setupNotifications();
+		setupDesktopWebSocketHeaders();
 		setupDisplayMediaRequestHandler();
 		createMainWindow();
 		createTray();

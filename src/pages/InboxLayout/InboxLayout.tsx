@@ -14,6 +14,9 @@ import { FriendListItem } from "../../components/FriendListItem/FriendListItem";
 
 export type buttonModeType = "Messages" | "Friends";
 
+const inboxFilterIconUrl = `${import.meta.env.BASE_URL}inbox-message-filter-icon.png`;
+const addRoomIconUrl = `${import.meta.env.BASE_URL}add-room-icon.png`;
+
 export function InboxLayout() {
 	const navigate = useNavigate();
 	const [filterMode, setFilterMode] = useState<"Newest" | "Oldest">("Newest");
@@ -140,12 +143,12 @@ export function InboxLayout() {
 						className={styles["messages-header-filter"]}
 						onClick={() => setFilterMode(filterMode === "Newest" ? "Oldest" : "Newest")}
 					>
-						<img src="/inbox-message-filter-icon.png" alt="inbox icon" />
+						<img src={inboxFilterIconUrl} alt="inbox icon" />
 						{filterMode}
 					</button>
 
 					<button className={styles["add-button"]} onClick={handleAddClick}>
-						<img src="/add-room-icon.png" alt="Add" />
+						<img src={addRoomIconUrl} alt="Add" />
 					</button>
 				</div>
 

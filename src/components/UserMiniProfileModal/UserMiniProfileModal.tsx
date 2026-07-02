@@ -8,6 +8,7 @@ import { friendActions } from "../../store/slices/friend.slice";
 import type { AppDispatch, RootState } from "../../store/store";
 import { formatDateTime } from "../../utils/timeHelpers";
 import { StringToColor } from "../../utils/stringHelpers";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import styles from "./UserMiniProfileModal.module.css";
 import type { UserMiniProfileModalProps } from "./UserMiniProfileModal.props";
 
@@ -31,6 +32,7 @@ export function UserMiniProfileModal({
 		username ??
 		"Пользователь";
 	const avatarUrl = profile?.avatarUrl ?? fallbackUser?.avatarUrl ?? (isSelf ? myUser?.avatarUrl : null);
+	const resolvedAvatarUrl = resolveMediaUrl(avatarUrl);
 	const friendshipStatus = profile?.friendshipStatus ?? (isSelf ? "SELF" : "NOT_FRIENDS");
 	const incomingRequestId = profile?.incomingRequestId ?? fallbackUser?.incomingRequestId ?? null;
 	const canRenderFallback = Boolean(username || displayName);
@@ -96,8 +98,8 @@ export function UserMiniProfileModal({
 								className={styles.avatar}
 								style={{ backgroundColor: StringToColor(username ?? displayName) }}
 							>
-								{avatarUrl ? (
-									<img src={avatarUrl} alt={displayName} />
+								{resolvedAvatarUrl ? (
+									<img src={resolvedAvatarUrl} alt={displayName} />
 								) : (
 									<span>{displayName[0]?.toUpperCase()}</span>
 								)}

@@ -4,6 +4,9 @@ import type { FriendListItemProps } from "./FriendListItem.props";
 import type { AppDispatch, RootState } from "../../store/store";
 import { friendActions } from "../../store/slices/friend.slice";
 import { StringToColor } from "../../utils/stringHelpers";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+
+const crossIconUrl = `${import.meta.env.BASE_URL}cross-icon.svg`;
 
 export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 	const dispatch = useDispatch<AppDispatch>();
@@ -15,6 +18,7 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 	const username = normalizedUser?.username ?? friend.friendUsername;
 	const displayName = normalizedUser?.displayName ?? friend.friendDisplayName;
 	const avatarUrl = normalizedUser?.avatarUrl ?? friend.friendAvatarUrl;
+	const resolvedAvatarUrl = resolveMediaUrl(avatarUrl);
 
 	const avatarBg = StringToColor(username);
 
@@ -29,8 +33,8 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 		>
 			<div className={styles["avatar-wrapper"]}>
 				<div className={styles["avatar"]} style={{ background: avatarBg }}>
-					{avatarUrl ? (
-						<img src={avatarUrl} crossOrigin="anonymous" />
+					{resolvedAvatarUrl ? (
+						<img src={resolvedAvatarUrl} />
 					) : (
 						<div>{(displayName?.[0] || "?").toUpperCase()}</div>
 					)}
@@ -51,7 +55,7 @@ export function FriendListItem({ friend, onClick }: FriendListItemProps) {
 							removeHandle();
 						}}
 					>
-						<img src="/cross-icon.svg" />
+						<img src={crossIconUrl} />
 					</button>
 				</div>
 			</div>
