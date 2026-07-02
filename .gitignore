@@ -11,7 +11,19 @@ node_modules
 dist
 dist-ssr
 *.local
+release
 
+release/
+dist/
+dist-electron/
+out/
+build/
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.zip
+*.7z
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

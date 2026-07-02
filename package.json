@@ -57,12 +57,17 @@
 		"files": [
 			"dist/**/*",
 			"electron-dist/**/*",
+			"assets/icons/**/*",
 			"package.json"
 		],
 		"win": {
-			"target": "nsis"
+			"target": "nsis",
+			"icon": "assets/icons/icon.ico"
 		},
 		"nsis": {
+			"installerIcon": "assets/icons/icon.ico",
+			"uninstallerIcon": "assets/icons/icon.ico",
+			"uninstallDisplayName": "Zvonok",
 			"oneClick": false,
 			"perMachine": false,
 			"allowToChangeInstallationDirectory": true

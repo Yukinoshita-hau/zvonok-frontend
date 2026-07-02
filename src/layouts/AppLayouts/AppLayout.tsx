@@ -10,6 +10,7 @@ import { ActiveCallOverlay } from "../../components/ActiveCallOverlay/ActiveCall
 import { websocketActions } from "../../store/slices/websocket.slice";
 import { ToastContainer } from "../../components/ToastContainer/ToastContainer";
 import { CallRestoreBootstrap } from "../../components/CallRestoreBootstrap/CallRestoreBootstrap";
+import { DesktopNotificationBridge } from "../../components/DesktopNotificationBridge/DesktopNotificationBridge";
 
 export function AppLayout() {
 	const dispatch = useDispatch<AppDispatch>();
@@ -36,6 +37,7 @@ export function AppLayout() {
 			<CallOverlay />
 			<ActiveCallOverlay />
 			<ToastContainer />
+			<DesktopNotificationBridge />
 		</div>
 	</div>
 }

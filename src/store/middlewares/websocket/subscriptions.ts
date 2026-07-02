@@ -27,6 +27,7 @@ import { usersActions } from "../../slices/users.slice";
 import { normalizeMessage } from "../../../utils/normalizeMessage";
 import { normalizeRoom } from "../../../utils/normalizeRoom";
 import { soundPlayer } from "../../../utils/soundPlayer";
+import { isAppFocused, showDesktopNotification, type DesktopNotificationPayload } from "../../../services/desktop.service";
 import type { SubscriptionRegistry, WebSocketStoreApi } from "./types";
 import type { RoomResponse } from "../../../entities/room";
 import type { UserMini } from "../../../entities/UserMini";
@@ -58,6 +59,16 @@ export function registerWebSocketSubscriptions(
 			soundPlayer.playMessage();
 		}
 
+		if (!isFromMe && data.eventType === "MESSAGE" && data.room?.id && !(isActiveRoom && isAppFocused())) {
+			pushDesktopNotification({
+				type: "message",
+				title: data.sender?.displayName ?? data.sender?.username ?? "Новое сообщение",
+				body: getMessageNotificationBody(normalized.message.content, normalized.message.attachments.length),
+				roomId: data.room.id,
+				userId: data.sender?.id,
+			});
+		}
+
 		storeApi.dispatch(usersActions.upsertUser(normalized.user));
 		storeApi.dispatch(messageActions.execEventMessage(normalized.message));
 
@@ -76,6 +87,21 @@ export function registerWebSocketSubscriptions(
 
 		storeApi.dispatch(callActions.applyCallEvent(data));
 		storeApi.dispatch(activeCallActions.handleCallEvent(data));
+
+		if (data.type === "CALL_INVITE") {
+			const state = storeApi.getState();
+			const callerUsername = data.callerUsername ?? data.fromUser;
+
+			if (callerUsername !== state.user.myUser?.username && !isAppFocused()) {
+				pushDesktopNotification({
+					type: "call",
+					title: "Входящий звонок",
+					body: callerUsername ? `${callerUsername} звонит вам` : "У вас входящий звонок",
+					roomId: data.chatRoomId ?? data.roomId,
+					callId: data.callId,
+				});
+			}
+		}
 
 		const callId = data.callId;
 		if (!callId) return;
@@ -167,6 +193,13 @@ export function registerWebSocketSubscriptions(
 				if (data.payload?.senderUsername === myUsername) {
 					storeApi.dispatch(fetchOutgoingRequests());
 				} else if (data.payload?.receiverUsername === myUsername) {
+					pushDesktopNotification({
+						type: "friend_request",
+						title: "Новая заявка в друзья",
+						body: `${data.payload?.senderDisplayName ?? data.payload?.senderUsername} хочет добавить вас в друзья`,
+						userId: data.payload?.senderId,
+					});
+
 					storeApi.dispatch(notificationAction.pushNotification({
 						notification: {
 							type: "info",
@@ -347,4 +380,17 @@ function isUserMini(value: unknown): value is UserMini {
 
 	const candidate = value as Partial<UserMini>;
 	return typeof candidate.id === "number" && typeof candidate.username === "string";
+}
+
+function pushDesktopNotification(payload: DesktopNotificationPayload) {
+	void showDesktopNotification(payload).catch((error) => {
+		console.warn("Failed to show desktop notification", error);
+	});
+}
+
+function getMessageNotificationBody(content: string | null, attachmentsCount: number) {
+	const trimmed = content?.trim();
+	if (trimmed) return trimmed;
+	if (attachmentsCount > 0) return attachmentsCount === 1 ? "Вложение" : `Вложения: ${attachmentsCount}`;
+	return "Новое сообщение";
 }
