@@ -3,9 +3,15 @@
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
+	"main": "electron-dist/main.js",
 	"scripts": {
 		"dev": "vite",
+		"dev:web": "vite",
 		"build": "tsc -b && vite build",
+		"build:web": "vite build",
+		"build:electron": "tsc -p electron/tsconfig.json",
+		"dev:desktop": "concurrently -k \"npm:dev:web\" \"wait-on http://localhost:3000 && npm run build:electron && electron .\"",
+		"dist:desktop": "npm run build:web && npm run build:electron && electron-builder",
 		"lint": "eslint .",
 		"preview": "vite preview"
 	},
@@ -19,8 +25,8 @@
 		"axios": "^1.13.2",
 		"classnames": "^2.5.1",
 		"livekit-client": "^2.17.2",
-		"monaco-editor": "^0.55.1",
 		"lucide-react": "^0.577.0",
+		"monaco-editor": "^0.53.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"react-redux": "^9.2.0",
@@ -33,9 +39,33 @@
 		"@types/react": "^19.2.5",
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react-swc": "^4.2.2",
+		"concurrently": "^10.0.3",
+		"electron": "^43.0.0",
+		"electron-builder": "^26.15.3",
 		"globals": "^16.5.0",
 		"prettier": "^3.6.2",
 		"typescript": "~5.9.3",
-		"vite": "^7.2.4"
+		"vite": "^7.2.4",
+		"wait-on": "^9.0.10"
+	},
+	"build": {
+		"appId": "info.zvonok.desktop",
+		"productName": "Zvonok",
+		"directories": {
+			"output": "release"
+		},
+		"files": [
+			"dist/**/*",
+			"electron-dist/**/*",
+			"package.json"
+		],
+		"win": {
+			"target": "nsis"
+		},
+		"nsis": {
+			"oneClick": false,
+			"perMachine": false,
+			"allowToChangeInstallationDirectory": true
+		}
 	}
 }

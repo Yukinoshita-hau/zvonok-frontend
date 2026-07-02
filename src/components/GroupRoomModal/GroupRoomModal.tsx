@@ -52,7 +52,7 @@ export function GroupRoomModal({
 		});
 	};
 
-	const canCreate = name.trim().length > 0 && selected.length >= 2;
+	const canCreate = name.trim().length > 0;
 
 	return (
 		<div
