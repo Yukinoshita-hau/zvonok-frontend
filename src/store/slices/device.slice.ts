@@ -8,6 +8,10 @@ import type {
 import { normalizeMicQualitySetting, type MicQualitySetting } from "../../utils/microphoneQuality";
 import type { ZvonokAudioGraphConfig, ZvonokVoicePresetId } from "../../livekit/audio/ZvonokAudioGraphConfig";
 import { getVoicePresetConfig } from "../../livekit/audio/ZvonokAudioPresets";
+import {
+	normalizeKeyboardShortcut,
+	type KeyboardShortcutPreference,
+} from "../../utils/keyboardShortcut";
 
 export type ParticipantAudioSource = "microphone" | "screenShareAudio";
 
@@ -25,16 +29,6 @@ export interface ScreenShareRuntimeInfo {
 	activePreset: string | null;
 	fallbackReason: string | null;
 	updatedAt: string | null;
-}
-
-export interface KeyboardShortcutPreference {
-	code: string;
-	key: string;
-	ctrlKey: boolean;
-	altKey: boolean;
-	shiftKey: boolean;
-	metaKey: boolean;
-	label: string;
 }
 
 export interface ConnectionTestResult {
@@ -67,6 +61,8 @@ export interface DeviceState {
 	screenShareRuntime: ScreenShareRuntimeInfo;
 	connectionTestResult: ConnectionTestResult;
 	muteMicrophoneHotkey: KeyboardShortcutPreference;
+	toggleCameraHotkey: KeyboardShortcutPreference;
+	toggleScreenShareHotkey: KeyboardShortcutPreference;
 }
 
 const DEVICE_PREFS_STORAGE_KEY = "device-preferences-v2";
@@ -81,21 +77,25 @@ export const DEFAULT_MUTE_MICROPHONE_HOTKEY: KeyboardShortcutPreference = {
 	label: "Ctrl+Alt+M",
 };
 
-function normalizeKeyboardShortcut(
-	value: Partial<KeyboardShortcutPreference> | undefined,
-	fallback: KeyboardShortcutPreference
-): KeyboardShortcutPreference {
-	if (!value?.code || typeof value.code !== "string") return fallback;
-	return {
-		code: value.code,
-		key: typeof value.key === "string" ? value.key : "",
-		ctrlKey: Boolean(value.ctrlKey),
-		altKey: Boolean(value.altKey),
-		shiftKey: Boolean(value.shiftKey),
-		metaKey: Boolean(value.metaKey),
-		label: typeof value.label === "string" && value.label.trim() ? value.label : fallback.label,
-	};
-}
+export const DEFAULT_TOGGLE_CAMERA_HOTKEY: KeyboardShortcutPreference = {
+	code: "KeyV",
+	key: "v",
+	ctrlKey: true,
+	altKey: true,
+	shiftKey: false,
+	metaKey: false,
+	label: "Ctrl+Alt+V",
+};
+
+export const DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY: KeyboardShortcutPreference = {
+	code: "KeyS",
+	key: "s",
+	ctrlKey: true,
+	altKey: true,
+	shiftKey: false,
+	metaKey: false,
+	label: "Ctrl+Alt+S",
+};
 
 function loadStoredPreferences() {
 	try {
@@ -129,6 +129,8 @@ function saveStoredPreferences(state: DeviceState) {
 				voiceProcessingPreset: state.voiceProcessingPreset,
 				voiceProcessingConfig: state.voiceProcessingConfig,
 				muteMicrophoneHotkey: state.muteMicrophoneHotkey,
+				toggleCameraHotkey: state.toggleCameraHotkey,
+				toggleScreenShareHotkey: state.toggleScreenShareHotkey,
 			})
 		);
 	} catch (error) {
@@ -178,6 +180,14 @@ const initialState: DeviceState = {
 		storedPrefs?.muteMicrophoneHotkey,
 		DEFAULT_MUTE_MICROPHONE_HOTKEY
 	),
+	toggleCameraHotkey: normalizeKeyboardShortcut(
+		storedPrefs?.toggleCameraHotkey,
+		DEFAULT_TOGGLE_CAMERA_HOTKEY
+	),
+	toggleScreenShareHotkey: normalizeKeyboardShortcut(
+		storedPrefs?.toggleScreenShareHotkey,
+		DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY
+	),
 }
 
 export const deviceSlice = createSlice({
@@ -205,6 +215,28 @@ export const deviceSlice = createSlice({
 		},
 		resetMuteMicrophoneHotkey: (state) => {
 			state.muteMicrophoneHotkey = DEFAULT_MUTE_MICROPHONE_HOTKEY;
+			saveStoredPreferences(state);
+		},
+		setToggleCameraHotkey: (state, action: PayloadAction<KeyboardShortcutPreference>) => {
+			state.toggleCameraHotkey = normalizeKeyboardShortcut(
+				action.payload,
+				DEFAULT_TOGGLE_CAMERA_HOTKEY
+			);
+			saveStoredPreferences(state);
+		},
+		resetToggleCameraHotkey: (state) => {
+			state.toggleCameraHotkey = DEFAULT_TOGGLE_CAMERA_HOTKEY;
+			saveStoredPreferences(state);
+		},
+		setToggleScreenShareHotkey: (state, action: PayloadAction<KeyboardShortcutPreference>) => {
+			state.toggleScreenShareHotkey = normalizeKeyboardShortcut(
+				action.payload,
+				DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY
+			);
+			saveStoredPreferences(state);
+		},
+		resetToggleScreenShareHotkey: (state) => {
+			state.toggleScreenShareHotkey = DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY;
 			saveStoredPreferences(state);
 		},
 		setCameraQuality: (previousState, action: PayloadAction<CallQualitySetting>) => {

@@ -9,6 +9,8 @@ interface DesktopNotificationPayload {
 	type?: "message" | "call" | "friend_request" | "room";
 }
 
+type DesktopHotkeyAction = "microphone" | "camera" | "screenShare";
+
 contextBridge.exposeInMainWorld("zvonokDesktop", {
 	platform: process.platform,
 	getScreenShareSources: () => ipcRenderer.invoke("screen-share:get-sources"),
@@ -25,6 +27,20 @@ contextBridge.exposeInMainWorld("zvonokDesktop", {
 
 			ipcRenderer.on("notifications:clicked", listener);
 			return () => ipcRenderer.off("notifications:clicked", listener);
+		},
+	},
+	hotkeys: {
+		registerHotkey: (action: DesktopHotkeyAction, accelerator: string) =>
+			ipcRenderer.invoke("hotkeys:register", action, accelerator),
+		unregisterHotkey: (action: DesktopHotkeyAction) =>
+			ipcRenderer.invoke("hotkeys:unregister", action),
+		onHotkeyPressed: (callback: (action: DesktopHotkeyAction) => void) => {
+			const listener = (_event: Electron.IpcRendererEvent, action: DesktopHotkeyAction) => {
+				callback(action);
+			};
+
+			ipcRenderer.on("hotkeys:pressed", listener);
+			return () => ipcRenderer.off("hotkeys:pressed", listener);
 		},
 	},
 });

@@ -252,7 +252,7 @@
 
 .section-tabs {
 	display: grid;
-	grid-template-columns: repeat(5, minmax(0, 1fr));
+	grid-template-columns: repeat(6, minmax(0, 1fr));
 	gap: 8px;
 	position: sticky;
 	top: 0;
@@ -359,6 +359,42 @@
 	padding-top: 4px;
 }
 
+.hotkeys-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.hotkey-setting-row {
+	display: grid;
+	grid-template-columns: minmax(160px, 0.7fr) minmax(0, 1fr);
+	gap: 12px;
+	align-items: start;
+	padding: 12px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--bg-input);
+}
+
+.hotkey-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.hotkey-copy strong {
+	color: var(--text-primary);
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.hotkey-copy span {
+	color: var(--text-secondary);
+	font-size: 12px;
+	line-height: 1.35;
+}
+
 @media (max-width: 720px) {
 	.section-tabs {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -369,6 +405,10 @@
 	}
 
 	.hotkey-row {
+		grid-template-columns: 1fr;
+	}
+
+	.hotkey-setting-row {
 		grid-template-columns: 1fr;
 	}
 }

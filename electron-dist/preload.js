@@ -16,5 +16,16 @@ contextBridge.exposeInMainWorld("zvonokDesktop", {
             return () => ipcRenderer.off("notifications:clicked", listener);
         },
     },
+    hotkeys: {
+        registerHotkey: (action, accelerator) => ipcRenderer.invoke("hotkeys:register", action, accelerator),
+        unregisterHotkey: (action) => ipcRenderer.invoke("hotkeys:unregister", action),
+        onHotkeyPressed: (callback) => {
+            const listener = (_event, action) => {
+                callback(action);
+            };
+            ipcRenderer.on("hotkeys:pressed", listener);
+            return () => ipcRenderer.off("hotkeys:pressed", listener);
+        },
+    },
 });
 //# sourceMappingURL=preload.js.map

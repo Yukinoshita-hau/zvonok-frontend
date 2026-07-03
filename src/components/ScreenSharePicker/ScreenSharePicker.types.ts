@@ -17,6 +17,8 @@ export interface ScreenSharePickerResult {
 	includeSystemAudio: boolean;
 }
 
+export type DesktopHotkeyAction = "microphone" | "camera" | "screenShare";
+
 export interface ZvonokDesktopApi {
 	platform: string;
 	getScreenShareSources: () => Promise<ScreenShareSource[]>;
@@ -25,6 +27,11 @@ export interface ZvonokDesktopApi {
 	notifications?: {
 		showNotification: (payload: DesktopNotificationPayload) => Promise<void>;
 		onNotificationClicked: (callback: (payload: DesktopNotificationPayload) => void) => () => void;
+	};
+	hotkeys?: {
+		registerHotkey: (action: DesktopHotkeyAction, accelerator: string) => Promise<boolean>;
+		unregisterHotkey: (action: DesktopHotkeyAction) => Promise<void>;
+		onHotkeyPressed: (callback: (action: DesktopHotkeyAction) => void) => () => void;
 	};
 }
 

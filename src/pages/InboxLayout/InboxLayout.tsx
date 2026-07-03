@@ -138,6 +138,17 @@ export function InboxLayout() {
 					</InboxHeaderButton>
 				</div>
 
+				{buttonMode === "Messages" && (
+					<button
+						type="button"
+						className={styles["create-group-button"]}
+						onClick={() => setIsRoomModalOpen(true)}
+					>
+						<img src={addRoomIconUrl} alt="" />
+						<span>Создать группу.</span>
+					</button>
+				)}
+
 				<div className={styles["messages-header"]}>
 					<button
 						className={styles["messages-header-filter"]}
@@ -147,9 +158,11 @@ export function InboxLayout() {
 						{filterMode}
 					</button>
 
-					<button className={styles["add-button"]} onClick={handleAddClick}>
-						<img src={addRoomIconUrl} alt="Add" />
-					</button>
+					{buttonMode === "Friends" && (
+						<button className={styles["add-button"]} onClick={handleAddClick}>
+							<img src={addRoomIconUrl} alt="Add" />
+						</button>
+					)}
 				</div>
 
 				<div className={styles["item-list"]}>

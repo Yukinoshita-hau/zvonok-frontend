@@ -41,16 +41,20 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = (stor
 
 			currentClient.onStompError = (frame) => {
 				const message = frame.headers.message || "STOMP connection error";
+				console.error("STOMP connection error", frame.headers, frame.body);
 				storeApi.dispatch(websocketActions.connectError(message));
 			};
 
-			currentClient.onWebSocketError = () => {
+			currentClient.onWebSocketError = (event) => {
+				console.error("WebSocket connection error", event);
 				storeApi.dispatch(websocketActions.connectError("WebSocket connection error"));
 			};
 
 			currentClient.onWebSocketClose = (event) => {
 				if (currentClient !== client || currentClient.connected) return;
-				storeApi.dispatch(websocketActions.connectError(`WebSocket closed: ${event.code || "unknown"}`));
+				const reason = event.reason ? ` ${event.reason}` : "";
+				console.warn("WebSocket closed", { code: event.code, reason: event.reason, wasClean: event.wasClean });
+				storeApi.dispatch(websocketActions.connectError(`WebSocket closed: ${event.code || "unknown"}${reason}`));
 			};
 
 			currentClient.activate();

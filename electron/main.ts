@@ -1,4 +1,4 @@
-import { app, BrowserWindow, desktopCapturer, ipcMain, Menu, Notification, session, shell, Tray } from "electron";
+import { app, BrowserWindow, desktopCapturer, globalShortcut, ipcMain, Menu, Notification, session, shell, Tray } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 const DEV_SERVER_URL = "http://localhost:3000";
 const ICONS_DIR = path.join(__dirname, "../assets/icons");
 const WINDOWS_APP_USER_MODEL_ID = app.isPackaged ? "info.zvonok.desktop" : process.execPath;
+const DESKTOP_WEB_ORIGIN = process.env.ZVONOK_DESKTOP_WEB_ORIGIN ?? "https://zvonok.info";
 
 if (process.platform === "win32") {
 	app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID);
@@ -20,6 +21,7 @@ let tray: Tray | null = null;
 let isQuitting = false;
 let hasShownTrayHint = false;
 let selectedScreenShareSource: { sourceId: string; includeAudio: boolean } | null = null;
+const registeredHotkeys = new Map<string, string>();
 
 interface DesktopNotificationPayload {
 	title: string;
@@ -89,6 +91,10 @@ function createMainWindow() {
 
 	mainWindow.once("ready-to-show", () => {
 		mainWindow?.show();
+
+		if (!app.isPackaged) {
+			mainWindow?.webContents.openDevTools({ mode: "detach" });
+		}
 	});
 
 	mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -175,6 +181,42 @@ function setupNotifications() {
 	});
 }
 
+function setupGlobalHotkeys() {
+	ipcMain.handle("hotkeys:register", (_event, action: string, accelerator: string) => {
+		unregisterHotkey(action);
+
+		if (!accelerator) return false;
+
+		const isRegistered = globalShortcut.register(accelerator, () => {
+			if (action === "screenShare") {
+				showMainWindow();
+			}
+
+			mainWindow?.webContents.send("hotkeys:pressed", action);
+		});
+
+		if (!isRegistered) {
+			console.warn(`Failed to register global hotkey "${action}": ${accelerator}`);
+			return false;
+		}
+
+		registeredHotkeys.set(action, accelerator);
+		return true;
+	});
+
+	ipcMain.handle("hotkeys:unregister", (_event, action: string) => {
+		unregisterHotkey(action);
+	});
+}
+
+function unregisterHotkey(action: string) {
+	const accelerator = registeredHotkeys.get(action);
+	if (!accelerator) return;
+
+	globalShortcut.unregister(accelerator);
+	registeredHotkeys.delete(action);
+}
+
 function setupDesktopWebSocketHeaders() {
 	session.defaultSession.webRequest.onBeforeSendHeaders(
 		{ urls: ["ws://*/*", "wss://*/*"] },
@@ -183,9 +225,9 @@ function setupDesktopWebSocketHeaders() {
 			const currentOrigin = getHeader(nextHeaders, "Origin");
 
 			if (!currentOrigin || currentOrigin === "null" || currentOrigin.startsWith("file://")) {
-				const endpointOrigin = getWebSocketHttpOrigin(details.url);
-				if (endpointOrigin) {
-					nextHeaders.Origin = endpointOrigin;
+				const desktopOrigin = getDesktopWebSocketOrigin(details.url);
+				if (desktopOrigin) {
+					setHeader(nextHeaders, "Origin", desktopOrigin);
 				}
 			}
 
@@ -200,9 +242,18 @@ function getHeader(headers: Record<string, string | string[]>, headerName: strin
 	return Array.isArray(value) ? value[0] : value;
 }
 
-function getWebSocketHttpOrigin(url: string) {
+function setHeader(headers: Record<string, string | string[]>, headerName: string, value: string) {
+	const matchingKey = Object.keys(headers).find((key) => key.toLowerCase() === headerName.toLowerCase());
+	headers[matchingKey ?? headerName] = value;
+}
+
+function getDesktopWebSocketOrigin(url: string) {
 	try {
 		const parsedUrl = new URL(url);
+		if (parsedUrl.hostname === "api.zvonok.info") {
+			return DESKTOP_WEB_ORIGIN;
+		}
+
 		const protocol = parsedUrl.protocol === "wss:" ? "https:" : "http:";
 		return `${protocol}//${parsedUrl.host}`;
 	} catch {
@@ -275,6 +326,7 @@ if (!gotSingleInstanceLock) {
 
 	void app.whenReady().then(() => {
 		setupNotifications();
+		setupGlobalHotkeys();
 		setupDesktopWebSocketHeaders();
 		setupDisplayMediaRequestHandler();
 		createMainWindow();
@@ -290,4 +342,5 @@ if (!gotSingleInstanceLock) {
 
 app.on("before-quit", () => {
 	isQuitting = true;
+	globalShortcut.unregisterAll();
 });

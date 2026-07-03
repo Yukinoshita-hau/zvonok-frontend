@@ -1,4 +1,4 @@
-import { app, BrowserWindow, desktopCapturer, ipcMain, Menu, Notification, session, shell, Tray } from "electron";
+import { app, BrowserWindow, desktopCapturer, globalShortcut, ipcMain, Menu, Notification, session, shell, Tray } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
@@ -6,6 +6,7 @@ const __dirname = path.dirname(__filename);
 const DEV_SERVER_URL = "http://localhost:3000";
 const ICONS_DIR = path.join(__dirname, "../assets/icons");
 const WINDOWS_APP_USER_MODEL_ID = app.isPackaged ? "info.zvonok.desktop" : process.execPath;
+const DESKTOP_WEB_ORIGIN = process.env.ZVONOK_DESKTOP_WEB_ORIGIN ?? "https://zvonok.info";
 if (process.platform === "win32") {
     app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID);
 }
@@ -15,6 +16,7 @@ let tray = null;
 let isQuitting = false;
 let hasShownTrayHint = false;
 let selectedScreenShareSource = null;
+const registeredHotkeys = new Map();
 function getIconPath(preferIco = process.platform === "win32") {
     return path.join(ICONS_DIR, preferIco ? "icon.ico" : "icon.png");
 }
@@ -66,6 +68,9 @@ function createMainWindow() {
     });
     mainWindow.once("ready-to-show", () => {
         mainWindow?.show();
+        if (!app.isPackaged) {
+            mainWindow?.webContents.openDevTools({ mode: "detach" });
+        }
     });
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
         void shell.openExternal(url);
@@ -143,14 +148,43 @@ function setupNotifications() {
         notification.show();
     });
 }
+function setupGlobalHotkeys() {
+    ipcMain.handle("hotkeys:register", (_event, action, accelerator) => {
+        unregisterHotkey(action);
+        if (!accelerator)
+            return false;
+        const isRegistered = globalShortcut.register(accelerator, () => {
+            if (action === "screenShare") {
+                showMainWindow();
+            }
+            mainWindow?.webContents.send("hotkeys:pressed", action);
+        });
+        if (!isRegistered) {
+            console.warn(`Failed to register global hotkey "${action}": ${accelerator}`);
+            return false;
+        }
+        registeredHotkeys.set(action, accelerator);
+        return true;
+    });
+    ipcMain.handle("hotkeys:unregister", (_event, action) => {
+        unregisterHotkey(action);
+    });
+}
+function unregisterHotkey(action) {
+    const accelerator = registeredHotkeys.get(action);
+    if (!accelerator)
+        return;
+    globalShortcut.unregister(accelerator);
+    registeredHotkeys.delete(action);
+}
 function setupDesktopWebSocketHeaders() {
     session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ["ws://*/*", "wss://*/*"] }, (details, callback) => {
         const nextHeaders = { ...details.requestHeaders };
         const currentOrigin = getHeader(nextHeaders, "Origin");
         if (!currentOrigin || currentOrigin === "null" || currentOrigin.startsWith("file://")) {
-            const endpointOrigin = getWebSocketHttpOrigin(details.url);
-            if (endpointOrigin) {
-                nextHeaders.Origin = endpointOrigin;
+            const desktopOrigin = getDesktopWebSocketOrigin(details.url);
+            if (desktopOrigin) {
+                setHeader(nextHeaders, "Origin", desktopOrigin);
             }
         }
         callback({ requestHeaders: nextHeaders });
@@ -161,9 +195,16 @@ function getHeader(headers, headerName) {
     const value = matchingKey ? headers[matchingKey] : undefined;
     return Array.isArray(value) ? value[0] : value;
 }
-function getWebSocketHttpOrigin(url) {
+function setHeader(headers, headerName, value) {
+    const matchingKey = Object.keys(headers).find((key) => key.toLowerCase() === headerName.toLowerCase());
+    headers[matchingKey ?? headerName] = value;
+}
+function getDesktopWebSocketOrigin(url) {
     try {
         const parsedUrl = new URL(url);
+        if (parsedUrl.hostname === "api.zvonok.info") {
+            return DESKTOP_WEB_ORIGIN;
+        }
         const protocol = parsedUrl.protocol === "wss:" ? "https:" : "http:";
         return `${protocol}//${parsedUrl.host}`;
     }
@@ -227,6 +268,7 @@ else {
     app.on("second-instance", showMainWindow);
     void app.whenReady().then(() => {
         setupNotifications();
+        setupGlobalHotkeys();
         setupDesktopWebSocketHeaders();
         setupDisplayMediaRequestHandler();
         createMainWindow();
@@ -240,5 +282,6 @@ else {
 }
 app.on("before-quit", () => {
     isQuitting = true;
+    globalShortcut.unregisterAll();
 });
 //# sourceMappingURL=main.js.map

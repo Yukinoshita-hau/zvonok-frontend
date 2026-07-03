@@ -1,6 +1,6 @@
 import { useMaybeRoomContext, useTrackToggle } from "@livekit/components-react";
 import { Track, type ScreenShareCaptureOptions } from "livekit-client";
-import { useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { ScreenSharePickerModal } from "../ScreenSharePicker/ScreenSharePickerModal";
 import type { ScreenSharePickerResult } from "../ScreenSharePicker/ScreenSharePicker.types";
 import {
@@ -14,6 +14,8 @@ import {
 } from "../../utils/callQuality";
 import styles from "./CallUi.module.css";
 import type { CallTrackToggleButtonProps } from "./CallTrackToggleButton.props";
+
+const OPEN_SCREEN_SHARE_PICKER_EVENT = "zvonok:open-screen-share-picker";
 
 export function CallTrackToggleButton({
 	kind,
@@ -38,6 +40,18 @@ export function CallTrackToggleButton({
 	});
 	const title = enabled ? enabledTitle : disabledTitle;
 	const Icon = enabled ? EnabledIcon : DisabledIcon;
+
+	useEffect(() => {
+		if (kind !== "screenShare") return;
+
+		const onOpenPicker = () => {
+			if (enabled) return;
+			setIsPickerOpen(true);
+		};
+
+		window.addEventListener(OPEN_SCREEN_SHARE_PICKER_EVENT, onOpenPicker);
+		return () => window.removeEventListener(OPEN_SCREEN_SHARE_PICKER_EVENT, onOpenPicker);
+	}, [enabled, kind]);
 
 	const handleScreenShareClick = (event: MouseEvent<HTMLButtonElement>) => {
 		if (kind !== "screenShare" || enabled) {

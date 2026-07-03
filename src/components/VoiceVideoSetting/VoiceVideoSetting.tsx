@@ -11,8 +11,9 @@ import { MicrophoneSettingsSection } from "./sections/MicrophoneSettingsSection"
 import { VoiceProcessingSection } from "./sections/VoiceProcessingSection";
 import { EqualizerSettingsSection } from "./sections/EqualizerSettingsSection";
 import { ScreenShareSettingsSection } from "./sections/ScreenShareSettingsSection";
+import { HotkeysSettingsSection } from "./sections/HotkeysSettingsSection";
 
-type VoiceVideoTab = "camera" | "microphone" | "processing" | "equalizer" | "screen";
+type VoiceVideoTab = "camera" | "microphone" | "hotkeys" | "processing" | "equalizer" | "screen";
 
 const VOICE_VIDEO_TABS: Array<{
 	id: VoiceVideoTab;
@@ -20,7 +21,8 @@ const VOICE_VIDEO_TABS: Array<{
 	description: string;
 }> = [
 	{ id: "camera", label: "Камера", description: "Устройство и качество видео" },
-	{ id: "microphone", label: "Микрофон", description: "Вход, тест и горячая клавиша" },
+	{ id: "microphone", label: "Микрофон", description: "Вход, тест и обработка" },
+	{ id: "hotkeys", label: "Горячие", description: "Клавиши звонка" },
 	{ id: "processing", label: "Обработка", description: "Шумодав и голосовые пресеты" },
 	{ id: "equalizer", label: "Эквалайзер", description: "Тонкая настройка голоса" },
 	{ id: "screen", label: "Экран", description: "Параметры трансляции" },
@@ -44,6 +46,8 @@ export function VoiceVideoSetting() {
 		voiceProcessingConfig,
 		voiceProcessingPreset,
 		muteMicrophoneHotkey,
+		toggleCameraHotkey,
+		toggleScreenShareHotkey,
 	} = useSelector((s: RootState) => s.device);
 
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
@@ -351,9 +355,17 @@ export function VoiceVideoSetting() {
 						isListening={isListening}
 						isAutoInputSensitivity={isAutoInputSensitivity}
 						voiceActivityThreshold={voiceActivityThreshold}
-						muteMicrophoneHotkey={muteMicrophoneHotkey}
 						audioPreviewRef={audioPreviewRef}
 						onListeningToggle={() => setIsListening((previous) => !previous)}
+					/>
+				)}
+
+				{activeTab === "hotkeys" && (
+					<HotkeysSettingsSection
+						dispatch={dispatch}
+						muteMicrophoneHotkey={muteMicrophoneHotkey}
+						toggleCameraHotkey={toggleCameraHotkey}
+						toggleScreenShareHotkey={toggleScreenShareHotkey}
 					/>
 				)}
 

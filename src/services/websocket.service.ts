@@ -6,8 +6,10 @@ const CONFIGURED_WS_URL = import.meta.env.VITE_WS_URL;
 export const WS_CONNECT_PATH = resolveWebSocketConnectPath();
 
 export const createWebSocketClient = (token: string) => {
+	const brokerURL = `${WS_CONNECT_PATH}?token=${encodeURIComponent(token)}`;
+
 	const client = new Client({
-		brokerURL: `${WS_CONNECT_PATH}?token=${encodeURIComponent(token)}`,
+		brokerURL,
 		reconnectDelay: 5000,
 		heartbeatIncoming: 4000,
 		heartbeatOutgoing: 4000,
@@ -15,6 +17,8 @@ export const createWebSocketClient = (token: string) => {
 			console.log("WebSocket debug: ", str)
 		}
 	})
+
+	console.info("WebSocket endpoint:", WS_CONNECT_PATH);
 
 	return client;
 }
