@@ -1,9 +1,7 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { callApi } from "../../api/callApi";
-import type { CallTokenDto } from "../../api/interfaces/CallTokenDto";
 import type { BaseCallEvent } from "../interfaces/callEvents.interface";
 import { type CallRoomType, type callStatus } from "../interfaces/call.types";
-import type { RestoreCallSessionResponse } from "../../api/interfaces/RestoreCallSessionResponse";
 import { conferenceApi } from "../../api/conferenceApi";
 import type { ConferenceCreateResponse, ConferenceJoinResponse } from "../../api/interfaces/ConferenceDtos";
 import { parseBackendDateMs } from "../../utils/timeHelpers";
@@ -11,6 +9,11 @@ import { parseBackendDateMs } from "../../utils/timeHelpers";
 export type CallPresentationMode = "expanded" | "minimized" | "hidden";
 
 export interface CallState {
+	restoreRequestId: string | null;
+	tokenRequestId: string | null;
+	mediaState: "connected" | "connecting" | "reconnecting" | "disconnected";
+	mediaGeneration: number;
+	closedCallIds: number[];
 	status: callStatus;
 	direction: "incoming" | "outgoing" | null;
 	callId: number | null;
@@ -39,6 +42,11 @@ export interface CallState {
 }
 
 export const initialState: CallState = {
+	restoreRequestId: null,
+	tokenRequestId: null,
+	mediaState: "connected",
+	mediaGeneration: 0,
+	closedCallIds: [],
 	status: "idle",
 	direction: null,
 	callId: null,
@@ -75,7 +83,9 @@ const keepUi = (state: CallState) => ({
 
 const resetCallState = (state: CallState, status: callStatus = "idle") => {
 	const ui = keepUi(state);
-	Object.assign(state, initialState, ui, { status })
+	const closedCallIds = [...state.closedCallIds];
+	if (status === "ended" && state.callId && !closedCallIds.includes(state.callId)) closedCallIds.push(state.callId);
+	Object.assign(state, initialState, ui, { status, mediaGeneration: state.mediaGeneration + 1, closedCallIds: closedCallIds.slice(-100) })
 }
 
 function parseCallStartedAtMs(value?: string | null): number | null {
@@ -179,6 +189,7 @@ export const callSlice = createSlice({
 	initialState,
 	reducers: {
 		startOutgoing: (state, action: PayloadAction<{ chatRoomId: number }>) => {
+			resetCallState(state);
 			state.status = "outgoing_ringing";
 			state.direction = "outgoing";
 			state.chatRoomId = action.payload.chatRoomId;
@@ -191,7 +202,12 @@ export const callSlice = createSlice({
 		},
 		applyCallEvent: (state, action: PayloadAction<BaseCallEvent>) => {
 			const e = action.payload;
+			if (state.status === "outgoing_ringing" && e.type === "CALL_INVITE") return;
+			if (e.callId && state.closedCallIds.includes(e.callId)) return;
+			if (state.conferenceCode || (state.callId && e.callId && state.callId !== e.callId)) return;
+			if (!state.callId && !["CALL_INVITE", "CALL_STARTED"].includes(e.type)) return;
 			if (e.eventId && state.processedEventIds.includes(e.eventId)) return;
+			state.restoreRequestId = null;
 			if (e.eventId) {
 				state.processedEventIds.push(e.eventId);
 				if (state.processedEventIds.length > 200) state.processedEventIds.shift();
@@ -212,7 +228,7 @@ export const callSlice = createSlice({
 					if (state.status === "outgoing_ringing") state.status = "connecting";
 					break;
 				case "CALL_INVITE":
-					if (state.direction !== "outgoing") {
+					if (state.direction !== "outgoing" && !state.participantToken) {
 						state.status = "incoming_ringing";
 						state.direction = "incoming";
 					}
@@ -220,15 +236,14 @@ export const callSlice = createSlice({
 				case "CALL_ACCEPT":
 				case "CALL_ACCEPTED":
 				case "CALL_PARTICIPANT_JOINED":
-					state.status = "connecting";
+					if (!state.participantToken) state.status = "connecting";
 					break;
 				case "CALL_DECLINE":
 				case "CALL_DECLINED":
 				case "CALL_END":
 				case "CALL_ENDED":
 				case "CALL_CANCELLED": {
-					const ui = keepUi(state);
-					Object.assign(state, initialState, ui, { status: "ended" as const });
+					resetCallState(state, "ended");
 					break;
 				}
 					break;
@@ -237,7 +252,12 @@ export const callSlice = createSlice({
 		markAcceptedHandled: (state, action: PayloadAction<number>) => {
 			state.lastAcceptedCallId = action.payload;
 		},
+		incomingInvitationExpired: (state, action: PayloadAction<number>) => {
+			if (state.callId === action.payload && state.status === "incoming_ringing") resetCallState(state, "ended");
+		},
 		prepareJoinedCall: (state, action: PayloadAction<{ callId: number; chatRoomId: number; roomType: CallRoomType; livekitRoomName: string; callerUsername: string; hostUsername: string }>) => {
+			resetCallState(state);
+			state.closedCallIds = state.closedCallIds.filter(id => id !== action.payload.callId);
 			state.status = "connecting";
 			state.direction = null;
 			state.callId = action.payload.callId;
@@ -256,6 +276,14 @@ export const callSlice = createSlice({
 			resetCallState(state, "ended");
 		},
 		liveKitDisconnectedLocally: (state) => {
+			resetCallState(state, "ended");
+		},
+		mediaConnectionChanged: (state, action: PayloadAction<{ roomName: string; generation: number; status: CallState["mediaState"] }>) => {
+			if (state.livekitRoomName !== action.payload.roomName || state.mediaGeneration !== action.payload.generation) return;
+			state.mediaState = action.payload.status;
+		},
+		mediaSessionEnded: (state, action: PayloadAction<{ roomName: string; generation: number }>) => {
+			if (state.livekitRoomName !== action.payload.roomName || state.mediaGeneration !== action.payload.generation) return;
 			resetCallState(state, "ended");
 		},
 		endCall: (state) => {
@@ -292,10 +320,14 @@ export const callSlice = createSlice({
 	},
 	extraReducers: (builder) => {
 		builder
-			.addCase(getCallToken.pending, (state) => {
-				state.status = "connecting";
+			.addCase(getCallToken.pending, (state, action) => {
+				if (state.callId !== action.meta.arg) return;
+				state.tokenRequestId = action.meta.requestId;
+				if (!state.participantToken) state.status = "connecting";
 			})
-			.addCase(getCallToken.fulfilled, (state, action: PayloadAction<CallTokenDto>) => {
+			.addCase(getCallToken.fulfilled, (state, action) => {
+				if (state.tokenRequestId !== action.meta.requestId || state.callId !== action.meta.arg) return;
+				state.tokenRequestId = null;
 				state.serverUrl = action.payload.serverUrl;
 				state.participantToken = action.payload.participantToken;
 				state.callId = action.payload.callId;
@@ -307,29 +339,41 @@ export const callSlice = createSlice({
 					?? Date.now();
 			})
 			.addCase(getCallToken.rejected, (state, action) => {
+				if (state.tokenRequestId !== action.meta.requestId || state.callId !== action.meta.arg) return;
+				state.tokenRequestId = null;
+				if (state.participantToken) return;
 				state.status = "error";
 				state.error = typeof action.payload === "string" ? action.payload : "Failed to get livekit token";
 			})
 
 
-			.addCase(restoreCallSession.pending, (state) => {
+			.addCase(restoreCallSession.pending, (state, action) => {
+				state.restoreRequestId = action.meta.requestId;
 				if (state.status === "idle" || state.status === "ended") {
 					state.status = "connecting";
 				}
 			})
-			.addCase(restoreCallSession.fulfilled, (state, action: PayloadAction<RestoreCallSessionResponse>) => {
+			.addCase(restoreCallSession.fulfilled, (state, action) => {
+				if (state.restoreRequestId !== action.meta.requestId) return;
+				state.restoreRequestId = null;
 				const data = action.payload;
+				if (data.callId && state.closedCallIds.includes(data.callId)) return;
 
-				if (state.conferenceCode || (state.status === "in_call" && state.participantToken)) {
+				if (state.conferenceCode) {
 					return;
+				}
+				if (data.callId === state.callId && data.callRestoreType === "ACTIVE_CALL" && state.participantToken) {
+					if (state.mediaState !== "disconnected") return;
+					state.mediaGeneration++;
 				}
 
 				if (data.callRestoreType === "NONE") {
-					resetCallState(state, "idle")
+					resetCallState(state, state.callId ? "ended" : "idle")
 					return;
 				}
 
 				if (data.callRestoreType === "ACTIVE_CALL") {
+					state.mediaState = "connecting";
 					state.status = "in_call";
 					state.direction = null;
 					state.callId = data.callId;
@@ -361,6 +405,8 @@ export const callSlice = createSlice({
 
 			})
 			.addCase(restoreCallSession.rejected, (state, action) => {
+				if (state.restoreRequestId !== action.meta.requestId) return;
+				state.restoreRequestId = null;
 				if (state.conferenceCode || (state.status === "in_call" && state.participantToken)) {
 					return;
 				}

@@ -9,18 +9,35 @@ export class ZvonokLiveKitAudioProcessor implements TrackProcessor<Track.Kind.Au
 	processedTrack?: MediaStreamTrack | undefined;
 
 	private audioGraph?: ZvonokAudioGraph;
+	private lifecycle = 0;
 
-	constructor(private config: ZvonokAudioGraphConfig) {}
+	private config: ZvonokAudioGraphConfig;
+
+	constructor(config: ZvonokAudioGraphConfig) { this.config = config; }
 
 	async init(options: AudioProcessorOptions): Promise<void> {
-		await this.destroy();
+		const lifecycle = ++this.lifecycle;
+		const previous = this.audioGraph;
+		this.audioGraph = undefined;
+		this.processedTrack = undefined;
+		await previous?.destroy();
+		if (lifecycle !== this.lifecycle) return;
 
 		const audioGraph = new ZvonokAudioGraph({
 			...this.config,
 			stereoOutput: true
 		});
 
-		await audioGraph.attachTrack(options.track);
+		try {
+			await audioGraph.attachTrack(options.track);
+		} catch (error) {
+			await audioGraph.destroy();
+			throw error;
+		}
+		if (lifecycle !== this.lifecycle) {
+			await audioGraph.destroy();
+			return;
+		}
 
 		this.audioGraph = audioGraph;
 		this.processedTrack = audioGraph.getProcessedTrack();
@@ -40,9 +57,10 @@ export class ZvonokLiveKitAudioProcessor implements TrackProcessor<Track.Kind.Au
 	}
 
 	async destroy(): Promise<void> {
-		await this.audioGraph?.destroy();
-
+		this.lifecycle++;
+		const graph = this.audioGraph;
 		this.audioGraph = undefined;
 		this.processedTrack = undefined;
+		await graph?.destroy();
 	}
 }

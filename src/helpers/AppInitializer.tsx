@@ -1,7 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store/store";
-import { AxiosError } from "axios";
 import authApi from "../api/authApi";
 import { getMyUser, userActions } from "../store/slices/user.slice";
 import type { CustomTheme } from "../store/slices/ui.slice";
@@ -42,17 +41,14 @@ export function AuthInitializator({ children }: { children: ReactNode }) {
 		const run = async () => {
 			if (!isAuthChecked) {
 				try {
-					const refreshData = await authApi.refresh();
-					dispatch(userActions.addJwt(refreshData.data));
+					await authApi.refresh();
 					await dispatch(getMyUser()).unwrap()
 					dispatch(userActions.setAuthChecked(true));
 					//const userData = await userApi.getMyUser();
 					//dispatch(userActions.addUser(userData.data));
 				} catch (e: unknown) {
-					if (e instanceof AxiosError) {
-						dispatch(userActions.logout());
-						dispatch(userActions.setAuthChecked(true));
-					}
+					console.warn("Authorization initialization failed", e);
+					dispatch(userActions.setAuthChecked(true));
 				}
 			}
 		};

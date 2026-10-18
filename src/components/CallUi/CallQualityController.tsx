@@ -347,7 +347,7 @@ export function CallQualityController() {
 }
 
 function resolveScreenShareFallbackReason(
-	quality: ScreenShareManualQuality,
+	_quality: ScreenShareManualQuality,
 	requestedFps: number,
 	actualFps: number | null,
 	fallbackPreset: ScreenShareManualQuality | null
@@ -416,7 +416,6 @@ function getHigherQuality(quality: ManualCallQuality): ManualCallQuality {
 
 function toVideoQuality(quality: ManualCallQuality | ScreenShareManualQuality): VideoQuality {
 	if (quality === "medium") return VideoQuality.MEDIUM;
-	if (quality === "medium") return VideoQuality.MEDIUM;
 	if (quality === "low") return VideoQuality.LOW;
 	return VideoQuality.HIGH;
 }
@@ -424,10 +423,9 @@ function toVideoQuality(quality: ManualCallQuality | ScreenShareManualQuality): 
 function normalizeToManualQuality(
 	quality: ScreenShareManualQuality | undefined
 ): ManualCallQuality {
-	if (quality && !["low", "medium", "high"].includes(quality)) {
-		return "high";
-	}
-	return quality ?? "medium";
+	if (quality === undefined) return "medium";
+	if (quality === "low" || quality === "medium" || quality === "high") return quality;
+	return "high";
 }
 
 const SCREEN_FPS_FALLBACK_CHAIN: Partial<Record<ScreenShareManualQuality, ScreenShareManualQuality[]>> = {

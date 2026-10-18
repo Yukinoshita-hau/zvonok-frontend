@@ -1,7 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
 import { activeCallActions } from "../../store/slices/activeCall.slice";
-import { getCallToken } from "../../store/slices/call.slice";
 import styles from "./RoomActiveCallBanner.module.css";
 
 interface RoomActiveCallBannerProps {
@@ -38,7 +37,6 @@ export function RoomActiveCallBanner({ roomId }: RoomActiveCallBannerProps) {
 					chatRoomId: activeCall.chatRoomId ?? undefined,
 				},
 			});
-			dispatch(getCallToken(activeCall.callId));
 		} catch {
 			// joinError is stored in Redux and rendered in the banner.
 		}

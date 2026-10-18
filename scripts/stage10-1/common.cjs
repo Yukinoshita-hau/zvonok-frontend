@@ -1,0 +1,21 @@
+const {chromium}=require(process.env.STAGE10_PLAYWRIGHT || 'C:/Users/Пользователь/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
+const legacy=require('../stage10-acceptance.cjs');
+const BASE='http://127.0.0.1:13000',API='http://127.0.0.1:18080/api',OUT='stage10-1-evidence';
+fs.mkdirSync(OUT,{recursive:true});
+const redact=s=>String(s).replace(/eyJ[\w.-]+/g,'[JWT]').replace(/(access_token=)[^&'\s]+/g,'$1[redacted]');
+async function browser(){return chromium.launch({headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required']});}
+async function register(b,name){const u=await legacy.register(b,name);u.responses=[];u.console=[];u.wsPaths=[];u.page.on('response',r=>u.responses.push({path:new URL(r.url()).pathname,status:r.status(),method:r.request().method()}));u.page.on('console',m=>{if(m.type()==='error')u.console.push(redact(m.text()));});u.page.on('websocket',ws=>u.wsPaths.push(new URL(ws.url()).pathname));return u;}
+async function token(u){return u.page.evaluate(async()=> (await import('/src/store/store.ts')).store.getState().user.accessToken);}
+async function request(u,p,method='GET',body){const t=await token(u);const r=await u.page.request.fetch(API+p,{method,headers:{Authorization:'Bearer '+t},data:body});return r;}
+async function http(u,p,method='GET',body){const r=await request(u,p,method,body);if(!r.ok())throw Error(`${method} ${p.split('?')[0]} status ${r.status()}`);return r.status()===204?null:r.json();}
+async function app(u,p,method='get',body){return u.page.evaluate(async({p,method,body})=>{const {api}=await import('/src/api/api.ts');const r=await api.request({url:p,method,data:body});return r.data;},{p,method,body});}
+async function state(u){return u.page.evaluate(async()=>{const s=(await import('/src/store/store.ts')).store.getState();return {user:s.user.myUser?.username,rooms:s.room.rooms.map(r=>({id:r.id,unread:r.unreadCount,preview:r.lastMessageContent})),messages:s.message.messages.map(m=>({id:m.id,content:m.content,eventType:m.eventType})),call:{id:s.call.callId,status:s.call.status,media:s.call.mediaState},ws:s.websocket};});}
+async function send(u,dest,payload){await u.page.evaluate(({dest,payload})=>{const ws=window.__sockets.findLast(s=>s.readyState===1&&s.url.includes(':18080/'));if(!ws)throw Error('No connected STOMP');const body=payload===undefined?'':JSON.stringify(payload);ws.send(`SEND\ndestination:${dest}\ncontent-type:application/json\ncontent-length:${new TextEncoder().encode(body).length}\n\n${body}\0`);},{dest,payload});}
+async function ready(u){await u.page.waitForFunction(async()=>{const s=(await import('/src/store/store.ts')).store.getState();return s.websocket.status==='connected'&&s.user.myUser;});}
+async function uiSend(u,text){const input=u.page.getByPlaceholder('Message @here');await input.fill(text);await input.press('Enter');}
+async function room(u,id){await u.page.goto(BASE+'/dm?roomId='+id);await ready(u);await u.page.getByPlaceholder('Message @here').waitFor();}
+function sql(query){if(/refresh_token.*\btoken\b/i.test(query))throw Error('Do not export refresh token values');const raw=execFileSync('docker',['exec','zvonok-stage10-pg','psql','-U','stage10','-d','zvonok_stage10_1','-v','ON_ERROR_STOP=1','-At','-c',query],{encoding:'utf8'});return raw.trim();}
+function save(file,data){fs.writeFileSync(path.join(OUT,file),JSON.stringify(data,null,2));}
+function runner(file){const results=[];return {results,async run(name,fn){try{const detail=await fn();results.push({scenario:name,status:'PASS',...detail});console.log('PASS',name);}catch(e){results.push({scenario:name,status:'FAIL',error:redact(e.stack||e.message)});console.error('FAIL',name,redact(e.message));}save(file,results);}};}
+module.exports={...legacy,register,send,ready,browser,token,request,http,app,state,uiSend,room,sql,save,runner,redact,BASE,API,OUT};

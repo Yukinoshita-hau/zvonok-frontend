@@ -27,6 +27,7 @@ export class ZvonokAudioGraph {
 	private destination: MediaStreamAudioDestinationNode;
 
 	private destroyed = false;
+	private rebuildGeneration = 0;
 
 	constructor(config: ZvonokAudioGraphConfig) {
 		this.config = config;
@@ -59,6 +60,7 @@ export class ZvonokAudioGraph {
 			await this.audioContext.resume();
 		}
 
+		if (this.destroyed) return;
 		this.sourceStream = new MediaStream([track]);
 
 		await this.rebuildGraph();
@@ -94,7 +96,8 @@ export class ZvonokAudioGraph {
 	}
 
 	private async rebuildGraph(): Promise<void> {
-		if (!this.sourceStream) return;
+		if (!this.sourceStream || this.destroyed) return;
+		const generation = ++this.rebuildGeneration;
 
 		this.disconnectGraph();
 		this.applyConfigToNodes();
@@ -106,7 +109,8 @@ export class ZvonokAudioGraph {
 		if (this.config.rnnoise.enabled) {
 			const rnnoiseNode = await rnnoiseResources.createNode(this.audioContext);
 
-			if (this.destroyed) {
+			if (this.destroyed || generation !== this.rebuildGeneration) {
+				rnnoiseNode.destroy();
 				rnnoiseNode.disconnect();
 				return;
 			}
@@ -159,7 +163,9 @@ export class ZvonokAudioGraph {
 	private disconnectGraph(): void {
 		this.source?.disconnect();
 		this.inputGain.disconnect();
+		this.rnnoiseNode?.destroy();
 		this.rnnoiseNode?.disconnect();
+		this.rnnoiseNode = undefined;
 		this.highPass.disconnect();
 		this.presence.disconnect();
 		this.compressor.disconnect();
@@ -174,6 +180,7 @@ export class ZvonokAudioGraph {
 		if (this.destroyed) return;
 
 		this.destroyed = true;
+		this.rebuildGeneration++;
 
 		this.disconnectGraph();
 

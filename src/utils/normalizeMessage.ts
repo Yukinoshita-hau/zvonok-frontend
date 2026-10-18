@@ -1,9 +1,9 @@
 import type { ShortMessage, ShortMessageResponse } from "../entities/shortMessage";
-import type { UserMini } from "../entities/UserMini";
+import type { MessageSender } from "../entities/UserMini";
 
 export function normalizeMessage(messageResponse: ShortMessageResponse): {
 	message: ShortMessage;
-	user: UserMini;
+	user: MessageSender;
 } {
 	return {
 		message: {
@@ -26,10 +26,10 @@ export function normalizeMessage(messageResponse: ShortMessageResponse): {
 
 export function normalizeMessages(messageResponses: ShortMessageResponse[]): {
 	messages: ShortMessage[];
-	users: UserMini[];
+	users: MessageSender[];
 } {
 	const messages: ShortMessage[] = [];
-	const usersById = new Map<number, UserMini>();
+	const usersById = new Map<number, MessageSender>();
 
 	for (const messageResponse of messageResponses) {
 		const normalized = normalizeMessage(messageResponse);

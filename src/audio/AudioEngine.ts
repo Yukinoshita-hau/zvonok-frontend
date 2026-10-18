@@ -1,58 +1,36 @@
 import { loadRnnoise } from "@sapphi-red/web-noise-suppressor";
-import { loadRnnoise, RnnoiseWorkletNode } from "@sapphi-red/web-noise-suppressor";
 import rnnoiseWorkletPath from "@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url";
 import rnnoiseWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise.wasm?url";
 import rnnoiseSimdWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise_simd.wasm?url";
 
 export class AudioEngine {
 	private ctx: AudioContext;
-	private wasmBinary?: ArrayBuffer;
+	private initialization?: Promise<void>;
+	private destroyed = false;
+	private captureGeneration = 0;
 	private isInitialized = false;
 
 	private source?: MediaStreamAudioSourceNode;
 
 	private currentStream: MediaStream | null = null;
 
-	private inputGain?: GainNode;
-	private outputGain!: GainNode;
+	private inputGain: GainNode;
+	private outputGain: GainNode;
 
-	private eqHighPass?: BiquadFilterNode;
-	private eqPresence!: BiquadFilterNode;
-	private compressor!: DynamicsCompressorNode;
-	private limiter!: DynamicsCompressorNode;
+	private eqHighPass: BiquadFilterNode;
+	private eqPresence: BiquadFilterNode;
+	private compressor: DynamicsCompressorNode;
+	private limiter: DynamicsCompressorNode;
 
-	private splitter!: ChannelSplitterNode;
-	private merger!: ChannelMergerNode;
+	private splitter: ChannelSplitterNode;
+	private merger: ChannelMergerNode;
 
-	private destination!: MediaStreamAudioDestinationNode;
+	private destination: MediaStreamAudioDestinationNode;
 
-	private analyser!: AnalyserNode;
+	private analyser: AnalyserNode;
 
 	constructor(ctx: AudioContext) {
-	}
-
-	async init() {
-		if (this.isInitialized) return;
-
-		this.ctx = new AudioContext();
-
-		// Загружаем WASM один раз на всё приложение
-		this.wasmBinary = await loadRnnoise({
-			url: rnnoiseWasmPath,
-			simdUrl: rnnoiseSimdWasmPath
-		});
-
-		await this.ctx.audioWorklet.addModule(rnnoiseWorkletPath);
-
-		this.buildStaticNodes();
-
-		this.isInitialized = true;
-	}
-
-	private buildStaticNodes() {
-		if (!this.ctx) return;
-
-
+		this.ctx = ctx;
 		this.inputGain = this.ctx.createGain();
 		this.outputGain = this.ctx.createGain();
 
@@ -102,7 +80,27 @@ export class AudioEngine {
 		this.merger.connect(this.destination);
 	}
 
+	async init() {
+		if (this.destroyed) throw new Error("AudioEngine is destroyed");
+		if (this.isInitialized) return;
+		this.initialization ??= this.initialize().catch(error => {
+			this.initialization = undefined;
+			throw error;
+		});
+		await this.initialization;
+	}
+
+	private async initialize() {
+		await loadRnnoise({ url: rnnoiseWasmPath, simdUrl: rnnoiseSimdWasmPath });
+		if (this.destroyed) return;
+		await this.ctx.audioWorklet.addModule(rnnoiseWorkletPath);
+		if (this.destroyed) return;
+		this.isInitialized = true;
+	}
+
+
 	public attachStream(stream: MediaStream) {
+		if (!this.isInitialized || this.destroyed) throw new Error("AudioEngine is not ready");
 		if (this.source) {
 			this.source.disconnect();
 		}
@@ -136,7 +134,8 @@ export class AudioEngine {
 	}
 
 	public async setMicDevice(deviceId: string) {
-		this.currentDeviceId = deviceId;
+		await this.init();
+		const generation = ++this.captureGeneration;
 
 		if (this.currentStream) {
 			this.currentStream.getTracks().forEach(t => t.stop());
@@ -150,6 +149,10 @@ export class AudioEngine {
 			}
 		});
 
+		if (this.destroyed || generation !== this.captureGeneration) {
+			stream.getTracks().forEach(track => track.stop());
+			return;
+		}
 		this.currentStream = stream;
 
 		this.attachStream(stream);
@@ -172,6 +175,9 @@ export class AudioEngine {
 	}
 
 	public async destroy() {
+		if (this.destroyed) return;
+		this.destroyed = true;
+		this.captureGeneration++;
 		if (this.source) {
 			this.source.disconnect();
 		}
@@ -180,8 +186,9 @@ export class AudioEngine {
 			this.currentStream.getTracks().forEach(track => track.stop());
 		}
 
-		this.destination.disconnect();
-		this.analyser.disconnect();
+		this.destination?.stream.getTracks().forEach(track => track.stop());
+		this.destination?.disconnect();
+		this.analyser?.disconnect();
 
 		await this.ctx.close();
 	}

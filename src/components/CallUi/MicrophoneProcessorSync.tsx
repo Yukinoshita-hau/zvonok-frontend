@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import type { RootState } from "../../store/store";
 import { ZvonokLiveKitAudioProcessor } from "../../livekit/audio/ZvonokLiveKitAudioProcessor";
 import type { ZvonokAudioGraphConfig } from "../../livekit/audio/ZvonokAudioGraphConfig";
+import { mediaDiagnostic } from "./MediaDiagnostics";
 
 export function MicrophoneProcessorSync() {
 	const room = useRoomContext();
@@ -12,47 +13,45 @@ export function MicrophoneProcessorSync() {
 	const processedTrackRef = useRef<LocalAudioTrack | null>(null);
 	const processorRef = useRef<ZvonokLiveKitAudioProcessor | null>(null);
 
-	const syncingRef = useRef(false);
-	const pendingConfigRef = useRef<ZvonokAudioGraphConfig | null>(null);
+	const requestSyncRef = useRef<((config: ZvonokAudioGraphConfig) => void) | null>(null);
 
-	const appliedProcessorKeyRef = useRef<string | null>(null);
+	const voiceProcessingConfig = useSelector((s: RootState) => s.device.voiceProcessingConfig);
 
-	const voiceProcessingConfig = useSelector(
-		(s: RootState) => s.device.voiceProcessingConfig
-	);
-
+	const configRef = useRef(voiceProcessingConfig);
+	configRef.current = voiceProcessingConfig;
 	useEffect(() => {
+		mediaDiagnostic("react.processor.mount");
 		let disposed = false;
+		let syncing = false;
+		let pendingConfig: ZvonokAudioGraphConfig | null = null;
 
 		async function syncProcessor(nextConfig: ZvonokAudioGraphConfig) {
-			pendingConfigRef.current = nextConfig;
+			pendingConfig = nextConfig;
 
-			if (syncingRef.current) return;
+			if (syncing) return;
 
-			syncingRef.current = true;
+			syncing = true;
 
 			try {
-				while (pendingConfigRef.current && !disposed) {
+				while (pendingConfig && !disposed) {
+					const configToApply = pendingConfig;
+					pendingConfig = null;
 
-					const configToApply = pendingConfigRef.current;
-					pendingConfigRef.current = null;
-
-					const publication = room.localParticipant.getTrackPublication(
-						Track.Source.Microphone
-					);
+					const publication = room.localParticipant.getTrackPublication(Track.Source.Microphone);
 
 					const track = publication?.track;
 
 					if (!(track instanceof LocalAudioTrack)) {
+						const previous = processedTrackRef.current;
 						processedTrackRef.current = null;
-						appliedProcessorKeyRef.current = null;
+						processorRef.current = null;
+						await previous?.stopProcessor();
 						return;
 					}
 
-
 					if (processedTrackRef.current === track && processorRef.current) {
 						await processorRef.current.updateConfig(configToApply);
-						return;
+						continue;
 					}
 
 					if (processedTrackRef.current && processedTrackRef.current !== track) {
@@ -61,9 +60,17 @@ export function MicrophoneProcessorSync() {
 						});
 					}
 
+					if (disposed) return;
 					const processor = new ZvonokLiveKitAudioProcessor(configToApply);
 
-					await track.setProcessor(processor);
+					try {
+						mediaDiagnostic("processor.setup.request");
+						await track.setProcessor(processor);
+						mediaDiagnostic("processor.setup.resolved", { processedTrack: processor.processedTrack ? { enabled: processor.processedTrack.enabled, readyState: processor.processedTrack.readyState, muted: processor.processedTrack.muted } : null });
+					} catch (error) {
+						await processor.destroy();
+						throw error;
+					}
 
 					if (disposed) {
 						await track.stopProcessor();
@@ -72,39 +79,37 @@ export function MicrophoneProcessorSync() {
 
 					processedTrackRef.current = track;
 					processorRef.current = processor;
-
 				}
 			} catch (error) {
 				console.log("[audio-processor] failed to apply processor", error);
 			} finally {
-				syncingRef.current = false;
+				syncing = false;
 
-				if (pendingConfigRef.current && !disposed) {
-					const pendingConfig = pendingConfigRef.current;
-					pendingConfigRef.current = null;
-					void syncProcessor(pendingConfig);
-				}
+				if (pendingConfig && !disposed) void syncProcessor(pendingConfig);
 			}
 		}
 
 		const nextConfig: ZvonokAudioGraphConfig = {
-			...voiceProcessingConfig,
+			...configRef.current,
 			stereoOutput: false,
-		}
+		};
 
+		requestSyncRef.current = (config) => {
+			void syncProcessor({ ...config, stereoOutput: false });
+		};
 		void syncProcessor(nextConfig);
 
 		const handleTrackPublished = () => {
 			void syncProcessor({
-				...voiceProcessingConfig,
-				stereoOutput: false
+				...configRef.current,
+				stereoOutput: false,
 			});
 		};
 
 		const handleTrackUnmuted = () => {
 			void syncProcessor({
-				...voiceProcessingConfig,
-				stereoOutput: false
+				...configRef.current,
+				stereoOutput: false,
 			});
 		};
 
@@ -112,28 +117,26 @@ export function MicrophoneProcessorSync() {
 		room.localParticipant.on("trackUnmuted", handleTrackUnmuted);
 
 		return () => {
+			mediaDiagnostic("react.processor.unmount");
 			disposed = true;
+			pendingConfig = null;
+			requestSyncRef.current = null;
+			const track = processedTrackRef.current;
+			processedTrackRef.current = null;
+			processorRef.current = null;
+			if (track)
+				void track
+					.stopProcessor()
+					.catch((error) => console.warn("Processor cleanup failed", error));
 
 			room.localParticipant.off("localTrackPublished", handleTrackPublished);
 			room.localParticipant.off("trackUnmuted", handleTrackUnmuted);
-		}
-	}, [room, voiceProcessingConfig]);
+		};
+	}, [room]);
 
 	useEffect(() => {
-		return () => {
-			const currentTrack = processedTrackRef.current;
-
-			processedTrackRef.current = null;
-			processorRef.current = null;
-			pendingConfigRef.current = null;
-
-			if (currentTrack) {
-				void currentTrack.stopProcessor().catch((error) => {
-					console.log("[audio-processor] failed tot stop processor", error)
-				});
-			}
-		}
-	}, []);
+		requestSyncRef.current?.(voiceProcessingConfig);
+	}, [voiceProcessingConfig]);
 
 	return null;
 }

@@ -5,6 +5,7 @@ import type { CallParticipantStatus } from "../../api/interfaces/CallParticipant
 import type { BaseCallEvent } from "../interfaces/callEvents.interface";
 
 export interface ActiveCallState {
+	requestIdsByRoomId: Record<number, string>;
 	activeCallsByRoomId: Record<number, ActiveCallResponse>;
 	incomingCall: BaseCallEvent | null;
 	currentCallId: number | null;
@@ -16,6 +17,7 @@ export interface ActiveCallState {
 }
 
 export const initialState: ActiveCallState = {
+	requestIdsByRoomId: {},
 	activeCallsByRoomId: {},
 	incomingCall: null,
 	currentCallId: null,
@@ -108,9 +110,10 @@ export const activeCallSlice = createSlice({
 			const event = action.payload;
 			const roomId = event.chatRoomId ?? event.roomId;
 			if (!roomId) return;
+			delete state.requestIdsByRoomId[roomId];
 
 			if (event.type === "CALL_ENDED") {
-				delete state.activeCallsByRoomId[roomId];
+				if (state.activeCallsByRoomId[roomId]?.callId === event.callId) delete state.activeCallsByRoomId[roomId];
 				if (state.incomingCall?.callId === event.callId) state.incomingCall = null;
 				if (state.currentCallId === event.callId) state.status = "ended";
 				return;
@@ -135,6 +138,7 @@ export const activeCallSlice = createSlice({
 
 			const participantStatus = statusByType[event.type];
 			const activeCall = state.activeCallsByRoomId[roomId];
+			if (activeCall && activeCall.callId !== event.callId) return;
 			if (activeCall && event.callStatus === "ACTIVE") activeCall.status = "ACTIVE";
 			if (participantStatus && activeCall && event.participantUsername) {
 				const participant = activeCall.participants.find((p) => p.username === event.participantUsername);
@@ -144,10 +148,17 @@ export const activeCallSlice = createSlice({
 	},
 	extraReducers: (builder) => {
 		builder
+			.addCase(getActiveCall.pending, (state, action) => {
+				state.requestIdsByRoomId[action.meta.arg] = action.meta.requestId;
+			})
 			.addCase(getActiveCall.rejected, (state, action) => {
+				if (state.requestIdsByRoomId[action.meta.arg] !== action.meta.requestId) return;
+				delete state.requestIdsByRoomId[action.meta.arg];
 				state.error = typeof action.payload === "string" ? action.payload : "Failed to get active call";
 			})
-			.addCase(getActiveCall.fulfilled, (state, action: PayloadAction<{ roomId: number; activeCall: ActiveCallResponse | null }>) => {
+			.addCase(getActiveCall.fulfilled, (state, action) => {
+				if (state.requestIdsByRoomId[action.meta.arg] !== action.meta.requestId) return;
+				delete state.requestIdsByRoomId[action.meta.arg];
 				if (action.payload.activeCall) {
 					state.activeCallsByRoomId[action.payload.roomId] = action.payload.activeCall;
 				} else {

@@ -1,7 +1,7 @@
-import type { UserMini } from "../../entities/UserMini";
+import type { UserSummary } from "../../entities/UserMini";
 
 export interface RoomMembersPanelProps {
-	members: UserMini[];
+	members: UserSummary[];
 	myUserId?: number;
-	onMemberSelect: (member: UserMini, anchorRect: DOMRect) => void;
+	onMemberSelect: (member: UserSummary, anchorRect: DOMRect) => void;
 }

@@ -1,5 +1,6 @@
 import cn from "classnames";
-import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
+import { useVirtualRows } from "./useVirtualRows";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import styles from "./DmItemsList.module.css";
 import { fetchRoomMessages, getMessagesReaders, messageActions } from "../../store/slices/message.slice";
 import { useSearchParams } from "react-router-dom";
@@ -37,7 +38,50 @@ export function DmItemsList() {
 	const processedIdsRef = useRef<Set<number>>(new Set());
 	const roomId = searchParams.get("roomId")
 	const numericRoomId = Number(roomId);
+	const activeRoomRef = useRef(numericRoomId); activeRoomRef.current = numericRoomId;
+	const replyTimers = useRef<Set<number>>(new Set());
+	const scheduleReplyEffect = (callback: () => void, delay: number) => {
+		const timer = window.setTimeout(() => { replyTimers.current.delete(timer); callback(); }, delay);
+		replyTimers.current.add(timer);
+	};
 	const currentRoom = rooms?.find(r => r.id === Number(roomId));
+	const messagesById = useMemo(() => new Map(messages.map(message => [message.id, message])), [messages]);
+
+	const chatItems = useMemo(() => {
+		const itemArr: (
+			{ type: "divider"; label: string; rawDate: string; key: string } |
+			{ type: "msg"; payload: ShortMessage; key: string })[] = [];
+
+		for (let i = 0; i < messages.length; i++) {
+			const currentMsg = messages[i];
+			const previousMsg = i === 0 ? null : messages[i - 1];
+
+			if ((previousMsg !== null && !isSameDay(currentMsg.sentAt, previousMsg.sentAt)) || i === 0) {
+				const now = new Date();
+				const yesterday = new Date();
+				yesterday.setDate(now.getDate() - 1);
+
+				if (isSameDay(now, currentMsg.sentAt)) {
+					itemArr.push({ type: "divider", label: "Today", rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
+				} else if (isSameDay(yesterday, currentMsg.sentAt)) {
+					itemArr.push({ type: "divider", label: "Yesterday", rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
+				} else {
+					itemArr.push({ type: "divider", label: formatDate(currentMsg.sentAt), rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
+				}
+			}
+
+			if (newDividerMessageId && messages[i].id === newDividerMessageId) {
+				itemArr.push({ type: "divider", label: "New", rawDate: "New", key: `date-divider-${currentMsg.id}` });
+			}
+
+			itemArr.push({ type: "msg", payload: currentMsg, key: `${currentMsg.id}` });
+		}
+
+		return itemArr;
+	}, [messages, newDividerMessageId])
+
+	const windowed = useVirtualRows(chatItems, scrollRef, isAtBottom, editingMsgId === null ? undefined : String(editingMsgId));
+	const virtualEnabled = useRef(windowed.enabled); virtualEnabled.current = windowed.enabled;
 
 	const lastMessageId = useMemo(() => {
 		if (messages.length === 0) return null;
@@ -46,11 +90,24 @@ export function DmItemsList() {
 
 	useEffect(() => {
 		processedIdsRef.current.clear();
+		return () => { replyTimers.current.forEach(window.clearTimeout); replyTimers.current.clear(); };
 	}, [roomId]);
+	useEffect(() => {
+		processedIdsRef.current.forEach(id => { if (!messagesById.has(id)) processedIdsRef.current.delete(id); });
+	}, [messagesById]);
 
 	useEffect(() => {
 		dispatch(messageActions.setIsAtBottom(true))
 	}, [roomId])
+
+	// Removing the loading skeleton can expose the entire history without a scroll event.
+	useLayoutEffect(() => {
+		const container = scrollRef.current;
+		if (status !== "succeeded" || isAtBottom || !container || container.clientHeight === 0) return;
+		if (container.scrollHeight - container.scrollTop - container.clientHeight < 60) {
+			dispatch(messageActions.setIsAtBottom(true));
+		}
+	}, [status, messages, roomId, isAtBottom, dispatch]);
 
 	useEffect(() => {
 		if (!scrollRef.current) return;
@@ -97,7 +154,7 @@ export function DmItemsList() {
 	}, [dispatch, isAtBottom, lastVisibleMessageId, myUser?.username])
 
 	useEffect(() => {
-		if (isAtBottom && currentRoom?.unreadCount > 0) {
+		if (isAtBottom && (currentRoom?.unreadCount ?? 0) > 0) {
 			dispatch(markRoomAsRead({ roomId: numericRoomId }));
 		}
 	}, [dispatch, isAtBottom, currentRoom?.unreadCount, numericRoomId])
@@ -124,7 +181,7 @@ export function DmItemsList() {
 					if (!entry.isIntersecting) return;
 
 					const messageId = Number(entry.target.getAttribute("data-id"));
-					const currentMessage = messages.find(m => m.id === messageId);
+					const currentMessage = messagesById.get(messageId);
 
 					if (!currentMessage) return;
 
@@ -146,7 +203,7 @@ export function DmItemsList() {
 		);
 
 		messageRefs.current.forEach((el, id) => {
-			const msg = messages.find(m => m.id === id);
+			const msg = messagesById.get(id);
 			if (!el || !msg) return;
 
 			if (msg.senderId === myUser.id) return;
@@ -157,7 +214,7 @@ export function DmItemsList() {
 		});
 
 		return () => observer.disconnect();
-	}, [messages, myUser?.id, myUser?.username, dispatch]);
+	}, [messagesById, myUser?.id, myUser?.username, dispatch, windowed.first, windowed.last]);
 
 	const handleScroll = async (e: UIEvent<HTMLDivElement>) => {
 		const container = e.currentTarget;
@@ -176,7 +233,7 @@ export function DmItemsList() {
 				beforeMessageId: oldestMessageId || undefined
 			}));
 
-			if (scrollRef.current) {
+			if (scrollRef.current && !virtualEnabled.current && activeRoomRef.current === numericRoomId) {
 				const scrollHeightAfter = scrollRef.current.scrollHeight;
 				const heighDifference = scrollHeightAfter - scrollHeightBefore;
 				scrollRef.current.scrollTop = heighDifference;
@@ -234,9 +291,14 @@ export function DmItemsList() {
 		if (!msg.replyToMessageId) return;
 
 		const targetEl = messageRefs.current.get(msg.replyToMessageId);
+		if (!targetEl && windowed.enabled && windowed.scrollTo(String(msg.replyToMessageId))) {
+			setHighlightedMessageId(msg.replyToMessageId);
+			scheduleReplyEffect(() => setHighlightedMessageId(current => current === msg.replyToMessageId ? null : current), 1600);
+			return;
+		}
 		if (!targetEl) {
 			setReplyJumpNotice("Original message is not loaded in the current list");
-			window.setTimeout(() => setReplyJumpNotice(null), 2200);
+			scheduleReplyEffect(() => setReplyJumpNotice(null), 2200);
 			return;
 		}
 
@@ -245,7 +307,7 @@ export function DmItemsList() {
 			block: "center"
 		});
 		setHighlightedMessageId(msg.replyToMessageId);
-		window.setTimeout(() => {
+		scheduleReplyEffect(() => {
 			setHighlightedMessageId(current => (current === msg.replyToMessageId ? null : current));
 		}, 1600);
 	}
@@ -269,46 +331,11 @@ export function DmItemsList() {
 		});
 	}
 
-	const chatItems = useMemo(() => {
-		const itemArr: (
-			{ type: "divider"; label: string; rawDate: string; key: string } |
-			{ type: "msg"; payload: ShortMessage; key: string })[] = [];
 
-		for (let i = 0; i < messages.length; i++) {
-			const currentMsg = messages[i];
-			const previousMsg = i === 0 ? null : messages[i - 1];
-
-			if ((previousMsg !== null && !isSameDay(currentMsg.sentAt, previousMsg.sentAt)) || i === 0) {
-				const now = new Date();
-				const yesterday = new Date();
-				yesterday.setDate(now.getDate() - 1);
-
-				if (isSameDay(now, currentMsg.sentAt)) {
-					itemArr.push({ type: "divider", label: "Today", rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
-				} else if (isSameDay(yesterday, currentMsg.sentAt)) {
-					itemArr.push({ type: "divider", label: "Yesterday", rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
-				} else {
-					itemArr.push({ type: "divider", label: formatDate(currentMsg.sentAt), rawDate: currentMsg.sentAt, key: `divider-${currentMsg.id}` });
-				}
-			}
-
-			if (newDividerMessageId && messages[i].id === newDividerMessageId) {
-				itemArr.push({ type: "divider", label: "New", rawDate: "New", key: `date-divider-${i}-${currentMsg.id}` });
-			}
-
-			itemArr.push({ type: "msg", payload: currentMsg, key: `${currentMsg.id}` });
-		}
-
-		return itemArr;
-	}, [messages, newDividerMessageId])
-
-	return (
-		<div className={styles["messages"]} onScroll={handleScroll} ref={scrollRef}>
-			{status === "loading" && <MessagesSkeleton />}
-			{chatItems.map(item => {
+	const renderItem = (item: (typeof chatItems)[number]) => {
 				if (item.type === "divider") {
 					return (
-						<div className={styles["data-divider"]} key={item.key}>
+						<div className={styles["data-divider"]} key={item.key} ref={element => { if (!windowed.enabled) windowed.bind(item.key, element); }}>
 							<span className={styles["data-label"]}>{item.label}</span>
 						</div>
 					)
@@ -328,6 +355,7 @@ export function DmItemsList() {
 				return (
 					<div key={item.key}
 						ref={(el) => {
+							if (!windowed.enabled) windowed.bind(item.key, el);
 							if (el) messageRefs.current.set(item.payload.id, el);
 							else messageRefs.current.delete(item.payload.id);
 						}}
@@ -415,7 +443,22 @@ export function DmItemsList() {
 						</div>
 					</div>
 				)
-			})}
+
+	};
+
+	return (
+		<div className={styles["messages"]} style={windowed.enabled ? {overflowAnchor:"none"} : undefined} onScroll={handleScroll} ref={scrollRef}>
+			{status === "loading" && messages.length === 0 && <MessagesSkeleton />}
+			{windowed.enabled ? (
+                <div style={{height:windowed.total,position:"relative",flexShrink:0,overflowAnchor:"none"}}>
+                    {windowed.rows.map(({item,index})=>(
+                        <div key={item.key} data-virtual-key={item.key} ref={element=>windowed.bind(item.key,element)}
+                            style={{position:"absolute",top:windowed.offsets[index],width:"100%",display:"flow-root",paddingBottom:10,boxSizing:"border-box"}}>
+                            {renderItem(item)}
+                        </div>
+                    ))}
+                </div>
+            ) : chatItems.map(renderItem)}
 
 			{replyJumpNotice && (
 				<div className={styles["reply-jump-notice"]}>{replyJumpNotice}</div>
@@ -429,19 +472,19 @@ export function DmItemsList() {
 				>
 					<button
 						onClick={() => {
-							const msg = messages.find(m => m.id === contextMenu.messageId);
+							const msg = messagesById.get(contextMenu.messageId);
 							if (msg) handleStartReply(msg);
 							setContextMenu(null);
 						}}>
 						Reply
 					</button>
 
-					{messages.find(m => m.id === contextMenu.messageId)?.senderId === myUser?.id && (
+					{messagesById.get(contextMenu.messageId)?.senderId === myUser?.id && (
 						<>
 							<div className={styles["menu-divider"]} />
 							<button
 								onClick={() => {
-									const msg = messages.find(m => m.id === contextMenu.messageId);
+									const msg = messagesById.get(contextMenu.messageId);
 									if (msg) handleStartEdit(msg.id, msg.content);
 									setContextMenu(null);
 								}}>

@@ -11,7 +11,7 @@ export interface MessageAttachment {
 	width?: number | null;
 	height?: number | null;
 	durationMs?: number | null;
-	waveform?: number[] | null;
+	waveform?: string | null;
 }
 
 export interface SelectedMessageAttachment {
@@ -27,6 +27,7 @@ export interface AttachmentValidationError {
 }
 
 export interface SendMessageWithAttachmentsPayload {
+	clientRequestId?: string;
 	content?: string;
 	files: File[];
 	replyToMessageId?: number | null;

@@ -1,118 +1,115 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useRoomContext } from "@livekit/components-react";
-import { LocalAudioTrack, Track } from "livekit-client";
+import { LocalAudioTrack, Track, type LocalTrack } from "livekit-client";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store/store";
 import { getMicrophonePublishOptions } from "../../utils/microphoneQuality";
 import { useMicrophoneCaptureOptions } from "./useMicrophoneCaptureOptions";
+import { mediaDiagnostic } from "./MediaDiagnostics";
+import { useCallMicrophoneOwner } from "./CallMicrophoneProvider";
 
 export function MicrophoneSettingsSync() {
 	const room = useRoomContext();
-
+	const microphoneOwner = useCallMicrophoneOwner();
 	const captureOptions = useMicrophoneCaptureOptions();
-
-	const micQualitySetting = useSelector(
-		(s: RootState) => s.device.micQualitySetting
-	);
-
-	const publishOptions = useMemo(
-		() => getMicrophonePublishOptions(micQualitySetting),
-		[micQualitySetting]
-	);
-
-	const lastAppliedRef = useRef<string>("");
-	const republishingRef = useRef(false);
-	const pendingSerializedRef = useRef<string | null>(null);
-
-	const serializedOptions = useMemo(
-		() =>
-			JSON.stringify({
-				captureOptions,
-				publishOptions,
-			}),
-		[captureOptions, publishOptions]
-	);
+	const quality = useSelector((s: RootState) => s.device.micQualitySetting);
+	const publishOptions = useMemo(() => getMicrophonePublishOptions(quality), [quality]);
+	type Options = { capture: typeof captureOptions; publish: typeof publishOptions; key: string };
+	const requestRef = useRef<((options: Options) => void) | null>(null);
+	const key = JSON.stringify({ captureOptions, publishOptions });
 
 	useEffect(() => {
-		if (!room.localParticipant.isMicrophoneEnabled) {
-			lastAppliedRef.current = serializedOptions;
-			return;
-		}
-
-		if (lastAppliedRef.current === serializedOptions) return;
-
-		pendingSerializedRef.current = serializedOptions;
-
-		if (republishingRef.current) return;
-
-		republishingRef.current = true;
-
-		void (async () => {
+		mediaDiagnostic("react.microphoneSettings.mount");
+		let disposed = false;
+		let running = false;
+		let pending: Options | null = null;
+		let applied = "";
+		const inFlightTracks = new Set<LocalAudioTrack>();
+		const stoppedTracks = new WeakSet<LocalTrack>();
+		const stopTrack = (track: LocalTrack) => {
+			if (stoppedTracks.has(track)) return;
+			stoppedTracks.add(track);
+			track.stop();
+		};
+		async function drain() {
+			if (running) return;
+			running = true;
 			try {
-				while (pendingSerializedRef.current) {
-					const nextSerialized = pendingSerializedRef.current;
-					pendingSerializedRef.current = null;
-
-					lastAppliedRef.current = nextSerialized;
-
-					console.log("[mic-quality] republish start", {
-						micQualitySetting,
-						captureOptions,
-						publishOptions,
-					});
-
-					const publication = room.localParticipant.getTrackPublication(
-						Track.Source.Microphone
-					);
-
-					const oldTrack = publication?.track;
-
-					if (oldTrack instanceof LocalAudioTrack) {
-						await oldTrack.stopProcessor().catch((error) => {
-							console.log("[mic-quality] failed to stop old processor", error);
-						});
-
-						await room.localParticipant.unpublishTrack(oldTrack, true);
+				while (pending && !disposed) {
+					const next = pending;
+					pending = null;
+					if (next.key === applied) continue;
+					if (!room.localParticipant.isMicrophoneEnabled) {
+						applied = next.key;
+						continue;
 					}
-
+					const old = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
+					if (old instanceof LocalAudioTrack) {
+						await old
+							.stopProcessor()
+							.catch((error) => console.warn("Microphone processor cleanup failed", error));
+						if (disposed) return;
+						await room.localParticipant.unpublishTrack(old, true);
+					}
+					if (disposed) return;
 					const tracks = await room.localParticipant.createTracks({
-						audio: captureOptions,
+						audio: next.capture,
 						video: false,
 					});
-
-					const newAudioTrack = tracks.find(
-						(track): track is LocalAudioTrack => track instanceof LocalAudioTrack
-					);
-
-					if (!newAudioTrack) {
-						tracks.forEach((track) => track.stop());
-						throw new Error("New microphone track was not created");
+					if (disposed) {
+						tracks.forEach(stopTrack);
+						return;
 					}
-
-					await room.localParticipant.publishTrack(
-						newAudioTrack,
-						publishOptions
+					const track = tracks.find(
+						(item): item is LocalAudioTrack => item instanceof LocalAudioTrack,
 					);
-
-					console.log("[mic-quality] republish done", {
-						micQualitySetting,
-						trackSid: newAudioTrack.sid,
-						publishOptions,
-					});
+					if (!track) {
+						tracks.forEach(stopTrack);
+						throw new Error("Microphone track was not created");
+					}
+					inFlightTracks.add(track);
+					try {
+						await room.localParticipant.publishTrack(track, next.publish);
+						inFlightTracks.delete(track);
+					} catch (error) {
+						tracks.forEach(stopTrack);
+						inFlightTracks.delete(track);
+						throw error;
+					}
+					if (disposed) {
+						try {
+							await room.localParticipant.unpublishTrack(track, true);
+						} finally {
+							stopTrack(track);
+						}
+						return;
+					}
+					applied = next.key;
 				}
 			} catch (error) {
-				console.error("[mic-quality] failed to republish microphone", error);
+				console.error("Failed to republish microphone", error);
 			} finally {
-				republishingRef.current = false;
+				running = false;
+				if (pending && !disposed) void drain();
 			}
-		})();
-	}, [
-		captureOptions,
-		publishOptions,
-		room,
-		serializedOptions,
-		micQualitySetting,
-	]);
+		}
+		requestRef.current = (options) => {
+			pending = options;
+			void drain();
+		};
+		return () => {
+			mediaDiagnostic("react.microphoneSettings.unmount");
+			disposed = true;
+			pending = null;
+			requestRef.current = null;
+			for (const track of inFlightTracks) stopTrack(track);
+			inFlightTracks.clear();
+		};
+	}, [room]);
 
+	useEffect(() => {
+		microphoneOwner.updateOptions(captureOptions, publishOptions);
+		requestRef.current?.({ capture: captureOptions, publish: publishOptions, key });
+	}, [room, captureOptions, microphoneOwner, publishOptions, key]);
 	return null;
 }

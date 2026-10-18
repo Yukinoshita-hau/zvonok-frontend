@@ -5,11 +5,11 @@ export interface FriendRequest {
 	senderId: number,
 	senderUsername: string,
 	senderDisplayName: string;
-	senderAvatarUrl: string;
+	senderAvatarUrl: string | null;
 	receiverId: number,
 	receiverUsername: string,
 	receiverDisplayName: string,
-	receiverAvatarUrl: string,
+	receiverAvatarUrl: string | null,
 	status: FriendRequestStatus,
 	createdAt: string,
 	updatedAt: string

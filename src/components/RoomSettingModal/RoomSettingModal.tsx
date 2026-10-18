@@ -8,7 +8,7 @@ import type { RoomSettingModalProps } from "./RoomSettingModal.props";
 import { useNavigate } from "react-router-dom";
 import { RoomMembersPanel } from "../RoomMembersPanel/RoomMembersPanel";
 import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
-import type { UserMini } from "../../entities/UserMini";
+import type { UserSummary } from "../../entities/UserMini";
 import { AddGroupMembersModal } from "../AddGroupMembersModal/AddGroupMembersModal";
 import { UserMiniProfileModal } from "../UserMiniProfileModal/UserMiniProfileModal";
 import { addRoomMembers, fetchMyRooms, leaveRoom } from "../../store/slices/room.slice";
@@ -24,7 +24,7 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 	const usersById = useSelector((s: RootState) => s.users.byId);
 	const friends = useSelector((s: RootState) => s.friend.friends);
-	const [selectedMember, setSelectedMember] = useState<UserMini | null>(null);
+	const [selectedMember, setSelectedMember] = useState<UserSummary | null>(null);
 	const [activeSection, setActiveSection] = useState<"main" | "members" | "invite" | "danger">("main");
 	const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
 	const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);

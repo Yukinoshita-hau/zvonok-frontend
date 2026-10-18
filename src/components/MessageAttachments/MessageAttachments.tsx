@@ -1,3 +1,4 @@
+import { parseWaveform } from "../../utils/parseWaveform";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { ImageOff, Mic, Pause, Play } from "lucide-react";
@@ -431,7 +432,8 @@ async function createWaveformBars(src: string, barCount: number) {
 	}
 }
 
-function normalizeWaveformBars(waveform?: number[] | null) {
+function normalizeWaveformBars(serialized?: string | null) {
+	const waveform = parseWaveform(serialized);
 	if (!waveform || waveform.length === 0) return null;
 
 	const resampledBars = resampleValues(waveform, VOICE_WAVEFORM_BAR_COUNT);

@@ -14,12 +14,16 @@ import {
 	toElectronAccelerator,
 } from "../../utils/keyboardShortcut";
 import type { DesktopHotkeyAction } from "../ScreenSharePicker/ScreenSharePicker.types";
+import { ConnectionState } from "livekit-client";
+import { useCallMicrophoneOwner } from "../CallUi/CallMicrophoneProvider";
+import { getMicrophonePublishOptions } from "../../utils/microphoneQuality";
 
 const OPEN_SCREEN_SHARE_PICKER_EVENT = "zvonok:open-screen-share-picker";
 
 export function CallHotkeys() {
 	const room = useRoomContext();
 	const microphoneCaptureOptions = useMicrophoneCaptureOptions();
+	const microphoneOwner = useCallMicrophoneOwner();
 	const registeredDesktopHotkeysRef = useRef<Set<DesktopHotkeyAction>>(new Set());
 
 	const {
@@ -29,7 +33,9 @@ export function CallHotkeys() {
 		selectedCameraId,
 		cameraQuality,
 		connectionTestResult,
+		micQualitySetting,
 	} = useSelector((s: RootState) => s.device);
+	const microphonePublishOptions = useMemo(() => getMicrophonePublishOptions(micQualitySetting), [micQualitySetting]);
 
 	const cameraPreset = useMemo(() => {
 		const quality = resolveQualitySetting(
@@ -42,10 +48,12 @@ export function CallHotkeys() {
 
 	const toggleMicrophone = useCallback(() => {
 		const nextEnabled = !room.localParticipant.isMicrophoneEnabled;
-		void room.localParticipant.setMicrophoneEnabled(nextEnabled, microphoneCaptureOptions).catch((error) => {
+		// SignalConnected applies the SDK's initial audio=false; do not race it with unmute.
+		if (nextEnabled && room.state !== ConnectionState.Connected) return;
+		void microphoneOwner.setEnabled(nextEnabled, microphoneCaptureOptions, microphonePublishOptions).catch((error) => {
 			console.error("Failed to toggle microphone from hotkey", error);
 		});
-	}, [microphoneCaptureOptions, room]);
+	}, [microphoneCaptureOptions, microphoneOwner, microphonePublishOptions, room]);
 
 	const toggleCamera = useCallback(() => {
 		const nextEnabled = !room.localParticipant.isCameraEnabled;

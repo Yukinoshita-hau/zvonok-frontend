@@ -1,3 +1,4 @@
+import type { UserProfileUpdate } from "../../api/interfaces/UserProfileUpdatedEvent";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { JwtPayload } from "../JwtPayload";
 import type { User } from "../../entities/user";
@@ -35,12 +36,7 @@ export const updateUser = createAsyncThunk(
 	async (body: UpdateUserDto, thunkAPI) => {
 		try {
 			const updateUserData = (await userApi.updateMyUser(body)).data;
-			const refreshTokenData = (await authApi.refresh()).data;
-
-			return {
-				user: updateUserData,
-				token: refreshTokenData,
-			};
+			return updateUserData;
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(
 				e?.response?.data?.message ?? e?.message ?? "Failed to update user"
@@ -142,7 +138,7 @@ export const userSlice = createSlice({
 			previousState.expiresIn = null;
 			previousState.expiresAt = null;
 			previousState.myUser = null;
-			previousState.isAuthChecked = false;
+			previousState.isAuthChecked = true;
 		},
 		setAuthChecked: (previousState, action: PayloadAction<boolean>) => {
 			previousState.isAuthChecked = action.payload;
@@ -151,7 +147,7 @@ export const userSlice = createSlice({
 			previousState.myUser = action.payload;
 		},
 
-		patchMyUser: (previousState, action) => {
+		patchMyUser: (previousState, action: PayloadAction<UserProfileUpdate>) => {
 			if (!previousState.myUser) return;
 			if (previousState.myUser.id !== action.payload.id) return;
 
@@ -167,18 +163,11 @@ export const userSlice = createSlice({
 				previousState.status = "loading";
 				previousState.error = null;
 			})
-			.addCase(updateUser.fulfilled, (previousState, action: PayloadAction<{
-				user: User;
-				token: JwtPayload;
-			}>) => {
+			.addCase(updateUser.fulfilled, (previousState, action: PayloadAction<User>) => {
 				previousState.status = "succeeded";
 				previousState.error = null;
 
-				previousState.myUser = action.payload.user;
-				previousState.accessToken = action.payload.token.accessToken;
-				previousState.tokenType = action.payload.token.tokenType;
-				previousState.expiresIn = action.payload.token.expiresIn;
-				previousState.expiresAt = Date.now() + action.payload.token.expiresIn;
+				previousState.myUser = action.payload;
 			})
 			.addCase(updateUser.rejected, (previousState, action) => {
 				previousState.status = "failed";

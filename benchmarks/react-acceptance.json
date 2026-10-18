@@ -1,0 +1,59 @@
+[
+  {
+    "count": 1000,
+    "prependAnchorDelta": 0.547165,
+    "expandedAnchorDelta": -0.207031,
+    "imageAnchorDelta": -0.007034,
+    "replyTargetMounted": true,
+    "editPinned": true,
+    "bottomGap": -0.203125,
+    "activeObserversAfterUnmount": 0,
+    "activeBlobUrlsAfterUnmount": 0,
+    "afterUnmountElements": 0,
+    "afterSwitchMessages": 0,
+    "passed": true
+  },
+  {
+    "count": 5000,
+    "prependAnchorDelta": 0.070557,
+    "expandedAnchorDelta": -0.51947,
+    "imageAnchorDelta": -0.319458,
+    "replyTargetMounted": true,
+    "editPinned": true,
+    "bottomGap": -0.1875,
+    "activeObserversAfterUnmount": 0,
+    "activeBlobUrlsAfterUnmount": 0,
+    "afterUnmountElements": 0,
+    "afterSwitchMessages": 0,
+    "passed": true
+  },
+  {
+    "count": 10000,
+    "prependAnchorDelta": 0.422729,
+    "expandedAnchorDelta": -0.247253,
+    "imageAnchorDelta": -0.047241,
+    "replyTargetMounted": true,
+    "editPinned": true,
+    "bottomGap": -0.1875,
+    "activeObserversAfterUnmount": 0,
+    "activeBlobUrlsAfterUnmount": 0,
+    "afterUnmountElements": 0,
+    "afterSwitchMessages": 0,
+    "passed": true
+  },
+  {
+    "count": 480,
+    "afterPrepend": 510,
+    "prependAnchorDelta": 0.590618,
+    "expandedAnchorDelta": 0,
+    "imageAnchorDelta": 0.2,
+    "replyTargetMounted": true,
+    "editPinned": true,
+    "bottomGap": -0.199219,
+    "activeObserversAfterUnmount": 0,
+    "activeBlobUrlsAfterUnmount": 0,
+    "afterUnmountElements": 0,
+    "afterSwitchMessages": 0,
+    "passed": true
+  }
+]

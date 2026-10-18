@@ -1,10 +1,5 @@
+import { isCallEvent, isFriendNotificationPayload, isMessage, isRecord, isRoomResponse, isUserMini, isUserProfileUpdate, parseObject } from "./payloadValidation";
 import type { Client } from "@stomp/stompjs";
-import type { FriendEventMessage } from "../../../api/interfaces/FriendEventMessage";
-import type { CallRecordingAction } from "../../../api/interfaces/CallRecordingPayload";
-import type { MessageReadStatusContent } from "../../../api/interfaces/MessageReadStatusContent";
-import type { RoomEvents } from "../../../api/interfaces/RoomEvents";
-import type { UserProfileUpdatedEvent } from "../../../api/interfaces/UserProfileUpdatedEvent";
-import type { BaseCallEvent } from "../../interfaces/callEvents.interface";
 import {
 	WS_CALL_PATH,
 	WS_CALL_RECORDING_PATH,
@@ -29,28 +24,24 @@ import { normalizeRoom } from "../../../utils/normalizeRoom";
 import { soundPlayer } from "../../../utils/soundPlayer";
 import { isAppFocused, showDesktopNotification, type DesktopNotificationPayload } from "../../../services/desktop.service";
 import type { SubscriptionRegistry, WebSocketStoreApi } from "./types";
-import type { RoomResponse } from "../../../entities/room";
-import type { UserMini } from "../../../entities/UserMini";
+import { createRefreshQueue } from "./refreshQueue";
 
 export function registerWebSocketSubscriptions(
 	client: Client,
 	storeApi: WebSocketStoreApi,
 	subscriptions: SubscriptionRegistry
 ) {
+	const refreshRooms = createRefreshQueue(() => Promise.resolve(storeApi.dispatch(fetchMyRooms())));
 	const personalMessageSub = client.subscribe(WS_MESSAGES_PATH, async (message) => {
-		const data = JSON.parse(message.body);
+		const data = parseObject(message.body);
+		if (!isMessage(data)) return;
 		const normalized = normalizeMessage(data);
 		const state = storeApi.getState();
 		const myUsername = state.user.myUser?.username;
 		const activeRoomId = state.message.activeRoomId;
 
-		if (data.sender) {
-			storeApi.dispatch(usersActions.upsertUser(data.sender));
-		}
 
-		if (data.room?.members) {
-			storeApi.dispatch(usersActions.upsertUsers(data.room.members));
-		}
+
 
 		const isFromMe = data.sender?.username === myUsername;
 		const isActiveRoom = data.room?.id === activeRoomId;
@@ -72,9 +63,9 @@ export function registerWebSocketSubscriptions(
 		storeApi.dispatch(usersActions.upsertUser(normalized.user));
 		storeApi.dispatch(messageActions.execEventMessage(normalized.message));
 
-		await storeApi.dispatch(fetchMyRooms());
+		await refreshRooms();
 
-		if (!activeRoomId && data.room?.id && data.sender?.username === state.user.myUser?.username) {
+		if (!storeApi.getState().message.activeRoomId && data.room?.id && data.sender?.username === state.user.myUser?.username) {
 			storeApi.dispatch(messageActions.setActiveRoom(data.room.id));
 			storeApi.dispatch(fetchRoomMessages({ roomId: data.room.id }));
 		}
@@ -82,11 +73,37 @@ export function registerWebSocketSubscriptions(
 	subscriptions[WS_MESSAGES_PATH] = personalMessageSub;
 
 	const personalCallSub = client.subscribe(WS_CALL_PATH, (message) => {
-		const data = JSON.parse(message.body) as BaseCallEvent;
-		console.log(data);
+		const raw = parseObject(message.body);
+		const data = raw && Object.fromEntries(Object.entries(raw).filter(([key, value]) => key === "endReason" || value !== null));
+		if (!isCallEvent(data)) return;
+		const current = storeApi.getState().call;
+		if (data.callId && current.closedCallIds.includes(data.callId)) {
+			storeApi.dispatch(activeCallActions.handleCallEvent(data));
+			return;
+		}
+		if (current.status === "outgoing_ringing" && data.type === "CALL_INVITE") {
+			storeApi.dispatch(activeCallActions.handleCallEvent(data));
+			return;
+		}
+		if (current.conferenceCode || (current.callId && data.callId && current.callId !== data.callId)) {
+			storeApi.dispatch(activeCallActions.handleCallEvent(data));
+			return;
+		}
+		if (data.eventId && current.processedEventIds.includes(data.eventId)) return;
+		// Group acceptance is broadcast to every invitee. It does not accept my invitation.
+		if (current.status === "incoming_ringing" && current.roomType === "GROUP"
+			&& ["CALL_ACCEPT", "CALL_ACCEPTED", "CALL_PARTICIPANT_JOINED"].includes(data.type)
+			&& data.participantUsername !== storeApi.getState().user.myUser?.username) {
+			storeApi.dispatch(activeCallActions.handleCallEvent(data));
+			return;
+		}
 
 		storeApi.dispatch(callActions.applyCallEvent(data));
 		storeApi.dispatch(activeCallActions.handleCallEvent(data));
+		if (data.type === "CALL_PARTICIPANT_DECLINED" && data.participantUsername === storeApi.getState().user.myUser?.username && data.callId) {
+			storeApi.dispatch(callActions.incomingInvitationExpired(data.callId));
+			if (storeApi.getState().activeCall.incomingCall?.callId === data.callId) storeApi.dispatch(activeCallActions.clearIncomingCall());
+		}
 
 		if (data.type === "CALL_INVITE") {
 			const state = storeApi.getState();
@@ -148,30 +165,35 @@ export function registerWebSocketSubscriptions(
 	subscriptions[WS_CALL_PATH] = personalCallSub;
 
 	const personalCallRecordingSub = client.subscribe(WS_CALL_RECORDING_PATH, (message) => {
-		const data = JSON.parse(message.body) as CallRecordingAction;
+		const data = parseObject(message.body);
+		if (!data) return;
 		console.log(data);
 	});
 	subscriptions[WS_CALL_RECORDING_PATH] = personalCallRecordingSub;
 
 	const personalFriendRequestSub = client.subscribe(WS_FRIEND_REQUESTS_PATH, (message) => {
-		const data = JSON.parse(message.body) as FriendEventMessage;
-		console.log(data);
+		const raw = parseObject(message.body);
+		if (!raw || typeof raw.type !== "string" || (raw.payload !== null && !isRecord(raw.payload))) return;
+		if (raw.payload !== null && !isFriendNotificationPayload(raw.payload)) return;
+		const data = { type: raw.type, payload: raw.payload };
 
 		const myUsername = storeApi.getState().user.myUser?.username;
 
 		switch (data.type) {
 			case "FRIEND_REQUEST_ACCEPTED": {
+				if (!data.payload?.receiverUsername || !data.payload.senderUsername) return;
 				if (data.payload?.senderUsername === myUsername) {
 					storeApi.dispatch(fetchOutgoingRequests());
 
 					storeApi.dispatch(notificationAction.pushNotification({
 						notification: {
+							id: crypto.randomUUID(),
 							type: "success",
 							title: "Запрос в друзья принят",
 							message: `${data.payload?.receiverUsername} теперь ваш друг`,
 							createdAt: new Date().toISOString(),
 							read: false,
-							target: { type: "FRIEND_PROFILE", username: data.payload?.receiverUsername }
+							target: { type: "FRIEND_PROFILE", username: data.payload.receiverUsername }
 						}
 					}));
 
@@ -186,10 +208,11 @@ export function registerWebSocketSubscriptions(
 				}
 
 				storeApi.dispatch(fetchMyFriends());
-				storeApi.dispatch(fetchMyRooms());
+				void refreshRooms();
 				break;
 			}
 			case "FRIEND_REQUEST_CREATED": {
+				if (!data.payload?.receiverUsername || !data.payload.senderUsername) return;
 				if (data.payload?.senderUsername === myUsername) {
 					storeApi.dispatch(fetchOutgoingRequests());
 				} else if (data.payload?.receiverUsername === myUsername) {
@@ -202,12 +225,13 @@ export function registerWebSocketSubscriptions(
 
 					storeApi.dispatch(notificationAction.pushNotification({
 						notification: {
+							id: crypto.randomUUID(),
 							type: "info",
 							title: "Новый запрос в друзья",
 							message: `${data.payload?.senderUsername} хочет добавить вас в друзья`,
 							createdAt: new Date().toISOString(),
 							read: false,
-							target: { type: "FRIEND_PROFILE", username: data.payload?.receiverUsername }
+							target: { type: "FRIEND_PROFILE", username: data.payload.senderUsername }
 						}
 					}));
 
@@ -240,7 +264,8 @@ export function registerWebSocketSubscriptions(
 	subscriptions[WS_FRIEND_REQUESTS_PATH] = personalFriendRequestSub;
 
 	const errorSub = client.subscribe(WS_ERROR_PATH, (message) => {
-		const data = JSON.parse(message.body) as { message: string; status: number };
+		const data = parseObject(message.body);
+		if (!data || typeof data.message !== "string" || typeof data.status !== "number") return;
 		if (data.message !== "Message was not found") {
 			storeApi.dispatch(toastActions.showToast({
 				id: crypto.randomUUID(),
@@ -253,7 +278,8 @@ export function registerWebSocketSubscriptions(
 	subscriptions[WS_ERROR_PATH] = errorSub;
 
 	const messageReadSub = client.subscribe(WS_MESSAGE_READ_PATH, (message) => {
-		const data = JSON.parse(message.body) as MessageReadStatusContent;
+		const data = parseObject(message.body);
+		if (!data || typeof data.messageId !== "number" || !Number.isSafeInteger(data.messageId) || data.messageId <= 0 || typeof data.readBy !== "string") return;
 		storeApi.dispatch(messageActions.messageReadUpdate({
 			messageId: data.messageId,
 			readBy: data.readBy
@@ -263,26 +289,28 @@ export function registerWebSocketSubscriptions(
 	subscriptions[WS_MESSAGE_READ_PATH] = messageReadSub;
 
 	const messageRoomEventsSub = client.subscribe(WS_ROOM_EVENTS_PATH, (message) => {
-		const data = JSON.parse(message.body) as RoomEvents;
+		const raw = parseObject(message.body);
+		if (!raw || typeof raw.type !== "string") return;
+		if (raw.roomId !== undefined && (typeof raw.roomId !== "number" || !Number.isSafeInteger(raw.roomId) || raw.roomId <= 0)) return;
+		if (raw.members !== undefined && !Array.isArray(raw.members)) return;
+		if (raw.payload != null && (!isRecord(raw.payload) || typeof raw.payload.roomId !== "number" || (raw.payload.userId !== undefined && typeof raw.payload.userId !== "number"))) return;
+		const data = { type: raw.type, roomId: typeof raw.roomId === "number" ? raw.roomId : undefined, room: raw.room, members: raw.members, payload: isRecord(raw.payload) && typeof raw.payload.roomId === "number" ? { roomId: raw.payload.roomId, userId: raw.payload.userId } : undefined };
 
 		switch (data.type) {
 			case "ROOM_CREATED": {
-				storeApi.dispatch(fetchMyRooms());
+				void refreshRooms();
 				break;
 			}
 
-			case "ROOM_MESSAGES_CLEARED": {
-				if (!data.roomId) return;
-
-				storeApi.dispatch(roomActions.clearRoomMessagesState({ roomId: data.roomId }));
-
-				const activeRoomId = storeApi.getState().message.activeRoomId;
-				if (activeRoomId === data.roomId) {
-					storeApi.dispatch(messageActions.clearMessages());
-				}
-
-				break;
-			}
+            case "ROOM_MESSAGES_CLEARED": {
+                const roomId = data.roomId ?? data.payload?.roomId;
+                if (!roomId) return;
+                void refreshRooms();
+                if (storeApi.getState().message.activeRoomId === roomId) {
+                    storeApi.dispatch(fetchRoomMessages({ roomId, resync: true }));
+                }
+                break;
+            }
 
 			case "ROOM_MEMBERS_ADDED": {
 				if (isRoomResponse(data.room)) {
@@ -293,7 +321,7 @@ export function registerWebSocketSubscriptions(
 				}
 
 				if (!data.roomId || !Array.isArray(data.members)) {
-					storeApi.dispatch(fetchMyRooms());
+					void refreshRooms();
 					break;
 				}
 
@@ -308,8 +336,8 @@ export function registerWebSocketSubscriptions(
 
 			case "ROOM_MEMBER_LEFT": {
 				const payload = data.payload;
-				if (!payload?.roomId || !payload.userId) {
-					storeApi.dispatch(fetchMyRooms());
+				if (!payload?.roomId || typeof payload.userId !== "number") {
+					void refreshRooms();
 					break;
 				}
 
@@ -338,7 +366,8 @@ export function registerWebSocketSubscriptions(
 	subscriptions[WS_ROOM_EVENTS_PATH] = messageRoomEventsSub;
 
 	const userEventsSub = client.subscribe(WS_USER_EVENTS_PATH, (message) => {
-		const data = JSON.parse(message.body) as UserProfileUpdatedEvent;
+		const data = parseObject(message.body);
+		if (!data || !isUserProfileUpdate(data.user)) return;
 		const eventType = data.type ?? data.eventType;
 
 		switch (eventType) {
@@ -347,7 +376,7 @@ export function registerWebSocketSubscriptions(
 
 				if (!updatedUser?.id) return;
 
-				storeApi.dispatch(usersActions.upsertUser(updatedUser));
+				storeApi.dispatch(usersActions.patchUser(updatedUser));
 
 				const myUserId = storeApi.getState().user.myUser?.id;
 
@@ -359,27 +388,8 @@ export function registerWebSocketSubscriptions(
 			}
 		}
 
-		storeApi.dispatch(fetchMyRooms());
 	});
 	subscriptions[WS_USER_EVENTS_PATH] = userEventsSub;
-}
-
-function isRoomResponse(value: unknown): value is RoomResponse {
-	if (!value || typeof value !== "object") return false;
-
-	const candidate = value as Partial<RoomResponse>;
-	return (
-		typeof candidate.id === "number" &&
-		typeof candidate.type === "string" &&
-		Array.isArray(candidate.members)
-	);
-}
-
-function isUserMini(value: unknown): value is UserMini {
-	if (!value || typeof value !== "object") return false;
-
-	const candidate = value as Partial<UserMini>;
-	return typeof candidate.id === "number" && typeof candidate.username === "string";
 }
 
 function pushDesktopNotification(payload: DesktopNotificationPayload) {

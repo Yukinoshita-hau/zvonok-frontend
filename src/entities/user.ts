@@ -5,11 +5,11 @@ export interface User {
 	id: number,
 	username: string;
 	displayName: string;
-	aboutMe: string;
+	aboutMe: string | null;
 	email: string;
 	isEmailVerified: boolean;
 	status: UserStatus;
-	lastSeenAt: string;
+	lastSeenAt: string | null;
 	avatarUrl: string | null;
 	updatedAt: string;
 	createdAt: string;

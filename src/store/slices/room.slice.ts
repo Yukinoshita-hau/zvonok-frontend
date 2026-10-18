@@ -9,6 +9,7 @@ import type { AddRoomMembersResponse } from "../../api/interfaces/RoomManagement
 import type { UserMini } from "../../entities/UserMini";
 
 export interface RoomState {
+	requestId?: string;
 	rooms: Room[];
 	status: "idle" | "loading" | "succeeded" | "failed";
 	error: string | null;
@@ -215,15 +216,20 @@ export const roomSlice = createSlice({
 	},
 	extraReducers: builder => {
 		builder
-			.addCase(fetchMyRooms.pending, state => {
+			.addCase(fetchMyRooms.pending, (state, action) => {
+				state.requestId = action.meta.requestId;
 				state.status = "loading";
 				state.error = null;
 			})
 			.addCase(fetchMyRooms.fulfilled, (state, action) => {
+				if (state.requestId !== action.meta.requestId) return;
+				state.requestId = undefined;
 				state.status = "succeeded";
 				state.rooms = action.payload;
 			})
 			.addCase(fetchMyRooms.rejected, (state, action) => {
+				if (state.requestId !== action.meta.requestId) return;
+				state.requestId = undefined;
 				state.status = "failed";
 				state.error = action.payload ?? "Unknown error";
 			})

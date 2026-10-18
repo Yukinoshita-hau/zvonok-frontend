@@ -5,25 +5,28 @@ import rnnoiseWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise.wasm?url";
 import rnnoiseSimdWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise_simd.wasm?url";
 
 class RnnoiseResources {
-	private wasmBinary?: ArrayBuffer;
+	private wasmBinary?: Promise<ArrayBuffer>;
 
-	private loadedContexts = new WeakSet<AudioContext>;
+	private loadedContexts = new WeakMap<AudioContext, Promise<void>>;
 
 	async createNode(audioContext: AudioContext): Promise<RnnoiseWorkletNode> {
-		if (!this.wasmBinary) {
-			this.wasmBinary = await loadRnnoise({
-				url: rnnoiseWasmPath,
-				simdUrl: rnnoiseSimdWasmPath,
+		this.wasmBinary ??= loadRnnoise({
+			url: rnnoiseWasmPath,
+			simdUrl: rnnoiseSimdWasmPath,
+		}).catch(error => { this.wasmBinary = undefined; throw error; });
+		const wasmBinary = await this.wasmBinary;
+		let module = this.loadedContexts.get(audioContext);
+		if (!module) {
+			module = audioContext.audioWorklet.addModule(rnnoiseWorkletPath).catch(error => {
+				this.loadedContexts.delete(audioContext);
+				throw error;
 			});
+			this.loadedContexts.set(audioContext, module);
 		}
-
-		if (!this.loadedContexts.has(audioContext)) {
-			await audioContext.audioWorklet.addModule(rnnoiseWorkletPath);
-			this.loadedContexts.add(audioContext);
-		}
+		await module;
 
 		return new RnnoiseWorkletNode(audioContext, {
-			wasmBinary: this.wasmBinary,
+			wasmBinary,
 			maxChannels: 1,
 		});
 	}

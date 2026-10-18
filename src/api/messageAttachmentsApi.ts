@@ -8,6 +8,7 @@ export const messageAttachmentsApi = {
 		payload: SendMessageWithAttachmentsPayload
 	): Promise<ShortMessageResponse> => {
 		const formData = new FormData();
+		formData.append("clientRequestId", payload.clientRequestId ?? crypto.randomUUID());
 
 		if (payload.content?.trim()) {
 			formData.append("content", payload.content.trim());

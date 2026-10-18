@@ -5,7 +5,6 @@ import { CallControlButton } from "./CallControlButton";
 import { CallTrackToggleButton } from "./CallTrackToggleButton";
 import { CallViewModeMenu } from "./CallViewModeMenu";
 import { CallMoreMenu } from "./CallMoreMenu";
-import { CallInteractiveMenu } from "./CallInteractiveMenu";
 import { CallDeviceSelectButton } from "./CallDeviceSelectButton";
 import styles from "./CallUi.module.css";
 import type { CallControlsProps } from "./CallControls.props";
@@ -24,19 +23,11 @@ export const CallControls = React.memo(function CallControls({
 	screenShareCaptureOptions,
 	screenSharePublishOptions,
 	onOpenChat,
-	onOpenWhiteboard,
-	onOpenCodeSession,
-	onToggleScreenOverlay,
 	onToggleFocus,
 	onToggleCinema,
 	onMinimize,
 	onHide,
 	onLeave,
-	canUseWhiteboard = true,
-	isWhiteboardOpen = false,
-	isCodeSessionOpen = false,
-	canUseScreenOverlay = false,
-	isScreenOverlayOpen = false,
 }: CallControlsProps) {
 	return (
 		<div className={styles["controls-bar"]} aria-label="Управление звонком">
@@ -94,16 +85,6 @@ export const CallControls = React.memo(function CallControls({
 					/>
 				)}
 
-				<CallInteractiveMenu
-					canUseWhiteboard={canUseWhiteboard}
-					isWhiteboardOpen={isWhiteboardOpen}
-					isCodeSessionOpen={isCodeSessionOpen}
-					canUseScreenOverlay={canUseScreenOverlay}
-					isScreenOverlayOpen={isScreenOverlayOpen}
-					onOpenWhiteboard={onOpenWhiteboard}
-					onOpenCodeSession={onOpenCodeSession}
-					onToggleScreenOverlay={onToggleScreenOverlay}
-				/>
 			</div>
 
 			<div className={styles["controls-secondary-group"]}>

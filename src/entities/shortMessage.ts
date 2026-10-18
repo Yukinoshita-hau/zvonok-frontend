@@ -1,5 +1,5 @@
 import type { MessageType } from "./interfaces/MessageType";
-import type { UserMini } from "./user";
+import type { MessageSender } from "./UserMini";
 import type { RoomType } from "./room";
 import type { MessageAttachment } from "../api/interfaces/MessageAttachmentDtos";
 
@@ -29,7 +29,7 @@ export interface ShortMessageResponse {
 	type: MessageType;
 	eventType: EventType;
 	sentAt: string;
-	sender: UserMini;
+	sender: MessageSender;
 	room: ShortMessageRoom;
 	editedAt: string | null;
 	replyToMessageId: number | null;

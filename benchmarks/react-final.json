@@ -1,0 +1,5 @@
+[
+{"count":1000,"mountedCommits":2,"mountRenderMs":26.865,"mountMs":51.305,"elements":119,"updateCommits":5,"updateRenderMs":42.525,"updateMs":61.515,"afterUnmountElements":0,"afterSwitchMessages":0},
+{"count":5000,"mountedCommits":4,"mountRenderMs":52.870,"mountMs":77.510,"elements":146,"updateCommits":5,"updateRenderMs":43.430,"updateMs":64.035,"afterUnmountElements":0,"afterSwitchMessages":0},
+{"count":10000,"mountedCommits":4,"mountRenderMs":83.540,"mountMs":117.410,"elements":146,"updateCommits":5,"updateRenderMs":47.575,"updateMs":62.610,"afterUnmountElements":0,"afterSwitchMessages":0}
+]

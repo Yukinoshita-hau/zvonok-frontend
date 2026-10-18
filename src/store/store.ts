@@ -1,7 +1,7 @@
-import { combineReducers, configureStore, type UnknownAction } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, type UnknownAction, type ThunkDispatch, type Dispatch } from "@reduxjs/toolkit";
 import userSlice from "./slices/user.slice";
-import serverSlice from "./slices/server.slice";
 import { setStore } from "../api/api";
+import { sessionMiddleware } from "./middlewares/session.middleware";
 import roomSlice from "./slices/room.slice";
 import messageSlice from "./slices/message.slice";
 import friendSlice from "./slices/friend.slice";
@@ -12,26 +12,19 @@ import notificationSlice from "./slices/notification.slice";
 import toastSlice from "./slices/toast.slice";
 import deviceSlice from "./slices/device.slice";
 import uiSlice from "./slices/ui.slice";
-import channelMessageSlice from "./slices/channelMessage.slice";
 import usersSlice from "./slices/users.slice";
 import activeCallSlice from "./slices/activeCall.slice";
-import canvasSlice from "./slices/canvas.slice";
-import codeSessionSlice from "./slices/codeSession.slice";
 
 
 const appReducer = combineReducers({
 	user: userSlice,
 	users: usersSlice,
-	server: serverSlice,
 	room: roomSlice,
 	message: messageSlice,
-	channelMessage: channelMessageSlice,
 	friend: friendSlice,
 	websocket: websocketSlice,
 	call: callSlice,
 	activeCall: activeCallSlice,
-	canvas: canvasSlice,
-	codeSession: codeSessionSlice,
 	notification: notificationSlice,
 	toast: toastSlice,
 	device: deviceSlice,
@@ -39,21 +32,22 @@ const appReducer = combineReducers({
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
-	if (action.type == "user/logout") {
+	if (action.type === "user/sessionCleared") {
 		state = undefined;
 	}
-
-	return appReducer(state, action);
+	const result = appReducer(state, action);
+	if (action.type === "user/sessionCleared") return { ...result, user: { ...result.user, isAuthChecked: true } };
+	return result;
 }
 
 export const store = configureStore({
 	reducer: rootReducer,
 	middleware: (getDefaultMiddleware) => {
-		return getDefaultMiddleware().concat(websocketMiddleware)
+		return getDefaultMiddleware().concat(sessionMiddleware, websocketMiddleware)
 	}
 })
 
 setStore(store);
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+export type RootState = ReturnType<typeof appReducer>;
+export type AppDispatch = ThunkDispatch<RootState, undefined, UnknownAction> & Dispatch<UnknownAction>;

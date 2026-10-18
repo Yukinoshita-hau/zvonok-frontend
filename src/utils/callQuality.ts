@@ -374,7 +374,7 @@ export function getQualityPreset(
 }
 
 export function resolveQualitySetting(
-	kind: "camera",
+	_kind: "camera",
 	setting: CallQualitySetting,
 	recommendation?: CallQualityRecommendation | null
 ): ManualCallQuality {
@@ -394,7 +394,7 @@ export function resolveScreenShareQualitySetting(
 
 export function getCameraCaptureOptions(
 	cameraId: string,
-	preset: CallQualityPreset
+	preset: Pick<CallQualityPreset, "width" | "height" | "frameRate">
 ): VideoCaptureOptions {
 	return {
 		deviceId: cameraId !== "default" ? cameraId : undefined,
@@ -440,7 +440,7 @@ export function getScreenSharePublishOptions(
 }
 
 export function getVideoEncoding(
-	preset: CallQualityPreset,
+	preset: Pick<CallQualityPreset, "maxBitrate" | "frameRate">,
 	priority: RTCPriorityType = "high"
 ): VideoEncoding {
 	return {

@@ -1,0 +1,125 @@
+[
+  {
+    "number": 1,
+    "variant": "logout-pending",
+    "roomId": 54,
+    "status": "FAIL",
+    "captureDelayMs": 1500,
+    "callId": 123,
+    "signalRouteHits": [
+      "A",
+      "B"
+    ],
+    "logoutRequested": true,
+    "expected": "hangup while real browser capture is acquired and its result is held before LiveKit createTracks resolves",
+    "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTitle('Завершить звонок', { exact: true })\u001b[22m\n",
+    "stats": [
+      {
+        "label": "immediately-before-timeout-teardown",
+        "peers": [
+          {
+            "connection": "closed",
+            "ice": "closed",
+            "senders": [],
+            "receivers": [],
+            "rtp": [],
+            "pairs": []
+          }
+        ],
+        "tracks": [
+          {
+            "id": "0e791868-6304-462f-b105-963ca51ec110",
+            "kind": "audio",
+            "enabled": true,
+            "muted": false,
+            "readyState": "ended"
+          }
+        ],
+        "contexts": [
+          {
+            "state": "closed",
+            "sampleRate": 44100
+          },
+          {
+            "state": "closed",
+            "sampleRate": 44100
+          }
+        ],
+        "worklets": [],
+        "playback": []
+      },
+      {
+        "label": "immediately-before-timeout-teardown",
+        "room": {
+          "callId": 123,
+          "generation": 2,
+          "connection": "connected",
+          "participants": [
+            {
+              "identity": "p2",
+              "local": true,
+              "microphoneEnabled": false,
+              "publications": []
+            }
+          ]
+        },
+        "peers": [
+          {
+            "connection": "connected",
+            "ice": "connected",
+            "senders": [],
+            "receivers": [],
+            "rtp": [],
+            "pairs": [
+              {
+                "rtt": 0.001,
+                "localType": "host",
+                "remoteType": "prflx",
+                "protocol": "udp"
+              },
+              {
+                "rtt": 0.001,
+                "localType": "host",
+                "remoteType": "prflx",
+                "protocol": "udp"
+              }
+            ]
+          }
+        ],
+        "tracks": [],
+        "contexts": [
+          {
+            "state": "running",
+            "sampleRate": 44100
+          }
+        ],
+        "worklets": [],
+        "playback": []
+      }
+    ],
+    "initialCleanup": [
+      {
+        "openPeers": 0,
+        "liveTracks": 0,
+        "openContexts": 0
+      },
+      {
+        "openPeers": 0,
+        "liveTracks": 0,
+        "openContexts": 0
+      }
+    ],
+    "cleanup": [
+      {
+        "openPeers": 0,
+        "liveTracks": 0,
+        "openContexts": 0
+      },
+      {
+        "openPeers": 0,
+        "liveTracks": 0,
+        "openContexts": 0
+      }
+    ]
+  }
+]

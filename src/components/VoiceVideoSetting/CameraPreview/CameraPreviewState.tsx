@@ -1,5 +1,5 @@
 import styles from "../VoiceVideoSetting.module.css";
-import type { CameraPreviewStatus } from "./useCameraPreview";
+import type { CameraPreviewStatus } from "./CameraPreview.types";
 
 interface CameraPreviewStateProps {
 	status: CameraPreviewStatus;

@@ -1,7 +1,7 @@
-import type { UserMini } from "../../entities/UserMini";
+import type { UserSummary } from "../../entities/UserMini";
 
 export interface RoomMemberRowProps {
-	member: UserMini;
+	member: UserSummary;
 	isCurrentUser: boolean;
 	onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }

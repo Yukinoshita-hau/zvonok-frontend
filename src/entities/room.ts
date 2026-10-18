@@ -4,7 +4,7 @@ export type RoomType = "GROUP" | "PRIVATE";
 
 export interface RoomResponse {
 	id: number;
-	name: string;
+	name: string | null;
 	type: RoomType;
 	avatarUrl: string | null;
 	isActive: boolean;
@@ -19,9 +19,9 @@ export interface RoomResponse {
 
 export interface Room {
 	id: number;
-	name: string;
+	name: string | null;
 	type: RoomType;
-	avatarUrl: string;
+	avatarUrl: string | null;
 	isActive: boolean;
 	createdAt: string;
 	lastMessageId: number | null;

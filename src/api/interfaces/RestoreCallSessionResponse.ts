@@ -10,10 +10,10 @@ export interface RestoreCallSessionResponse {
 	callId: number | null;
 	chatRoomId: number | null;
 	roomId: number | null;
-	roomType: RoomType;
-	callStatus: CallSessionStatus;
-	hostUsername: string;
-	participantStatus: CallParticipantStatus;
+	roomType: RoomType | null;
+	callStatus: CallSessionStatus | null;
+	hostUsername: string | null;
+	participantStatus: CallParticipantStatus | null;
 	liveKitRoomName: string | null;
 	serverUrl: string | null;
 	participantToken: string | null;

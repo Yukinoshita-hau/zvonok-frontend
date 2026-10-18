@@ -13,14 +13,18 @@ export const createWebSocketClient = (token: string) => {
 		reconnectDelay: 5000,
 		heartbeatIncoming: 4000,
 		heartbeatOutgoing: 4000,
-		debug: (str) => {
-			console.log("WebSocket debug: ", str)
-		}
+		// STOMP debug includes CONNECT headers; never log the JWT.
+		debug: () => {}
 	})
 
 	console.info("WebSocket endpoint:", WS_CONNECT_PATH);
 
 	return client;
+}
+
+export function configureWebSocketToken(client: Client, token: string) {
+	client.brokerURL = `${WS_CONNECT_PATH}?token=${encodeURIComponent(token)}`;
+	client.connectHeaders = { Authorization: `Bearer ${token}` };
 }
 
 function resolveWebSocketConnectPath() {

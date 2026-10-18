@@ -18,11 +18,6 @@ interface SendPrivateMessageAction {
 	payload: { receiver: string, content: string }
 }
 
-interface SendChannelMessageAction {
-	type: "channelMessage/sendChannelMessage";
-	payload: { channelId: string, content: string }
-}
-
 interface EditMessageAction {
 	type: "message/editMessage";
 	payload: { messageId: number, newContent: string };
@@ -95,104 +90,10 @@ interface RemoveFriendAction {
 	payload: { friendUsername: number }
 }
 
-interface CanvasLifecycleSubscribeAction {
-	type: "canvas/subscribeCanvasBoardLifecycle";
-	payload: number;
-}
-
-interface CanvasLifecycleUnsubscribeAction {
-	type: "canvas/unsubscribeCanvasBoardLifecycle";
-	payload: number;
-}
-
-interface CanvasDrawSubscribeAction {
-	type: "canvas/subscribeCanvasDrawEvents";
-	payload: { callId: number; boardId: number };
-}
-
-interface CanvasDrawUnsubscribeAction {
-	type: "canvas/unsubscribeCanvasDrawEvents";
-	payload: { callId: number; boardId: number };
-}
-
-interface CanvasDrawSendAction {
-	type: "canvas/sendCanvasDrawEvent";
-	payload: {
-		callId: number;
-		boardId: number;
-		event: {
-			type:
-				| "STROKE_START"
-				| "STROKE_POINT"
-				| "STROKE_END"
-				| "STROKE_REMOVED"
-				| "BOARD_CLEAR"
-				| "CURSOR_MOVE"
-				| "CURSOR_LEAVE"
-				| "LASER_POINT"
-				| "LASER_END"
-				| "REACTION"
-				| "VIEWPORT_CHANGED";
-			boardId: number;
-			strokeId?: string | null;
-			userId?: string | null;
-			x?: number | null;
-			y?: number | null;
-			color?: string | null;
-			width?: number | null;
-			tool?: "PEN" | "ERASER" | null;
-			reaction?: "THUMBS_UP" | "FIRE" | "QUESTION" | "CHECK" | "EYES" | null;
-			zoom?: number | null;
-			timestamp?: string | null;
-		};
-	}
-}
-
-interface CodeSessionSubscribeAction {
-	type: "codeSession/subscribeCodeSession";
-	payload: { callSessionId: number; sessionId?: number | null };
-}
-
-interface CodeSessionUnsubscribeAction {
-	type: "codeSession/unsubscribeCodeSession";
-	payload: { callSessionId: number; sessionId?: number | null };
-}
-
-interface CodeSessionContentSyncAction {
-	type: "codeSession/sendCodeContentSync";
-	payload: { sessionId: number; payload: { code: string } };
-}
-
-interface CodeSessionStdinSyncAction {
-	type: "codeSession/sendCodeStdinSync";
-	payload: { sessionId: number; payload: { stdin: string } };
-}
-
-interface CodeSessionLanguageChangeAction {
-	type: "codeSession/sendCodeLanguageChange";
-	payload: { sessionId: number; payload: { language: string; code?: string | null } };
-}
-
-interface CodeSessionCursorSyncAction {
-	type: "codeSession/sendCodeCursorSync";
-	payload: {
-		sessionId: number;
-		payload: {
-			lineNumber: number;
-			column: number;
-			selectionStartLineNumber: number;
-			selectionStartColumn: number;
-			selectionEndLineNumber: number;
-			selectionEndColumn: number;
-		};
-	};
-}
-
 export type Actions =
 	| WsConnectAction
 	| SendMessageAction
 	| SendPrivateMessageAction
-	| SendChannelMessageAction
 	| EditMessageAction
 	| DeleteMessageAction
 	| MarkMessageReadAction
@@ -206,15 +107,4 @@ export type Actions =
 	| AcceptFriendRequestAction
 	| RejectFriendRequestAction
 	| CancelFriendRequestAction
-	| RemoveFriendAction
-	| CanvasLifecycleSubscribeAction
-	| CanvasLifecycleUnsubscribeAction
-	| CanvasDrawSubscribeAction
-	| CanvasDrawUnsubscribeAction
-	| CanvasDrawSendAction
-	| CodeSessionSubscribeAction
-	| CodeSessionUnsubscribeAction
-	| CodeSessionContentSyncAction
-	| CodeSessionStdinSyncAction
-	| CodeSessionLanguageChangeAction
-	| CodeSessionCursorSyncAction;
+	| RemoveFriendAction;

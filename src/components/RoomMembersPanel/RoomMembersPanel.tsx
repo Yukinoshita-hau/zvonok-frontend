@@ -1,4 +1,4 @@
-import type { UserMini } from "../../entities/UserMini";
+import type { UserSummary } from "../../entities/UserMini";
 import { RoomMemberRow } from "../RoomMemberRow/RoomMemberRow";
 import type { RoomMembersPanelProps } from "./RoomMembersPanel.props";
 import styles from "./RoomMembersPanel.module.css";
@@ -8,7 +8,7 @@ export function RoomMembersPanel({ members, myUserId, onMemberSelect }: RoomMemb
 		return <div className={styles["empty-state"]}>No participants in this room yet.</div>;
 	}
 
-	const getMemberName = (member: UserMini) => (
+	const getMemberName = (member: UserSummary) => (
 		member.displayName || member.username || `user-${member.id}`
 	);
 
@@ -21,7 +21,7 @@ export function RoomMembersPanel({ members, myUserId, onMemberSelect }: RoomMemb
 
 	return (
 		<div className={styles["members-list"]}>
-			{sortedMembers.map((member: UserMini) => (
+			{sortedMembers.map((member: UserSummary) => (
 				<RoomMemberRow
 					key={member.id}
 					member={member}

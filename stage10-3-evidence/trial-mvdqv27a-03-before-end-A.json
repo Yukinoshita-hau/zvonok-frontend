@@ -1,0 +1,4171 @@
+{
+  "anchor": {
+    "wallMs": 1792323043817,
+    "monotonicMs": 9.379999998956919
+  },
+  "events": [
+    {
+      "sequence": 142,
+      "monotonicMs": 23331.519999999553,
+      "event": "checkpoint",
+      "callId": 128,
+      "generation": 5,
+      "label": "before-connect",
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 143,
+      "monotonicMs": 23561.77999999933,
+      "event": "react.mount",
+      "callId": 129,
+      "generation": 7,
+      "connection": "disconnected",
+      "participants": [
+        {
+          "identity": "p1",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 144,
+      "monotonicMs": 23561.929999999702,
+      "event": "react.microphoneSettings.mount",
+      "callId": 129,
+      "generation": 7,
+      "connection": "disconnected",
+      "participants": [
+        {
+          "identity": "p1",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 145,
+      "monotonicMs": 23561.955000000075,
+      "event": "react.processor.mount",
+      "callId": 129,
+      "generation": 7,
+      "connection": "disconnected",
+      "participants": [
+        {
+          "identity": "p1",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 146,
+      "monotonicMs": 23562.605000000447,
+      "event": "livekit.connectionStateChanged",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connecting",
+      "participants": [
+        {
+          "identity": "p1",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 147,
+      "monotonicMs": 23582.484999999404,
+      "event": "audioContext.created",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 148,
+      "monotonicMs": 23583.45999999903,
+      "event": "audioContext.state",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 149,
+      "monotonicMs": 23606.609999999404,
+      "event": "transport.open",
+      "callId": 129,
+      "generation": 7,
+      "path": "/rtc/v1"
+    },
+    {
+      "sequence": 150,
+      "monotonicMs": 23611.445000000298,
+      "event": "pc.created",
+      "callId": 129,
+      "generation": 7
+    },
+    {
+      "sequence": 151,
+      "monotonicMs": 23612.480000000447,
+      "event": "microphone.request",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connecting",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ],
+      "enabled": false
+    },
+    {
+      "sequence": 152,
+      "monotonicMs": 23612.615000000224,
+      "event": "microphone.resolved",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connecting",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 153,
+      "monotonicMs": 23614.140000000596,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "microphone-request",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connecting",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": false,
+            "publications": []
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "new",
+          "ice": "new",
+          "senders": [],
+          "receivers": [],
+          "rtp": [],
+          "pairs": []
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 154,
+      "monotonicMs": 23651.789999999106,
+      "event": "pc.iceconnectionstatechange",
+      "callId": 129,
+      "generation": 7,
+      "connection": "new",
+      "ice": "checking"
+    },
+    {
+      "sequence": 155,
+      "monotonicMs": 23652.570000000298,
+      "event": "pc.connectionstatechange",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connecting",
+      "ice": "checking"
+    },
+    {
+      "sequence": 156,
+      "monotonicMs": 23654.84500000067,
+      "event": "pc.iceconnectionstatechange",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connecting",
+      "ice": "connected"
+    },
+    {
+      "sequence": 157,
+      "monotonicMs": 23656.894999999553,
+      "event": "pc.connectionstatechange",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "ice": "connected"
+    },
+    {
+      "sequence": 158,
+      "monotonicMs": 23664.699999999255,
+      "event": "livekit.connectionStateChanged",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 159,
+      "monotonicMs": 23664.775000000373,
+      "event": "livekit.connected",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 160,
+      "monotonicMs": 23677.08499999903,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "event:connected",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": false,
+            "publications": []
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [],
+          "receivers": [],
+          "rtp": [],
+          "pairs": [
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 161,
+      "monotonicMs": 23685.330000000075,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "await-connected",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": false,
+            "publications": []
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [],
+          "receivers": [],
+          "rtp": [],
+          "pairs": [
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 162,
+      "monotonicMs": 23870.43999999948,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "await-connected",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": false,
+            "publications": []
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [],
+          "receivers": [],
+          "rtp": [],
+          "pairs": [
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.007,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 163,
+      "monotonicMs": 24044,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "await-connected",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": false,
+            "publications": []
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [],
+          "receivers": [],
+          "rtp": [],
+          "pairs": [
+            {
+              "rtt": 0.003,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.007,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 164,
+      "monotonicMs": 24166.574999999255,
+      "event": "createTracks.request",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 165,
+      "monotonicMs": 24166.68500000052,
+      "event": "capture.request",
+      "callId": 129,
+      "generation": 7
+    },
+    {
+      "sequence": 166,
+      "monotonicMs": 24230.06000000052,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "after-microphone-request",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": false,
+            "publications": []
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [],
+          "receivers": [],
+          "rtp": [],
+          "pairs": [
+            {
+              "rtt": 0.003,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.007,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 167,
+      "monotonicMs": 24246.53500000015,
+      "event": "capture.resolved",
+      "callId": 129,
+      "generation": 7,
+      "tracks": [
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ]
+    },
+    {
+      "sequence": 168,
+      "monotonicMs": 24247,
+      "event": "audioContext.created",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 169,
+      "monotonicMs": 24247.275000000373,
+      "event": "createTracks.resolved",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ],
+      "tracks": [
+        {
+          "kind": "audio",
+          "enabled": true,
+          "readyState": "live"
+        }
+      ]
+    },
+    {
+      "sequence": 170,
+      "monotonicMs": 24247.304999999702,
+      "event": "publishTrack.request",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 171,
+      "monotonicMs": 24248.855000000447,
+      "event": "audioContext.state",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 172,
+      "monotonicMs": 24308.570000000298,
+      "event": "processor.setup.request",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 173,
+      "monotonicMs": 24308.855000000447,
+      "event": "livekit.localTrackPublished",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 174,
+      "monotonicMs": 24309.265000000596,
+      "event": "audioContext.created",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 175,
+      "monotonicMs": 24309.90499999933,
+      "event": "audioContext.created",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 176,
+      "monotonicMs": 24310.75,
+      "event": "publishTrack.resolved",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "sid": "TR_AMjFrND7w3C6uM"
+    },
+    {
+      "sequence": 177,
+      "monotonicMs": 24311.06000000052,
+      "event": "audioContext.state",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 178,
+      "monotonicMs": 24317.18999999948,
+      "event": "audioContext.state",
+      "callId": 129,
+      "generation": 7,
+      "state": "running"
+    },
+    {
+      "sequence": 179,
+      "monotonicMs": 24317.375,
+      "event": "processor.setup.resolved",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "processedTrack": {
+        "enabled": true,
+        "readyState": "live",
+        "muted": false
+      }
+    },
+    {
+      "sequence": 180,
+      "monotonicMs": 24319.15499999933,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "event:localTrackPublished",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 0,
+              "packetsSent": 0,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.003,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.007,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 181,
+      "monotonicMs": 24448.480000000447,
+      "event": "audioContext.state",
+      "callId": 129,
+      "generation": 7,
+      "state": "closed"
+    },
+    {
+      "sequence": 182,
+      "monotonicMs": 24452.004999998957,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "publication-requested",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 26,
+              "packetsSent": 3,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.003,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.007,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": []
+    },
+    {
+      "sequence": 183,
+      "monotonicMs": 24500.25,
+      "event": "livekit.participantConnected",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "identity": "p3",
+          "local": false,
+          "microphoneEnabled": false,
+          "publications": []
+        }
+      ]
+    },
+    {
+      "sequence": 184,
+      "monotonicMs": 24500.58499999903,
+      "event": "livekit.trackPublished",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "identity": "p3",
+          "local": false,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMGj3DBfdAJ3uD",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": false,
+              "track": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 185,
+      "monotonicMs": 24501.634999999776,
+      "event": "livekit.connectionQualityChanged",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "identity": "p3",
+          "local": false,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMGj3DBfdAJ3uD",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": false,
+              "track": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 186,
+      "monotonicMs": 24510.480000000447,
+      "event": "audioContext.state",
+      "callId": 129,
+      "generation": 7,
+      "state": "closed"
+    },
+    {
+      "sequence": 187,
+      "monotonicMs": 24549.164999999106,
+      "event": "pc.track",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "ice": "connected"
+    },
+    {
+      "sequence": 188,
+      "monotonicMs": 24549.414999999106,
+      "event": "livekit.trackSubscribed",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "identity": "p3",
+          "local": false,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMGj3DBfdAJ3uD",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                  "enabled": true,
+                  "muted": true,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 189,
+      "monotonicMs": 24555.86999999918,
+      "event": "playback.request",
+      "callId": 129,
+      "generation": 7,
+      "kind": "AUDIO"
+    },
+    {
+      "sequence": 190,
+      "monotonicMs": 24556.43999999948,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "event:trackSubscribed",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "identity": "p3",
+            "local": false,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMGj3DBfdAJ3uD",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                    "enabled": true,
+                    "muted": true,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            },
+            null
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            },
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 81,
+              "packetsSent": 8,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.003,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.007,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": [
+        {
+          "paused": false,
+          "muted": false,
+          "volume": 1,
+          "readyState": 0,
+          "currentTime": 0,
+          "tracks": [
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 191,
+      "monotonicMs": 24575.949999999255,
+      "event": "playback.resolved",
+      "callId": 129,
+      "generation": 7,
+      "kind": "AUDIO"
+    },
+    {
+      "sequence": 192,
+      "monotonicMs": 25455.879999998957,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "t+1s",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "identity": "p3",
+            "local": false,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMGj3DBfdAJ3uD",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            },
+            null
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            },
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "inbound-rtp",
+              "id": "IT01A2289869326",
+              "kind": "audio",
+              "ssrc": 2289869326,
+              "trackIdentifier": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "bytesReceived": 12436,
+              "packetsReceived": 33,
+              "packetsLost": 0,
+              "jitter": 0.002,
+              "totalAudioEnergy": 0.06517360767571162,
+              "audioLevel": 0.04657124546037172,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 18494,
+              "packetsSent": 42,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "remote-inbound-rtp",
+              "id": "RIA1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "packetsLost": 0,
+              "jitter": 0.0037289999999999997,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.001,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.001,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": [
+        {
+          "paused": false,
+          "muted": false,
+          "volume": 1,
+          "readyState": 4,
+          "currentTime": 0.785,
+          "tracks": [
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 193,
+      "monotonicMs": 27460.525000000373,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "t+3s",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "identity": "p3",
+            "local": false,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMGj3DBfdAJ3uD",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            },
+            null
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            },
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "inbound-rtp",
+              "id": "IT01A2289869326",
+              "kind": "audio",
+              "ssrc": 2289869326,
+              "trackIdentifier": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "bytesReceived": 58702,
+              "packetsReceived": 131,
+              "packetsLost": 0,
+              "jitter": 0,
+              "totalAudioEnergy": 0.35038664471242653,
+              "audioLevel": 0.011932737205114903,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 64673,
+              "packetsSent": 142,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "remote-inbound-rtp",
+              "id": "RIA1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "packetsLost": 0,
+              "jitter": 0.00052,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.004,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.001,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": [
+        {
+          "paused": false,
+          "muted": false,
+          "volume": 1,
+          "readyState": 4,
+          "currentTime": 2.824,
+          "tracks": [
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 194,
+      "monotonicMs": 28532.95999999903,
+      "event": "livekit.connectionQualityChanged",
+      "callId": 129,
+      "generation": 7,
+      "connection": "connected",
+      "participants": [
+        {
+          "identity": "p2",
+          "local": true,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMjFrND7w3C6uM",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "identity": "p3",
+          "local": false,
+          "microphoneEnabled": true,
+          "publications": [
+            {
+              "sid": "TR_AMGj3DBfdAJ3uD",
+              "source": "microphone",
+              "muted": false,
+              "subscribed": true,
+              "track": {
+                "kind": "audio",
+                "muted": false,
+                "media": {
+                  "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                  "enabled": true,
+                  "muted": false,
+                  "readyState": "live"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 195,
+      "monotonicMs": 29457.09500000067,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "t+5s",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "identity": "p3",
+            "local": false,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMGj3DBfdAJ3uD",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            },
+            null
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            },
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "inbound-rtp",
+              "id": "IT01A2289869326",
+              "kind": "audio",
+              "ssrc": 2289869326,
+              "trackIdentifier": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "bytesReceived": 111318,
+              "packetsReceived": 231,
+              "packetsLost": 0,
+              "jitter": 0,
+              "totalAudioEnergy": 0.6416893153258414,
+              "audioLevel": 0.012329477828302866,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 115896,
+              "packetsSent": 242,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "remote-inbound-rtp",
+              "id": "RIA1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "packetsLost": 0,
+              "jitter": 0.00029099999999999997,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": [
+        {
+          "paused": false,
+          "muted": false,
+          "volume": 1,
+          "readyState": 4,
+          "currentTime": 4.824,
+          "tracks": [
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 196,
+      "monotonicMs": 30315.740000000224,
+      "event": "transport.close",
+      "callId": 129,
+      "generation": 7,
+      "path": "/api/ws-raw"
+    },
+    {
+      "sequence": 197,
+      "monotonicMs": 30321.539999999106,
+      "event": "transport.open",
+      "callId": 129,
+      "generation": 7,
+      "path": "/api/ws-raw"
+    },
+    {
+      "sequence": 198,
+      "monotonicMs": 34462.6950000003,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "t+10s",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "identity": "p3",
+            "local": false,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMGj3DBfdAJ3uD",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            },
+            null
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            },
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "inbound-rtp",
+              "id": "IT01A2289869326",
+              "kind": "audio",
+              "ssrc": 2289869326,
+              "trackIdentifier": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "bytesReceived": 247628,
+              "packetsReceived": 481,
+              "packetsLost": 0,
+              "jitter": 0,
+              "totalAudioEnergy": 1.4389169318612,
+              "audioLevel": 0.04950102237006745,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 251561,
+              "packetsSent": 492,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "remote-inbound-rtp",
+              "id": "RIA1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "packetsLost": 0,
+              "jitter": 0.00025,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.001,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": [
+        {
+          "paused": false,
+          "muted": false,
+          "volume": 1,
+          "readyState": 4,
+          "currentTime": 9.795,
+          "tracks": [
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 199,
+      "monotonicMs": 34469.984999999404,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "rtp-check",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "identity": "p3",
+            "local": false,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMGj3DBfdAJ3uD",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            },
+            null
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            },
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "inbound-rtp",
+              "id": "IT01A2289869326",
+              "kind": "audio",
+              "ssrc": 2289869326,
+              "trackIdentifier": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "bytesReceived": 247628,
+              "packetsReceived": 481,
+              "packetsLost": 0,
+              "jitter": 0,
+              "totalAudioEnergy": 1.4389169318612,
+              "audioLevel": 0.04950102237006745,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 251561,
+              "packetsSent": 492,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "remote-inbound-rtp",
+              "id": "RIA1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "packetsLost": 0,
+              "jitter": 0.00025,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.001,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": [
+        {
+          "paused": false,
+          "muted": false,
+          "volume": 1,
+          "readyState": 4,
+          "currentTime": 9.805,
+          "tracks": [
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sequence": 200,
+      "monotonicMs": 34621.31499999948,
+      "event": "checkpoint",
+      "callId": 129,
+      "generation": 7,
+      "label": "immediately-before-timeout-teardown",
+      "room": {
+        "callId": 129,
+        "generation": 7,
+        "connection": "connected",
+        "participants": [
+          {
+            "identity": "p2",
+            "local": true,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMjFrND7w3C6uM",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "identity": "p3",
+            "local": false,
+            "microphoneEnabled": true,
+            "publications": [
+              {
+                "sid": "TR_AMGj3DBfdAJ3uD",
+                "source": "microphone",
+                "muted": false,
+                "subscribed": true,
+                "track": {
+                  "kind": "audio",
+                  "muted": false,
+                  "media": {
+                    "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+                    "enabled": true,
+                    "muted": false,
+                    "readyState": "live"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "peers": [
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "63a67e22-8ca1-4e5c-9346-6f0515aedfd9",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "4b806050-95bc-4d48-a34c-64586f3dc507",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "closed",
+          "ice": "closed",
+          "senders": [
+            null,
+            null
+          ],
+          "receivers": [
+            {
+              "id": "dbfd544c-cd1d-4c14-a4ad-fda0d1233b55",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "ended"
+            },
+            {
+              "id": "a345f62f-bf97-4ca1-aff2-ebec3b63dbc7",
+              "kind": "audio",
+              "enabled": false,
+              "muted": false,
+              "readyState": "ended"
+            }
+          ],
+          "rtp": [],
+          "pairs": []
+        },
+        {
+          "connection": "connected",
+          "ice": "connected",
+          "senders": [
+            {
+              "id": "164cf8ef-e0a1-418e-bac3-644cdb6ec42c",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            },
+            null
+          ],
+          "receivers": [
+            {
+              "id": "a1b74db3-57f8-43b4-9d5a-97f91fa3a555",
+              "kind": "audio",
+              "enabled": true,
+              "muted": true,
+              "readyState": "live"
+            },
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ],
+          "rtp": [
+            {
+              "type": "inbound-rtp",
+              "id": "IT01A2289869326",
+              "kind": "audio",
+              "ssrc": 2289869326,
+              "trackIdentifier": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "bytesReceived": 251759,
+              "packetsReceived": 489,
+              "packetsLost": 0,
+              "jitter": 0,
+              "totalAudioEnergy": 1.4513969050218996,
+              "audioLevel": 0.7870723593859675,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "outbound-rtp",
+              "id": "OT01A1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "bytesSent": 256401,
+              "packetsSent": 500,
+              "codec": "audio/opus"
+            },
+            {
+              "type": "remote-inbound-rtp",
+              "id": "RIA1841647081",
+              "kind": "audio",
+              "ssrc": 1841647081,
+              "packetsLost": 0,
+              "jitter": 0.00025,
+              "codec": "audio/opus"
+            }
+          ],
+          "pairs": [
+            {
+              "rtt": 0.002,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            },
+            {
+              "rtt": 0.001,
+              "localType": "host",
+              "remoteType": "prflx",
+              "protocol": "udp"
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "dcac548a-f6b4-48da-938d-f56785b174de",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "47b6357d-c6d9-4d13-9bfb-6f320ce71b75",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "ended"
+        },
+        {
+          "id": "50f1af67-4e7c-45c3-829a-62cb828814dd",
+          "kind": "audio",
+          "enabled": true,
+          "muted": false,
+          "readyState": "live"
+        }
+      ],
+      "contexts": [
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "closed",
+          "sampleRate": 44100
+        },
+        {
+          "state": "running",
+          "sampleRate": 44100
+        }
+      ],
+      "worklets": [],
+      "playback": [
+        {
+          "paused": false,
+          "muted": false,
+          "volume": 1,
+          "readyState": 4,
+          "currentTime": 9.955,
+          "tracks": [
+            {
+              "id": "101532c2-fca9-45e5-a159-f72fc71e5153",
+              "kind": "audio",
+              "enabled": true,
+              "muted": false,
+              "readyState": "live"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

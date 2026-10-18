@@ -5,6 +5,7 @@
 	"type": "module",
 	"main": "electron-dist/main.js",
 	"scripts": {
+		"test": "vitest run",
 		"dev": "vite",
 		"dev:web": "vite",
 		"build": "tsc -b && vite build",
@@ -18,7 +19,6 @@
 	"dependencies": {
 		"@livekit/components-react": "^2.9.20",
 		"@livekit/krisp-noise-filter": "^0.3.4",
-		"@monaco-editor/react": "^4.7.0",
 		"@reduxjs/toolkit": "^2.11.2",
 		"@sapphi-red/web-noise-suppressor": "^0.3.5",
 		"@stomp/stompjs": "^7.3.0",
@@ -26,7 +26,6 @@
 		"classnames": "^2.5.1",
 		"livekit-client": "^2.17.2",
 		"lucide-react": "^0.577.0",
-		"monaco-editor": "^0.53.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"react-redux": "^9.2.0",
@@ -46,6 +45,7 @@
 		"prettier": "^3.6.2",
 		"typescript": "~5.9.3",
 		"vite": "^7.2.4",
+		"vitest": "^5.0.5",
 		"wait-on": "^9.0.10"
 	},
 	"build": {

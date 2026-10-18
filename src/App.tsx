@@ -9,9 +9,6 @@ import { AppLayout } from './layouts/AppLayouts/AppLayout'
 import { ChatPlaceholder } from './pages/ChatPlaceholder/ChatPlaceholder'
 import { AuthInitializator } from './helpers/AppInitializer'
 import { NotificationsPage } from './components/NotificationsPage/NotificationPage'
-import { ServerLayout } from './pages/ServerLayout/ServerLayout'
-import { ChannelChat } from './components/ChannelChat/ChannelChat'
-import { MyServers } from './pages/MyServers/MyServers'
 import { ConferenceJoin } from './pages/ConferenceJoin/ConferenceJoin'
 import { InviteJoinPage } from './pages/InviteJoin/InviteJoinPage'
 
@@ -61,29 +58,6 @@ const routes = [
 						element: <NotificationsPage />
 					}
 				]
-			},
-			{
-				path: "server/:serverId",
-				element: (
-					<ServerLayout/>
-				),
-				children: [
-					{
-						index: true,
-						element: <ChatPlaceholder/>
-					},
-					{
-						path: "channel-folders/:channelFolderId/channels/:channelId",
-						element: <ChannelChat/>
-					}
-				]
-			},
-			{
-				path: "my-servers",
-				element: (
-					<MyServers/>
-				),
-				children: []
 			},
 			{
 				path: "conference/:code",

@@ -299,12 +299,12 @@ export function DmChat() {
 
 			<RoomActiveCallBanner roomId={roomId} />
 
-			<RoomSettingModal
+			{currentRoom && <RoomSettingModal
 				isOpen={isRoomSettingOpen}
 				onClose={() => setIsRoomSettingOpen(false)}
 				onStartCall={handleStartCall}
 				room={currentRoom}
-			/>
+			/>}
 
 			<UserMiniProfileModal
 				userId={interlocutor?.id ?? null}

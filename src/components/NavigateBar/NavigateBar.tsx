@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./NavigateBar.module.css";
-import { ServerButton } from "../ServerButton/ServerButton";
-import type { NavigateBarProps } from "./NavigateBar.props";
 import { NavigateBarButton } from "../NavigateBarButton/NavigateBarButton";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store/store";
@@ -17,7 +15,7 @@ import { resolveMediaUrl } from "../../utils/mediaUrl";
 const messageNavIconUrl = `${import.meta.env.BASE_URL}message-nav-icon.png`;
 const notifyIconUrl = `${import.meta.env.BASE_URL}notify-icon.png`;
 
-export function NavigateBar({ servers }: NavigateBarProps) {
+export function NavigateBar() {
 	const navigate = useNavigate();
 	const dispatch = useDispatch<AppDispatch>();
 	const friend = useSelector((s: RootState) => s.friend);
@@ -29,7 +27,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 
 	const requestsCount = friend.incomingRequests.length + friend.outgoingRequests.length;
 	const unreadNotification = notifications.filter(n => n.read === false).length;
-	const avatarBg = StringToColor(username);
+	const avatarBg = StringToColor(username ?? "");
 	const resolvedAvatarUrl = resolveMediaUrl(avatarUrl);
 
 	const goToDM = () => {
@@ -54,16 +52,7 @@ export function NavigateBar({ servers }: NavigateBarProps) {
 
 		<div className={styles["divider"]} />
 
-		<div className={styles["middle"]}>
-			{servers.map((server, index) => (
-				<ServerButton
-					key={server.id}
-					index={index}
-					server={server}
-					onClick={() => navigate(`/server/${server.id}`)}
-				/>
-			))}
-		</div>
+		<div className={styles["middle"]} />
 
 		<div className={styles["bottom"]}>
 			<NavigateBarButton onClick={notificationHandle}>

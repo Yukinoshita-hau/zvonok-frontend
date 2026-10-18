@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Friend } from "../../entities/friend";
 import { friendApi } from "../../api/friendApi";
 import type { FriendRequest } from "../../api/interfaces/FriendRequest";
@@ -95,19 +95,19 @@ export const friendSlice = createSlice({
 	name: "friend",
 	initialState: initialState,
 	reducers: {
-		sendFriendRequest: (currentState, action: PayloadAction<{
+		sendFriendRequest: (_currentState, _action: PayloadAction<{
 			username: string;
 		}>) => { },
-		acceptFriendRequest: (currentState, action: PayloadAction<{
+		acceptFriendRequest: (_currentState, _action: PayloadAction<{
 			requestId: number;
 		}>) => { },
-		rejectFriendRequest: (currentState, action: PayloadAction<{
+		rejectFriendRequest: (_currentState, _action: PayloadAction<{
 			requestId: number
 		}>) => { },
-		cancelFriendRequest: (currentState, action: PayloadAction<{
+		cancelFriendRequest: (_currentState, _action: PayloadAction<{
 			requestId: number
 		}>) => { },
-		removeFriend: (currentState, action: PayloadAction<{
+		removeFriend: (_currentState, _action: PayloadAction<{
 			friendUsername: string
 		}>) => { },
 	},

@@ -18,6 +18,7 @@ export const websocketSlice = createSlice({
 	initialState,
 	reducers: {
 		connectStart: (previousState) => {
+			previousState.isConnected = false;
 			previousState.status = "connecting";
 			previousState.error = null;
 		},
@@ -29,6 +30,9 @@ export const websocketSlice = createSlice({
 		connectError: (previousState, action: PayloadAction<string>) => {
 			previousState.isConnected = false;
 			previousState.status = "error";
+			previousState.error = action.payload;
+		},
+		syncError: (previousState, action: PayloadAction<string>) => {
 			previousState.error = action.payload;
 		},
 	}

@@ -1,8 +1,9 @@
+import type { UserProfileUpdate } from "../../api/interfaces/UserProfileUpdatedEvent";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { UserMini } from "../../entities/UserMini";
+import type { UserSummary } from "../../entities/UserMini";
 
 export interface UsersState {
-	byId: Record<number, UserMini>
+	byId: Record<number, UserSummary>
 	ids: number[];
 }
 
@@ -15,7 +16,11 @@ const usersSlice = createSlice({
 	name: "users",
 	initialState,
 	reducers: {
-		upsertUser(previousState, action: PayloadAction<UserMini>) {
+		patchUser(state, action: PayloadAction<UserProfileUpdate>) {
+			const previous = state.byId[action.payload.id];
+			if (previous) state.byId[action.payload.id] = { ...previous, ...action.payload };
+		},
+		upsertUser(previousState, action: PayloadAction<UserSummary>) {
 			const user = action.payload;
 
 			if (!previousState.byId[user.id]) {
@@ -28,7 +33,7 @@ const usersSlice = createSlice({
 			};
 		},
 
-		upsertUsers(previousState, action: PayloadAction<UserMini[]>) {
+		upsertUsers(previousState, action: PayloadAction<UserSummary[]>) {
 			for (const user of action.payload) {
 				if (!previousState.byId[user.id]) {
 					previousState.ids.push(user.id);

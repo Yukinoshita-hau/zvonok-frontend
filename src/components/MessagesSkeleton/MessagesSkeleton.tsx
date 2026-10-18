@@ -7,7 +7,7 @@ export function MessagesSkeleton() {
 			<div className={styles["data-divider"]} >
 				<span className={cn(styles["data-label"], styles["shimmer"])}></span>
 			</div>
-			{[...Array(15)].map((el, i) => {
+			{[...Array(15)].map((_el, i) => {
 				return (
 					<div key={i}
 						className={styles["message-row"]}>

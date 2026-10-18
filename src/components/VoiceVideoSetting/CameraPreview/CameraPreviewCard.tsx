@@ -1,6 +1,6 @@
 import styles from "../VoiceVideoSetting.module.css";
 import { CameraPreviewState } from "./CameraPreviewState";
-import type { CameraPreviewStatus } from "./useCameraPreview";
+import type { CameraPreviewStatus } from "./CameraPreview.types";
 import type { RefObject } from "react";
 
 interface CameraPreviewCardProps {

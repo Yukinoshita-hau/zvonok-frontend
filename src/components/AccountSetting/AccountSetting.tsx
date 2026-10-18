@@ -5,7 +5,6 @@ import React, { useEffect, useRef, useState } from "react";
 import type { UpdateUserDto } from "../../api/interfaces/UpdateUserDto";
 import { logoutUser, updateUser, uploadAvatar } from "../../store/slices/user.slice";
 import { fetchMyRooms } from "../../store/slices/room.slice";
-import { fetchMyServers } from "../../store/slices/server.slice";
 import { websocketActions } from "../../store/slices/websocket.slice";
 import { useNavigate } from "react-router-dom";
 import { UserProfileCard } from "../UserProfileCard/UserProfileCard";
@@ -52,7 +51,6 @@ export function AccountSetting() {
 			await dispatch(updateUser(body)).unwrap();
 			dispatch(websocketActions.connectStart());
 			await dispatch(fetchMyRooms()).unwrap();
-			await dispatch(fetchMyServers()).unwrap();
 		} catch (error) {
 			console.error(error);
 		} finally {

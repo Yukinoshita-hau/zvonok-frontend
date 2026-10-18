@@ -1,0 +1,98 @@
+src/audio/AudioEngine.ts(1,10): error TS2300: Duplicate identifier 'loadRnnoise'.
+src/audio/AudioEngine.ts(2,10): error TS2300: Duplicate identifier 'loadRnnoise'.
+src/audio/AudioEngine.ts(2,23): error TS6133: 'RnnoiseWorkletNode' is declared but its value is never read.
+src/audio/AudioEngine.ts(8,10): error TS2564: Property 'ctx' has no initializer and is not definitely assigned in the constructor.
+src/audio/AudioEngine.ts(9,10): error TS6133: 'wasmBinary' is declared but its value is never read.
+src/audio/AudioEngine.ts(31,14): error TS6133: 'ctx' is declared but its value is never read.
+src/audio/AudioEngine.ts(111,23): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(destinationNode: AudioNode, output?: number | undefined, input?: number | undefined): AudioNode', gave the following error.
+    Argument of type 'GainNode | undefined' is not assignable to parameter of type 'AudioNode'.
+      Type 'undefined' is not assignable to type 'AudioNode'.
+  Overload 2 of 2, '(destinationParam: AudioParam, output?: number | undefined): void', gave the following error.
+    Argument of type 'GainNode | undefined' is not assignable to parameter of type 'AudioParam'.
+      Type 'undefined' is not assignable to type 'AudioParam'.
+src/audio/AudioEngine.ts(126,23): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(destinationNode: AudioNode, output?: number | undefined, input?: number | undefined): AudioNode', gave the following error.
+    Argument of type 'GainNode | undefined' is not assignable to parameter of type 'AudioNode'.
+      Type 'undefined' is not assignable to type 'AudioNode'.
+  Overload 2 of 2, '(destinationParam: AudioParam, output?: number | undefined): void', gave the following error.
+    Argument of type 'GainNode | undefined' is not assignable to parameter of type 'AudioParam'.
+      Type 'undefined' is not assignable to type 'AudioParam'.
+src/audio/AudioEngine.ts(135,23): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(destinationNode: AudioNode, output?: number | undefined, input?: number | undefined): AudioNode', gave the following error.
+    Argument of type 'GainNode | undefined' is not assignable to parameter of type 'AudioNode'.
+      Type 'undefined' is not assignable to type 'AudioNode'.
+  Overload 2 of 2, '(destinationParam: AudioParam, output?: number | undefined): void', gave the following error.
+    Argument of type 'GainNode | undefined' is not assignable to parameter of type 'AudioParam'.
+      Type 'undefined' is not assignable to type 'AudioParam'.
+src/audio/AudioEngine.ts(139,8): error TS2339: Property 'currentDeviceId' does not exist on type 'AudioEngine'.
+src/audio/AudioEngine.ts(159,3): error TS2532: Object is possibly 'undefined'.
+src/components/CallUi/CallQualityController.tsx(311,77): error TS2345: Argument of type 'CallQualityPreset | ScreenShareQualityPreset' is not assignable to parameter of type 'CallQualityPreset'.
+  Type 'ScreenShareQualityPreset' is not assignable to type 'CallQualityPreset'.
+    Types of property 'value' are incompatible.
+      Type 'ScreenShareManualQuality' is not assignable to type 'ManualCallQuality'.
+        Type '"mediumPlus"' is not assignable to type 'ManualCallQuality'.
+src/components/CallUi/CallQualityController.tsx(350,2): error TS6133: 'quality' is declared but its value is never read.
+src/components/CallUi/CallQualityController.tsx(419,6): error TS2367: This comparison appears to be unintentional because the types '"low" | "high" | "mediumPlus" | "highPlus" | "game60" | "game120" | "g1080p144" | "g1080p180" | "g1080p200" | "g1080p220" | "g1080p300" | "c1440p30" | "c4k30" | "c4k60" | "c4k120" | "g8k30" | "g8k60"' and '"medium"' have no overlap.
+src/components/CallUi/CallQualityController.tsx(430,2): error TS2322: Type 'ScreenShareManualQuality' is not assignable to type 'ManualCallQuality'.
+  Type '"mediumPlus"' is not assignable to type 'ManualCallQuality'.
+src/components/ChannelChat/ChannelChat.tsx(19,61): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/components/ChannelFolder/ChannelFolder.props.ts(1,36): error TS2307: Cannot find module '../../entities/channelFoldier' or its corresponding type declarations.
+src/components/ChannelFolder/ChannelFolder.tsx(26,27): error TS7006: Parameter 'channel' implicitly has an 'any' type.
+src/components/ChannelItemsList/ChannelItemList.tsx(22,9): error TS6133: 'contextMenu' is declared but its value is never read.
+src/components/DmItemsList/DmItemsList.tsx(100,21): error TS18048: 'currentRoom.unreadCount' is possibly 'undefined'.
+src/components/MessagesSkeleton/MessagesSkeleton.tsx(10,25): error TS6133: 'el' is declared but its value is never read.
+src/components/NavigateBar/NavigateBar.tsx(32,33): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/RoomsList/RoomsList.tsx(38,28): error TS2551: Property 'members' does not exist on type 'Room'. Did you mean 'memberIds'?
+src/components/RoomsList/RoomsList.tsx(38,42): error TS7006: Parameter 'member' implicitly has an 'any' type.
+src/components/VoiceVideoSetting/CameraPreview/CameraPreviewCard.tsx(3,42): error TS2307: Cannot find module './useCameraPreview' or its corresponding type declarations.
+src/components/VoiceVideoSetting/CameraPreview/CameraPreviewState.tsx(2,42): error TS2307: Cannot find module './useCameraPreview' or its corresponding type declarations.
+src/components/VoiceVideoSetting/CameraPreview/CameraView.tsx(38,32): error TS2339: Property 'getTracks' does not exist on type 'MediaProvider'.
+  Property 'getTracks' does not exist on type 'Blob'.
+src/components/VoiceVideoSetting/CameraPreview/CameraView.tsx(38,52): error TS7006: Parameter 'track' implicitly has an 'any' type.
+src/entities/server.ts(1,36): error TS2307: Cannot find module './channelFoldier' or its corresponding type declarations.
+src/entities/shortMessage.ts(2,15): error TS2305: Module '"./user"' has no exported member 'UserMini'.
+src/livekit/audio/ZvonokLiveKitAudioProcessor.ts(14,14): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/pages/DmChat/DmChat.tsx(306,5): error TS2322: Type 'Room | null' is not assignable to type 'Room'.
+  Type 'null' is not assignable to type 'Room'.
+src/pages/MyServers/MyServers.tsx(19,10): error TS18047: 'servers' is possibly 'null'.
+src/pages/ServerLayout/ServerLayout.tsx(21,78): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/pages/ServerLayout/ServerLayout.tsx(22,8): error TS6133: 'voiceChannels' is declared but its value is never read.
+src/pages/ServerLayout/ServerLayout.tsx(22,79): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/pages/ServerLayout/ServerLayout.tsx(23,8): error TS6133: 'activeTextChannel' is declared but its value is never read.
+src/store/middlewares/websocket/subscriptions.ts(191,42): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/store/middlewares/websocket/subscriptions.ts(227,42): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/store/slices/channelMessage.slice.ts(96,4): error TS6133: 'currentState' is declared but its value is never read.
+src/store/slices/channelMessage.slice.ts(97,4): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/friend.slice.ts(1,41): error TS6133: 'current' is declared but its value is never read.
+src/store/slices/friend.slice.ts(98,23): error TS6133: 'currentState' is declared but its value is never read.
+src/store/slices/friend.slice.ts(98,37): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/friend.slice.ts(101,25): error TS6133: 'currentState' is declared but its value is never read.
+src/store/slices/friend.slice.ts(101,39): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/friend.slice.ts(104,25): error TS6133: 'currentState' is declared but its value is never read.
+src/store/slices/friend.slice.ts(104,39): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/friend.slice.ts(107,25): error TS6133: 'currentState' is declared but its value is never read.
+src/store/slices/friend.slice.ts(107,39): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/friend.slice.ts(110,18): error TS6133: 'currentState' is declared but its value is never read.
+src/store/slices/friend.slice.ts(110,32): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/message.slice.ts(247,4): error TS6133: 'state' is declared but its value is never read.
+src/store/slices/message.slice.ts(248,4): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/message.slice.ts(274,4): error TS6133: 'state' is declared but its value is never read.
+src/store/slices/message.slice.ts(275,4): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/message.slice.ts(282,4): error TS6133: 'state' is declared but its value is never read.
+src/store/slices/message.slice.ts(283,4): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/message.slice.ts(290,4): error TS6133: 'state' is declared but its value is never read.
+src/store/slices/message.slice.ts(291,4): error TS6133: 'action' is declared but its value is never read.
+src/store/slices/message.slice.ts(297,4): error TS6133: 'state' is declared but its value is never read.
+src/store/slices/message.slice.ts(298,4): error TS6133: 'action' is declared but its value is never read.
+src/utils/callQuality.ts(377,2): error TS6133: 'kind' is declared but its value is never read.
+src/utils/callQuality.ts(438,41): error TS2345: Argument of type 'ScreenShareQualityPreset' is not assignable to parameter of type 'CallQualityPreset'.
+  Types of property 'value' are incompatible.
+    Type 'ScreenShareManualQuality' is not assignable to type 'ManualCallQuality'.
+      Type '"mediumPlus"' is not assignable to type 'ManualCallQuality'.
+src/utils/normalizeRoom.ts(2,15): error TS2305: Module '"../entities/user"' has no exported member 'UserMini'.
+src/utils/normalizeRoom.ts(13,4): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.

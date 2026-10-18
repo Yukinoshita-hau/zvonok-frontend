@@ -1,5 +1,5 @@
 import type { Room, RoomResponse } from "../entities/room";
-import type { UserMini } from "../entities/user";
+import type { UserMini } from "../entities/UserMini";
 
 export function normalizeRoom(roomResponse: RoomResponse): {
 	room: Room;

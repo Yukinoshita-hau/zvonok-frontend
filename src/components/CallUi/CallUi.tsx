@@ -26,8 +26,6 @@ import type { ParticipantCard } from "./hooks/useCallParticipants";
 import { ParticipantContextMenu } from "./ParticipantContextMenu/ParticipantContextMenu";
 import { deviceActions, type ParticipantAudioSource } from "../../store/slices/device.slice";
 import { FocusedScreenShareVolume } from "./FocusedScreenShareVolume";
-import type { CanvasParticipantOption } from "../CallCanvas/CallCanvas.types";
-import { InteractiveHost } from "../InteractiveHost/InteractiveHost";
 import { parseBackendDateMs } from "../../utils/timeHelpers";
 
 interface ParticipantMenuState {
@@ -62,11 +60,9 @@ export function CallUi({
 		call.chatRoomId ? s.activeCall.activeCallsByRoomId[call.chatRoomId] ?? null : null
 	));
 	const participantVolumes = useSelector((s: RootState) => s.device.participantVolumes);
-	const isWebSocketConnected = useSelector((s: RootState) => s.websocket.isConnected);
 
 	const {
 		participantCards,
-		sortedParticipants,
 		remoteMicrophoneParticipants,
 		remoteScreenAudioParticipants,
 		availableScreenTracks,
@@ -202,31 +198,6 @@ export function CallUi({
 	}, [participantCards]);
 
 	const canOpenCinemaMode = Boolean(focusedCard?.videoTrack);
-	const isCurrentUserHost = Boolean(
-		myUser?.username &&
-		(
-			call.isConferenceHost ||
-			(call.hostUsername && myUser.username === call.hostUsername)
-		)
-	);
-	const canvasParticipantOptions = useMemo<CanvasParticipantOption[]>(() => {
-		const seen = new Set<string>();
-		return sortedParticipants.flatMap((participant) => {
-			const username = participant.identity || participant.name;
-			if (!username || seen.has(username)) return [];
-			seen.add(username);
-
-			const isHost = username === call.hostUsername ||
-				participant.name === call.hostUsername ||
-				(participant.isLocal && isCurrentUserHost);
-
-			return [{
-				username,
-				displayName: participant.name || participant.identity,
-				role: isHost ? "HOST" : "MEMBER",
-			}];
-		});
-	}, [call.hostUsername, isCurrentUserHost, sortedParticipants]);
 	useEffect(() => {
 		if (!isCinemaMode) return;
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -388,16 +359,7 @@ export function CallUi({
 		/>
 	) : null;
 
-	const openInteractiveFocusMode = useCallback(() => {
-		setParticipantMenu(null);
-		setFocusedCardId(null);
-		dispatch(callActions.setCallFocusMode(true));
-	}, [dispatch]);
-
-	const resetInteractiveFocusMode = useCallback(() => {
-		setFocusedCardId(null);
-		dispatch(callActions.setCallFocusMode(false));
-	}, [dispatch]);
+	const isSingleParticipantView = !hasScreenShare && participantCards.length === 1;
 
 	return (
 		<div ref={callRootRef} className={styles["call-root"]}>
@@ -407,28 +369,6 @@ export function CallUi({
 					{formatCallDuration(elapsedCallMs)}
 				</div>
 			)}
-			<InteractiveHost
-				callId={call.callId}
-				isWebSocketConnected={isWebSocketConnected}
-				isFocusMode={isFocusMode}
-				focusedMediaCardId={focusedCardId}
-				currentUsername={myUser?.username}
-				currentUserId={myUser?.id}
-				isCurrentUserHost={isCurrentUserHost}
-				focusedScreenShareCard={focusedCard?.isScreenShareCard ? focusedCard : null}
-				participantOptions={canvasParticipantOptions}
-				whiteboardTileClassName={[
-					styles["tile"],
-					styles["tile-animated"],
-				].join(" ")}
-				onRequestFocusMode={openInteractiveFocusMode}
-				onResetFocusMode={resetInteractiveFocusMode}
-			>
-				{(interactive) => {
-					const isSingleParticipantView = !hasScreenShare && !interactive.hasWhiteboard && participantCards.length === 1;
-
-					return (
-						<>
 			{isCinemaMode ? (
 				focusedCard?.videoTrack ? (
 					<div className={styles["cinema-layout"]}>
@@ -436,12 +376,7 @@ export function CallUi({
 							trackRef={focusedCard.videoTrack}
 							displayName={focusedCard.displayName}
 							onExit={onToggleCinema}
-							onToggleScreenOverlay={interactive.toggleScreenOverlay}
-							isScreenOverlayOpen={interactive.isScreenOverlayOpen}
-							canUseScreenOverlay={interactive.canUseScreenOverlay}
-						>
-							{interactive.renderScreenShareOverlay()}
-						</TheaterModeView>
+						/>
 						{focusedScreenShareVolumeControl}
 					</div>
 				) : (
@@ -450,10 +385,6 @@ export function CallUi({
 						<div className={styles["empty-subtitle"]}>Сначала выберите камеру или трансляцию экрана.</div>
 					</div>
 				)
-			) : isFocusMode && interactive.isCodeSessionOpen ? (
-				interactive.renderCodeSession()
-			) : isFocusMode && interactive.isWhiteboardFocused && call.callId ? (
-				interactive.renderWhiteboardFocus()
 			) : isFocusMode && focusedCard?.videoTrack ? (
 				<div className={styles["screen-layout"]}>
 					<div
@@ -467,7 +398,6 @@ export function CallUi({
 						) : (
 							<div className={styles["screen-loading"]}>Открываем видео...</div>
 						)}
-						{interactive.renderScreenShareOverlay()}
 						<div className={styles["name"]}>{focusedCard.displayName}</div>
 						<button
 							type="button"
@@ -492,7 +422,6 @@ export function CallUi({
 					<div className={styles["participants-strip-shell"]}>
 						<ParticipantsGrid
 							participantCards={participantCards}
-							extraTiles={interactive.interactiveTiles}
 							focusedCardId={focusedCard.id}
 							onOpenCard={openCardInFocus}
 							onOpenContextMenu={openParticipantMenu}
@@ -507,7 +436,6 @@ export function CallUi({
 				<div className={styles["grid-container"]}>
 					<ParticipantsGrid
 						participantCards={participantCards}
-						extraTiles={interactive.interactiveTiles}
 						focusedCardId={focusedCardId}
 						onOpenCard={openCardInFocus}
 						onOpenContextMenu={openParticipantMenu}
@@ -517,7 +445,6 @@ export function CallUi({
 			) : isSingleParticipantView ? (
 				<ParticipantsGrid
 					participantCards={participantCards}
-					extraTiles={interactive.interactiveTiles}
 					focusedCardId={focusedCardId}
 					onOpenCard={openCardInFocus}
 					onOpenContextMenu={openParticipantMenu}
@@ -528,7 +455,6 @@ export function CallUi({
 				<div className={styles["grid-container"]}>
 					<ParticipantsGrid
 						participantCards={participantCards}
-						extraTiles={interactive.interactiveTiles}
 						focusedCardId={focusedCardId}
 						onOpenCard={openCardInFocus}
 						onOpenContextMenu={openParticipantMenu}
@@ -557,19 +483,11 @@ export function CallUi({
 					screenShareCaptureOptions={screenShareCaptureOptions}
 					screenSharePublishOptions={screenSharePublishOptions}
 					onOpenChat={() => setIsCallChatOpen((value) => !value)}
-					onOpenWhiteboard={interactive.openWhiteboard}
-					onOpenCodeSession={interactive.openCodeSession}
-					onToggleScreenOverlay={interactive.toggleScreenOverlay}
 					onToggleFocus={onToggleFocus}
 					onToggleCinema={onToggleCinema}
 					onMinimize={onMinimize}
 					onHide={onHide}
 					onLeave={onLeave}
-					canUseWhiteboard={interactive.canUseWhiteboard}
-					isWhiteboardOpen={interactive.isWhiteboardFocused}
-					isCodeSessionOpen={interactive.isCodeSessionOpen}
-					canUseScreenOverlay={interactive.canUseScreenOverlay}
-					isScreenOverlayOpen={interactive.isScreenOverlayOpen}
 				/>
 			)}
 			{!isCinemaMode && (
@@ -606,10 +524,6 @@ export function CallUi({
 					onStreamReset={() => resetParticipantVolume(contextMenuCard.participant.identity, "screenShareAudio")}
 				/>
 			)}
-						</>
-					);
-				}}
-			</InteractiveHost>
 		</div>
 	);
 }
