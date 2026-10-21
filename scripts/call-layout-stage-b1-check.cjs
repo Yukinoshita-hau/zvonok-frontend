@@ -1,0 +1,62 @@
+const {chromium}=require(process.env.STAGE10_PLAYWRIGHT || 'C:/Users/Пользователь/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const out=process.env.STAGE_B1_OUTPUT || 'artifacts/stages/call-layout-stage-b1-evidence';fs.mkdirSync(out,{recursive:true});
+(async()=>{const browser=await chromium.launch({headless:true});let page=await browser.newPage();const results=[],errors=[];
+const bind=()=>page.on('pageerror',e=>errors.push(e.message));bind();
+const shot=name=>page.screenshot({path:`${out}/${name}.png`});
+const open=async(w,h,query='voice&stageB&b1&count=4')=>{await page.close();page=await browser.newPage();bind();await page.setViewportSize({width:w,height:h});await page.goto(`http://127.0.0.1:3017/scripts/call-layout-preview.html?${query}`);};
+const waitDock=()=>page.locator('[data-call-dock]:not([hidden])').waitFor();
+try{
+ for(const [w,h] of [[1920,1080],[1440,900],[1366,768],[1024,768],[1024,600],[1000,700]]){
+  await open(w,h);await waitDock();await page.waitForTimeout(220);
+  const measure=await page.evaluate(()=>{
+   const rect=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
+   const dock=document.querySelector('[data-call-dock]');return {dock:rect(dock),composer:rect(document.querySelector('[data-fixture-composer]')),buttons:[...dock.querySelectorAll('[class*="mini-actions"] button')].map(rect),overflow:document.documentElement.scrollWidth>innerWidth};
+  });
+  assert(!measure.overflow);assert(measure.dock.right<=w&&measure.dock.bottom<=h);
+  assert(measure.dock.right<=measure.composer.x||measure.dock.bottom<=measure.composer.y);
+  assert(measure.buttons.every(b=>b.width>=40&&b.height>=40));assert.equal(new Set(measure.buttons.map(b=>b.y)).size,1);
+  assert.equal(await page.locator('[data-call-dock] [aria-label="Чат звонка"]').count(),0);
+  assert.equal(await page.locator('[aria-label="Панель пользователя"] [data-lk-source="microphone"]:visible').count(),0);
+  if(w===1440)await shot('default-compact');
+  await page.getByRole('button',{name:'Развернуть',exact:true}).click();await page.locator('[data-layout="voice"]').waitFor();await page.waitForTimeout(220);
+  assert(await page.locator('[data-call-dock]').evaluate(e=>e.hidden&&e.inert));
+  await page.getByRole('button',{name:'Свернуть звонок',exact:true}).first().click();await waitDock();await page.waitForTimeout(220);
+  results.push({name:`${w}x${h} default/expand/collapse/composer`,status:'PASS',...measure});
+ }
+ await open(1440,900);await waitDock();await page.waitForTimeout(200);
+ await page.locator('[data-call-dock]').evaluate(e=>window.savedDock=e);
+ await page.evaluate(()=>window.stageFixture.speak());await page.getByText('Говорит Участник 1',{exact:true}).waitFor();await shot('speaking');
+ await page.evaluate(()=>window.stageFixture.speak());await page.waitForTimeout(1100);assert(await page.getByText('Никто не говорит',{exact:true}).isVisible());
+ await shot('muted');
+ const handle=page.getByRole('button',{name:'Переместить панель звонка'});let rect=await handle.boundingBox();
+ await page.mouse.move(rect.x+10,rect.y+10);await page.mouse.down();await page.mouse.move(1435,230,{steps:10});await page.mouse.up();await page.waitForTimeout(200);
+ let floating=await page.locator('[data-call-dock]').boundingBox();assert.equal(floating.width,296);assert(Math.abs(floating.x+floating.width-1432)<2);await shot('floating-compact');
+ await handle.focus();await page.keyboard.press('ArrowLeft');await page.waitForTimeout(180);assert((await page.locator('[data-call-dock]').boundingBox()).x<floating.x);
+ await page.keyboard.press('Home');await page.waitForTimeout(180);assert.equal(await page.locator('[data-call-dock]').getAttribute('data-floating'),'false');
+ await page.getByRole('button',{name:'Открыть звонок',exact:true}).click();assert(await handle.evaluate(e=>e===document.activeElement));
+ await page.evaluate(()=>window.stageFixture.navigate());await page.getByRole('button',{name:'Чат звонка',exact:true}).waitFor();
+ assert(await page.evaluate(()=>window.savedDock===document.querySelector('[data-call-dock]')));
+ await page.evaluate(()=>window.stageFixture.share());await page.getByRole('button',{name:'Смотреть трансляцию',exact:true}).waitFor();await page.waitForTimeout(220);await shot('screen-share-cta');
+ assert.equal(await page.locator('[data-call-stage]').getAttribute('hidden'),'');
+ await page.evaluate(()=>window.stageFixture.stopShare());await page.waitForTimeout(220);assert.equal(await page.getByRole('button',{name:'Смотреть трансляцию',exact:true}).count(),0);
+ await page.getByRole('button',{name:'Развернуть',exact:true}).click();await page.locator('[data-layout="voice"]').waitFor();
+ const slots=await page.locator('[data-voice-count] [data-card-id]').evaluateAll(ns=>{window.slots=ns;return ns.map(n=>n.dataset.cardId)});
+ await page.evaluate(()=>{window.stageFixture.camera(true);window.stageFixture.share();window.stageFixture.speak();});await page.waitForTimeout(220);
+ assert(await page.locator('[data-layout="voice"]').isVisible());assert(await page.evaluate(()=>window.slots.every(n=>n.isConnected)));
+ assert.deepEqual(await page.locator('[data-voice-count] [data-card-id]').evaluateAll(ns=>ns.map(n=>n.dataset.cardId)),slots);await shot('expanded-voice');
+ await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'Свернуть звонок',exact:true}).first().click();await waitDock();
+ await page.setViewportSize({width:640,height:480});await page.waitForTimeout(50);
+ const reduced=await page.locator('[data-call-dock]').evaluate(e=>({transform:getComputedStyle(e).transform,transition:getComputedStyle(e).transitionDuration,animations:e.getAnimations({subtree:true}).filter(a=>a.playState==='running').length}));
+ assert.equal(reduced.transform,'none');assert.equal(reduced.transition,'0s');assert.equal(reduced.animations,0);await shot('reduced-motion-small');
+ results.push({name:'speaking hold/slots/sidebar focus/navigation/media CTA/manual Voice/drag snap/keyboard/reduced motion',status:'PASS',reduced});
+ // Synthetic 30 FPS sources: no RTC, audio capture, or getStats is implied.
+ await open(1024,768,'stageB&b1&fps30&count=2');await page.locator('[data-layout="grid"]').waitFor();await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
+ await page.evaluate(()=>{window.videoNodes=[...document.querySelectorAll('video')];window.roomBefore=window.stageFixture.room;window.longTasks=[];window.shifts=[];window.observers=[new PerformanceObserver(l=>window.longTasks.push(...l.getEntries().map(e=>e.duration))),new PerformanceObserver(l=>window.shifts.push(...l.getEntries().filter(e=>!e.hadRecentInput).map(e=>e.value)))];window.observers[0].observe({type:'longtask',buffered:false});window.observers[1].observe({type:'layout-shift',buffered:false});});
+ await page.getByRole('button',{name:'Свернуть звонок',exact:true}).first().click();await waitDock();await page.waitForTimeout(220);
+ await page.getByRole('button',{name:'Развернуть',exact:true}).click();await page.waitForTimeout(220);
+ assert(await page.evaluate(()=>window.videoNodes.length>0&&window.videoNodes.every(v=>v.isConnected&&v.videoWidth>0)&&window.roomBefore===window.stageFixture.room));
+ const perf=await page.evaluate(async()=>{const sample=async()=>{const before=window.longTasks.length;const start=performance.now();await new Promise(r=>setTimeout(r,1000));return {durationMs:performance.now()-start,longTasks:window.longTasks.slice(before)};};const idle=await sample();window.stageFixture.speak();const speaking=await sample();window.observers.forEach(o=>o.disconnect());return {idle,speaking,layoutShiftSum:window.shifts.reduce((a,b)=>a+b,0),videoCount:document.querySelectorAll('video').length,audioCount:document.querySelectorAll('audio').length};});
+ assert.deepEqual(await page.evaluate(()=>window.stageFixture.counts()),{connections:0,publications:0});results.push({name:'30 FPS canvas compact continuity/Room identity/performance observations',status:'PASS',...perf});
+ assert.deepEqual(errors,[]);console.log('PASS',results.length,'Stage B.1 browser groups');
+}catch(error){console.error(error);process.exitCode=1;results.push({status:'FAIL',error:String(error)});await shot('failure');}finally{fs.writeFileSync(`${out}/results.json`,JSON.stringify({results,errors,realMedia:'NOT RUN'},null,2));await browser.close();}})();

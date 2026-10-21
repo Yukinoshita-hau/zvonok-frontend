@@ -7,7 +7,7 @@ export function InboxHeaderButton({ children, isActive, onClick, ...props }: Inb
 	return (
 		<button className={cn(styles["inbox-header-button"], {
 			[styles["inbox-header-button_active"]]: isActive
-		})} onClick={onClick} {...props}>
+		})} aria-pressed={isActive} onClick={onClick} {...props}>
 			{children}
 		</button>
 	)

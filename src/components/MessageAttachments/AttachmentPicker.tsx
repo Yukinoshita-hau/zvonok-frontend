@@ -22,8 +22,8 @@ export function AttachmentPicker({ disabled = false, onSelectFiles }: Attachment
 				type="button"
 				className={styles["picker-button"]}
 				disabled={disabled}
-				title="Прикрепить изображение или видео"
-				aria-label="Прикрепить изображение или видео"
+				title="Прикрепить файлы"
+				aria-label="Прикрепить файлы"
 				onClick={() => inputRef.current?.click()}
 			>
 				<Paperclip size={19} />
@@ -32,7 +32,7 @@ export function AttachmentPicker({ disabled = false, onSelectFiles }: Attachment
 				ref={inputRef}
 				type="file"
 				multiple
-				accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+				accept=".pdf,.txt,.md,.json,.csv,.docx,.xlsx,.pptx,.zip,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov,.mp3,.ogg,.m4a,.wav"
 				className={styles["file-input"]}
 				onChange={handleChange}
 			/>

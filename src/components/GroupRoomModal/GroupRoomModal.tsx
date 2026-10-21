@@ -1,5 +1,6 @@
 import { Search, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { useModalAnimation } from "../../hooks/useModalAnimation";
 import { StringToColor } from "../../utils/stringHelpers";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
@@ -20,6 +21,10 @@ export function GroupRoomModal({
 	const [selected, setSelected] = useState<string[]>([]);
 	const [query, setQuery] = useState("");
 	const isVisible = useModalAnimation(isOpen);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState('');
+	const close = () => { if (!busy) onClose(); };
+	const modalRef = useModalFocus(isVisible, close);
 
 	const selectedFriends = useMemo(
 		() => friends.filter((friend) => selected.includes(getFriendUsername(friend.friendId, friend.friendUsername))),
@@ -59,10 +64,11 @@ export function GroupRoomModal({
 		<div
 			className={styles.backdrop}
 			data-state={isOpen ? "open" : "close"}
-			onClick={onClose}
+			onClick={close}
 		>
 			<div
 				className={styles.modal}
+				ref={modalRef} role="dialog" aria-modal="true" aria-label="Создать группу" tabIndex={-1} aria-busy={busy}
 				data-state={isOpen ? "open" : "close"}
 				onClick={(event) => event.stopPropagation()}
 			>
@@ -72,7 +78,7 @@ export function GroupRoomModal({
 					</div>
 					<div>
 						<h3>Создать группу</h3>
-						<p>Выберите минимум двух друзей и задайте название комнаты.</p>
+						<p>Задайте название и выберите друзей для группы.</p>
 					</div>
 				</header>
 
@@ -82,6 +88,8 @@ export function GroupRoomModal({
 						<input
 							className={styles.input}
 							placeholder="Например: Команда проекта"
+							maxLength={100}
+							disabled={busy}
 							value={name}
 							onChange={(event) => setName(event.target.value)}
 						/>
@@ -121,6 +129,7 @@ export function GroupRoomModal({
 						<Search size={16} />
 						<input
 							placeholder="Поиск друзей"
+							disabled={busy}
 							value={query}
 							onChange={(event) => setQuery(event.target.value)}
 						/>
@@ -142,6 +151,8 @@ export function GroupRoomModal({
 										type="button"
 										className={styles.friendRow}
 										data-selected={isSelected}
+										aria-pressed={isSelected}
+										disabled={busy}
 										onClick={() => toggle(username)}
 									>
 										<div
@@ -167,15 +178,19 @@ export function GroupRoomModal({
 				</div>
 
 				<footer className={styles.footer}>
-					<button className={styles["btn-secondary"]} onClick={onClose}>
+					{error && <p role="alert">{error}</p>}
+					<button disabled={busy} className={styles["btn-secondary"]} onClick={close}>
 						Отмена
 					</button>
 					<button
 						className={styles["btn-primary"]}
-						disabled={!canCreate}
-						onClick={() => {
-							if (!canCreate) return;
-							onCreate({ roomName: name.trim(), roomMemberUsernames: selected });
+						disabled={!canCreate || busy}
+						onClick={async () => {
+							if (!canCreate || busy) return;
+							setBusy(true);setError('');
+							try { await onCreate({ roomName: name.trim(), roomMemberUsernames: selected }); }
+							catch(e) {setError(typeof e === 'string' ? e : 'Не удалось создать группу. Попробуйте ещё раз.');}
+							finally {setBusy(false);}
 						}}
 					>
 						Создать

@@ -21,6 +21,7 @@ export class SessionCoordinator {
 	private version: string | null;
 	private queue: Promise<unknown> = Promise.resolve();
 	private readonly adapter: SessionAdapter;
+	get refreshing() { return this.flight !== null; }
 	constructor(adapter: SessionAdapter) {
 		this.adapter = adapter;
 		this.version = adapter.version?.() ?? null;
@@ -72,7 +73,8 @@ export class SessionCoordinator {
 				this.adapter.apply(response.data);
 				return response;
 			} catch (error) {
-				if (epoch === this.epoch && error instanceof AxiosError && error.response?.status === 401) this.invalidate();
+				if (epoch === this.epoch && error instanceof AxiosError && (error.response?.status === 401 ||
+					(error.response?.status === 400 && error.response.data?.message === 'Refresh token not transferred'))) this.invalidate();
 				throw error;
 			}
 		});

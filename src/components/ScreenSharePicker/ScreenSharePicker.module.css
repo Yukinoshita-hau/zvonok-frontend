@@ -420,3 +420,6 @@
 		justify-content: flex-start;
 	}
 }
+.modal-backdrop { background: var(--overlay-backdrop); backdrop-filter: none; }
+.modal { background: var(--bg-secondary); border-color: var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-dialog); overflow-y: auto; }
+.modal-header h2 { font-size: 20px; }

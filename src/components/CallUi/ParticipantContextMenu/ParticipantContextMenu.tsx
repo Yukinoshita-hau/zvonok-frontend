@@ -11,6 +11,8 @@ interface ParticipantContextMenuProps {
 	micVolume: number;
 	streamVolume: number;
 	onOpenProfile?: () => void;
+	pinnedParticipant?: boolean;
+	onPinParticipant?: () => void;
 	onOpenScreenShare: () => void;
 	onOpenTheater: () => void;
 	onMicChange: (value: number) => void;
@@ -29,6 +31,8 @@ export function ParticipantContextMenu({
 	micVolume,
 	streamVolume,
 	onOpenProfile,
+	pinnedParticipant,
+	onPinParticipant,
 	onOpenScreenShare,
 	onOpenTheater,
 	onMicChange,
@@ -44,6 +48,9 @@ export function ParticipantContextMenu({
 			onClick={(event) => event.stopPropagation()}
 		>
 			<div className={styles["header"]} title={displayName}>{displayName}</div>
+			{onPinParticipant && <button type="button" role="menuitem" className={styles["item"]} onClick={onPinParticipant}>
+				{pinnedParticipant ? "Открепить" : "Закрепить"}
+			</button>}
 			{onOpenProfile && (
 				<button type="button" className={styles["item"]} onClick={onOpenProfile}>
 					Открыть профиль

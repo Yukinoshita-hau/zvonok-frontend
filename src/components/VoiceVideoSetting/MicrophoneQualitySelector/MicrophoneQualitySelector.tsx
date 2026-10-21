@@ -2,55 +2,12 @@ import { MICROPHONE_QUALITY_PRESETS, type MicQualitySetting } from "../../../uti
 import type { MicrophoneQualitySelectorProps } from "./MicrophoneQualitySelector.props";
 import styles from "./MicrophoneQualitySelector.module.css";
 
-const ORDER: MicQualitySetting[] = [
-	"potato",
-	"stable",
-	"gaming",
-	"clear",
-	"studio",
-	"boosted",
-	"insane"
-];
-
-export function MicrophoneQualitySelector({
-	value,
-	onChange,
-}: MicrophoneQualitySelectorProps) {
-	return (
-		<div className={styles["root"]}>
-			<div className={styles["cards"]}>
-				{ORDER.map((key) => {
-					const preset = MICROPHONE_QUALITY_PRESETS[key];
-
-					return (
-						<button
-							type="button"
-							key={preset.value}
-							className={[
-								styles["card"],
-								value === preset.value ? styles["card-active"] : "",
-							].join(" ")}
-							onClick={() => onChange(preset.value)}
-						>
-							<div className={styles["title"]}>{preset.label}</div>
-
-							<div className={styles["description"]}>
-								{preset.description}
-							</div>
-
-							<div className={styles["meta"]}>
-								{preset.sampleRate} Hz • Mono • {preset.publishLabel}
-							</div>
-
-							{preset.warning && (
-								<div className={styles["warning"]}>
-									{preset.warning}
-								</div>
-							)}
-						</button>
-					);
-				})}
-			</div>
-		</div>
-	);
+export function MicrophoneQualitySelector({value,onChange}: MicrophoneQualitySelectorProps) {
+  const preset = MICROPHONE_QUALITY_PRESETS[value];
+  return <div className={styles.root}>
+    <select className={styles.select} aria-label="Качество микрофона" value={value} onChange={e=>onChange(e.target.value as MicQualitySetting)}>
+      {Object.values(MICROPHONE_QUALITY_PRESETS).map(item=><option key={item.value} value={item.value}>{item.label} · {item.publishLabel}</option>)}
+    </select>
+    <p className={styles.description}>{preset.description} · {preset.sampleRate} Hz · Mono</p>
+  </div>;
 }

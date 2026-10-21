@@ -21,18 +21,26 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = store
 	let lifecycle = Promise.resolve();
 	let connectedToken: string | null = null;
 	let replacing = false;
+	const presentedNotifications = new Set<string>();
 
-	const scheduleRefresh = () => {
+	const scheduleRefresh = (retryDelay?: number) => {
 		clearTimeout(timer);
 		const { expiresAt, expiresIn } = storeApi.getState().user;
 		if (!expiresAt || !client) return;
 		const epoch = session.epoch;
 		const current = client;
 		timer = setTimeout(() => {
-			void session.refresh().catch(() => {
-				if (session.epoch === epoch && client === current) storeApi.dispatch(websocketActions.connectError("Не удалось обновить сессию. Проверьте соединение."));
+			void session.refresh().then(() => {
+				if (session.epoch !== epoch || client !== current) return;
+				scheduleRefresh();
+				if (!current.active) reconnect();
+			}).catch(() => {
+				if (session.epoch === epoch && client === current) {
+					storeApi.dispatch(websocketActions.connectError("Не удалось обновить сессию. Проверьте соединение."));
+					scheduleRefresh(15000);
+				}
 			});
-		}, Math.max(0, expiresAt - Date.now() - refreshThreshold(expiresIn)));
+		}, retryDelay ?? Math.max(0, expiresAt - Date.now() - refreshThreshold(expiresIn)));
 	};
 
 	const start = () => {
@@ -59,8 +67,8 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = store
 				configureWebSocketToken(current, token);
 			} catch {
 				if (valid()) storeApi.dispatch(websocketActions.connectError("Не удалось авторизовать WebSocket"));
-				// STOMP does not reschedule a failed beforeConnect. Resume on online or explicit connect.
 				void current.deactivate({ force: true });
+				if (valid()) scheduleRefresh(15000);
 			}
 		};
 		current.onConnect = () => {
@@ -72,7 +80,7 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = store
 			const guardedStore = { ...storeApi, dispatch: ((action: Parameters<AppDispatch>[0]) => {
 				if (active()) return storeApi.dispatch(action);
 			}) as AppDispatch };
-			registerWebSocketSubscriptions(current, guardedStore, subscriptions);
+			registerWebSocketSubscriptions(current, guardedStore, subscriptions, presentedNotifications);
 			storeApi.dispatch(websocketActions.connectSuccess());
 			scheduleRefresh();
 			void (async () => {
@@ -123,17 +131,23 @@ export const websocketMiddleware: Middleware<{}, RootState, AppDispatch> = store
 			if (client === current && storeApi.getState().user.accessToken) current.activate();
 		});
 	};
-	if (typeof window !== "undefined") window.addEventListener("online", () => {
+	const resume = () => {
 		if (!client) return;
 		const { expiresAt, expiresIn } = storeApi.getState().user;
 		if (expiresAt && expiresAt - Date.now() <= refreshThreshold(expiresIn)) {
-			void session.refresh().catch(() => storeApi.dispatch(websocketActions.connectError("Не удалось обновить сессию")));
+			scheduleRefresh(0);
 		} else if (!client.connected) reconnect();
-	});
+	};
+	if (typeof window !== "undefined") {
+		window.addEventListener('online', resume);
+		window.addEventListener('focus', resume);
+		window.zvonokDesktop?.onResume?.(resume);
+	}
 
 	return next => action => {
 		const event = action as Actions;
 		if ((action as { type: string }).type === "user/sessionCleared") {
+			presentedNotifications.clear();
 			clearTimeout(timer);
 			connection++;
 			const previous = client;

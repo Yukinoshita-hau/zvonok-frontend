@@ -1,5 +1,6 @@
 import { Search, UserPlus, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { createPortal } from "react-dom";
 import { StringToColor } from "../../utils/stringHelpers";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
@@ -16,6 +17,8 @@ export function AddGroupMembersModal({
 }: AddGroupMembersModalProps) {
 	const [query, setQuery] = useState("");
 	const [selectedIds, setSelectedIds] = useState<number[]>([]);
+	const close = () => { if (!isSubmitting) onClose(); };
+	const modalRef = useModalFocus(isOpen, close);
 
 	const availableFriends = useMemo(() => {
 		const normalizedQuery = query.trim().toLowerCase();
@@ -53,14 +56,14 @@ export function AddGroupMembersModal({
 	};
 
 	return createPortal(
-		<div className={styles.backdrop} onClick={onClose}>
-			<div className={styles.modal} onClick={(event) => event.stopPropagation()}>
+		<div className={styles.backdrop} onClick={event => {event.stopPropagation();close();}}>
+			<div ref={modalRef} role="dialog" aria-modal="true" aria-label="Добавить друзей в группу" aria-busy={isSubmitting} tabIndex={-1} className={styles.modal} onClick={(event) => event.stopPropagation()}>
 				<div className={styles.header}>
 					<div>
 						<h3>Добавить друзей</h3>
 						<p>Выберите друзей, которых нужно добавить в группу.</p>
 					</div>
-					<button type="button" onClick={onClose} aria-label="Закрыть">
+					<button type="button" disabled={isSubmitting} onClick={close} aria-label="Закрыть">
 						<X size={18} />
 					</button>
 				</div>
@@ -129,7 +132,7 @@ export function AddGroupMembersModal({
 				</div>
 
 				<div className={styles.footer}>
-					<button type="button" className={styles.secondaryButton} onClick={onClose}>
+					<button type="button" disabled={isSubmitting} className={styles.secondaryButton} onClick={event => {event.stopPropagation();close();}}>
 						Отмена
 					</button>
 					<button

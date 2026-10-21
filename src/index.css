@@ -32,24 +32,24 @@
 
 :root,
 [data-theme="dark"] {
-	--bg-primary: #0f1117;
-	--bg-secondary: #131a1f;
-	--bg-tertiary: #0a0f12;
-	--bg-hover: #1a2530;
-	--bg-active: #1e2d38;
-	--bg-input: #111820;
+	--bg-primary: #313338;
+	--bg-secondary: #2b2d31;
+	--bg-tertiary: #1e1f22;
+	--bg-hover: #35373c;
+	--bg-active: #404249;
+	--bg-input: #383a40;
 
 	--accent: #00c896;
 	--accent-hover: #00b882;
 	--accent-muted: rgba(0, 200, 150, 0.12);
 
-	--text-primary: #e8edf2;
-	--text-secondary: #7a8f9e;
-	--text-muted: #4a5a66;
+	--text-primary: #f2f3f5;
+	--text-secondary: #b5bac1;
+	--text-muted: #949ba4;
 
-	--border: rgba(30, 45, 56, 0.6);
+	--border: rgba(0, 0, 0, 0.22);
 	--online: #00c896;
-	--offline: #c80032;
+	--offline: #80848e;
 	--danger: rgba(207, 44, 56, 1);
 	--danger-hover: rgba(148, 30, 39, 1);
 }

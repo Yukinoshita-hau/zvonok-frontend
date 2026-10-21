@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRoomContext } from "@livekit/components-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { deviceActions } from '../../store/slices/device.slice';
 import { useMicrophoneCaptureOptions } from "../CallUi/useMicrophoneCaptureOptions";
 import type { RootState } from "../../store/store";
 import {
@@ -22,6 +23,7 @@ const OPEN_SCREEN_SHARE_PICKER_EVENT = "zvonok:open-screen-share-picker";
 
 export function CallHotkeys() {
 	const room = useRoomContext();
+	const dispatch = useDispatch();
 	const microphoneCaptureOptions = useMicrophoneCaptureOptions();
 	const microphoneOwner = useCallMicrophoneOwner();
 	const registeredDesktopHotkeysRef = useRef<Set<DesktopHotkeyAction>>(new Set());
@@ -51,6 +53,7 @@ export function CallHotkeys() {
 		// SignalConnected applies the SDK's initial audio=false; do not race it with unmute.
 		if (nextEnabled && room.state !== ConnectionState.Connected) return;
 		void microphoneOwner.setEnabled(nextEnabled, microphoneCaptureOptions, microphonePublishOptions).catch((error) => {
+			dispatch(deviceActions.setMediaError('Не удалось переключить микрофон горячей клавишей. Проверьте устройство и разрешения.'));
 			console.error("Failed to toggle microphone from hotkey", error);
 		});
 	}, [microphoneCaptureOptions, microphoneOwner, microphonePublishOptions, room]);
@@ -62,6 +65,7 @@ export function CallHotkeys() {
 			getCameraCaptureOptions(selectedCameraId, cameraPreset),
 			getCameraPublishOptions(cameraPreset)
 		).catch((error) => {
+			dispatch(deviceActions.setMediaError('Не удалось переключить камеру горячей клавишей. Проверьте устройство и разрешения.'));
 			console.error("Failed to toggle camera from hotkey", error);
 		});
 	}, [cameraPreset, room, selectedCameraId]);
@@ -95,6 +99,7 @@ export function CallHotkeys() {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.repeat || event.defaultPrevented) return;
 			if (isEditableTarget(event.target) || isModalOpen()) return;
+			if (document.querySelector('#zvonok-settings-content > section:not([hidden])')) return;
 
 			const action = getKeyboardAction(event, {
 				microphone: muteMicrophoneHotkey,
@@ -123,10 +128,12 @@ export function CallHotkeys() {
 	useEffect(() => {
 		const desktopHotkeys = window.zvonokDesktop?.hotkeys;
 		if (!desktopHotkeys) return;
+		dispatch(deviceActions.setHotkeyError(null));
 
 		let isDisposed = false;
 		const nextRegisteredActions = new Set<DesktopHotkeyAction>();
 		const removePressedListener = desktopHotkeys.onHotkeyPressed((action) => {
+			if (document.hasFocus() && (isEditableTarget(document.activeElement) || isModalOpen() || document.querySelector('#zvonok-settings-content > section:not([hidden])'))) return;
 			runHotkeyAction(action);
 		});
 
@@ -138,10 +145,15 @@ export function CallHotkeys() {
 
 		registrations.forEach(([action, accelerator]) => {
 			void desktopHotkeys.registerHotkey(action, accelerator).then((isRegistered) => {
-				if (isDisposed || !isRegistered) return;
+				if (isDisposed) return;
+				if (!isRegistered) {
+					dispatch(deviceActions.setHotkeyError(`ОС не зарегистрировала ${accelerator}. При фокусе приложения действует локальная комбинация.`));
+					return;
+				}
 				nextRegisteredActions.add(action);
 				registeredDesktopHotkeysRef.current = new Set(nextRegisteredActions);
 			}).catch((error) => {
+				dispatch(deviceActions.setHotkeyError(`Не удалось зарегистрировать ${accelerator}.`));
 				console.error(`Failed to register desktop ${action} hotkey`, error);
 			});
 		});

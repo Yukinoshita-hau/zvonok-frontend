@@ -2,7 +2,6 @@ import { isCallEvent, isFriendNotificationPayload, isMessage, isRecord, isRoomRe
 import type { Client } from "@stomp/stompjs";
 import {
 	WS_CALL_PATH,
-	WS_CALL_RECORDING_PATH,
 	WS_ERROR_PATH,
 	WS_FRIEND_REQUESTS_PATH,
 	WS_MESSAGE_READ_PATH,
@@ -22,15 +21,36 @@ import { usersActions } from "../../slices/users.slice";
 import { normalizeMessage } from "../../../utils/normalizeMessage";
 import { normalizeRoom } from "../../../utils/normalizeRoom";
 import { soundPlayer } from "../../../utils/soundPlayer";
+import { deviceActions } from '../../slices/device.slice';
 import { isAppFocused, showDesktopNotification, type DesktopNotificationPayload } from "../../../services/desktop.service";
 import type { SubscriptionRegistry, WebSocketStoreApi } from "./types";
 import { createRefreshQueue } from "./refreshQueue";
+import { notificationPresentation } from '../../../utils/notificationPolicy';
 
 export function registerWebSocketSubscriptions(
 	client: Client,
 	storeApi: WebSocketStoreApi,
-	subscriptions: SubscriptionRegistry
+	subscriptions: SubscriptionRegistry,
+	presentedNotifications = new Set<string>()
 ) {
+	const seen = (key: string) => {
+		if (presentedNotifications.has(key)) return true;
+		presentedNotifications.add(key);
+		// shortcut: retain 512 IDs per session; use server replay cursors if longer replay windows are added.
+		if (presentedNotifications.size > 512) presentedNotifications.delete(presentedNotifications.values().next().value!);
+		return false;
+	};
+	const pushDesktopNotification = (payload: DesktopNotificationPayload) => {
+		const state = storeApi.getState();
+		const presentation = notificationPresentation(state.device, payload.type ?? 'room', Number(payload.roomId), state.user.myUser?.id, isAppFocused());
+		if (!presentation.toast) return;
+		void showDesktopNotification({...payload, body: payload.type === 'message' && !presentation.preview ? 'Новое сообщение' : payload.body, silent: payload.type === 'call' || payload.type === 'message' || !presentation.sound}).then(() => {
+			storeApi.dispatch(deviceActions.setNotificationError(null));
+		}).catch(error => {
+			storeApi.dispatch(deviceActions.setNotificationError('Не удалось отправить системное уведомление. Проверьте разрешения браузера или ОС.'));
+			console.error('Не удалось отправить системное уведомление', error);
+		});
+	};
 	const refreshRooms = createRefreshQueue(() => Promise.resolve(storeApi.dispatch(fetchMyRooms())));
 	const personalMessageSub = client.subscribe(WS_MESSAGES_PATH, async (message) => {
 		const data = parseObject(message.body);
@@ -45,12 +65,14 @@ export function registerWebSocketSubscriptions(
 
 		const isFromMe = data.sender?.username === myUsername;
 		const isActiveRoom = data.room?.id === activeRoomId;
+		const duplicate = data.eventType === 'MESSAGE' && (seen(`message:${data.id}`) || !!state.message.live?.[data.id] || state.message.messages?.some(item => item.id === data.id));
+		const presentation = notificationPresentation(state.device, 'message', data.room?.id, state.user.myUser?.id, isAppFocused());
 
-		if (!isFromMe && !isActiveRoom && data.room?.id) {
+		if (!duplicate && data.eventType === 'MESSAGE' && !isFromMe && !(isActiveRoom && isAppFocused()) && data.room?.id && presentation.sound) {
 			soundPlayer.playMessage();
 		}
 
-		if (!isFromMe && data.eventType === "MESSAGE" && data.room?.id && !(isActiveRoom && isAppFocused())) {
+		if (!duplicate && !isFromMe && data.eventType === "MESSAGE" && data.room?.id && !(isActiveRoom && isAppFocused())) {
 			pushDesktopNotification({
 				type: "message",
 				title: data.sender?.displayName ?? data.sender?.username ?? "Новое сообщение",
@@ -105,7 +127,7 @@ export function registerWebSocketSubscriptions(
 			if (storeApi.getState().activeCall.incomingCall?.callId === data.callId) storeApi.dispatch(activeCallActions.clearIncomingCall());
 		}
 
-		if (data.type === "CALL_INVITE") {
+		if (data.type === "CALL_INVITE" && !seen(`call:${data.callId}`)) {
 			const state = storeApi.getState();
 			const callerUsername = data.callerUsername ?? data.fromUser;
 
@@ -122,6 +144,12 @@ export function registerWebSocketSubscriptions(
 
 		const callId = data.callId;
 		if (!callId) return;
+		if (["CALL_STARTED", "CALL_ACCEPT", "CALL_ACCEPTED", "CALL_PARTICIPANT_JOINED"].includes(data.type)
+			&& !storeApi.getState().call.mediaIntent && !storeApi.getState().call.participantToken) {
+			const call = storeApi.getState().call;
+			storeApi.dispatch(callActions.mediaOwnershipLost({ callId, generation: call.mediaGeneration }));
+			return;
+		}
 
 		if (data.type === "CALL_STARTED") {
 			const state = storeApi.getState().call;
@@ -133,8 +161,6 @@ export function registerWebSocketSubscriptions(
 		}
 
 		if (data.type === "CALL_ACCEPT" || data.type === "CALL_ACCEPTED") {
-			console.log("it is accepted");
-			console.log(data);
 			const state = storeApi.getState().call;
 
 			if (state.lastAcceptedCallId === callId) return;
@@ -163,13 +189,6 @@ export function registerWebSocketSubscriptions(
 		}
 	});
 	subscriptions[WS_CALL_PATH] = personalCallSub;
-
-	const personalCallRecordingSub = client.subscribe(WS_CALL_RECORDING_PATH, (message) => {
-		const data = parseObject(message.body);
-		if (!data) return;
-		console.log(data);
-	});
-	subscriptions[WS_CALL_RECORDING_PATH] = personalCallRecordingSub;
 
 	const personalFriendRequestSub = client.subscribe(WS_FRIEND_REQUESTS_PATH, (message) => {
 		const raw = parseObject(message.body);
@@ -390,12 +409,6 @@ export function registerWebSocketSubscriptions(
 
 	});
 	subscriptions[WS_USER_EVENTS_PATH] = userEventsSub;
-}
-
-function pushDesktopNotification(payload: DesktopNotificationPayload) {
-	void showDesktopNotification(payload).catch((error) => {
-		console.warn("Failed to show desktop notification", error);
-	});
 }
 
 function getMessageNotificationBody(content: string | null, attachmentsCount: number) {

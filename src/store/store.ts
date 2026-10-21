@@ -14,6 +14,7 @@ import deviceSlice from "./slices/device.slice";
 import uiSlice from "./slices/ui.slice";
 import usersSlice from "./slices/users.slice";
 import activeCallSlice from "./slices/activeCall.slice";
+import { callTraceMiddleware } from './middlewares/callTrace.middleware';
 
 
 const appReducer = combineReducers({
@@ -33,17 +34,19 @@ const appReducer = combineReducers({
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
 	if (action.type === "user/sessionCleared") {
-		state = undefined;
+		const result = appReducer(undefined, action);
+		return { ...result, user: { ...result.user, isAuthChecked: true }, ui: state?.ui ?? result.ui,
+			device: state ? { ...state.device, deviceSwitchPending: false, mediaError: null, hotkeyError: null, notificationError: null,
+				screenShareRuntime: result.device.screenShareRuntime, connectionTestResult: result.device.connectionTestResult } : result.device };
 	}
-	const result = appReducer(state, action);
-	if (action.type === "user/sessionCleared") return { ...result, user: { ...result.user, isAuthChecked: true } };
-	return result;
+	return appReducer(state, action);
 }
 
 export const store = configureStore({
+	devTools: import.meta.env.DEV,
 	reducer: rootReducer,
 	middleware: (getDefaultMiddleware) => {
-		return getDefaultMiddleware().concat(sessionMiddleware, websocketMiddleware)
+		return getDefaultMiddleware().concat(callTraceMiddleware, sessionMiddleware, websocketMiddleware)
 	}
 })
 

@@ -24,12 +24,12 @@ await r.run('two tabs share real cookie jar and serialize refresh using browser 
 await r.run('logout during pending real refresh cannot resurrect old account',async()=>{
  oldRoom=await c.http(a,'/rooms/createGroup','POST',{roomName:'stage101 private '+suffix,roomMemberUsernames:[]});
  await a.page.evaluate(async()=>{const {store}=await import('/src/store/store.ts');const {fetchMyRooms}=await import('/src/store/slices/room.slice.ts');await store.dispatch(fetchMyRooms());});assert.ok((await c.state(a)).rooms.some(x=>x.id===oldRoom.id));
- let release,seen;const gate=new Promise(resolve=>release=resolve),arrived=new Promise(resolve=>seen=resolve);
+ let artifacts/stages/release,seen;const gate=new Promise(resolve=>artifacts/stages/release=resolve),arrived=new Promise(resolve=>seen=resolve);
  await a.page.route(c.API+'/auth/refresh',async route=>{const response=await route.fetch();seen();await gate;await route.fulfill({response});});
  const refresh=a.page.evaluate(async()=>{try{await (await import('/src/api/api.ts')).session.refresh();return 'applied';}catch{return 'cancelled';}});
  await arrived;
  const logout=a.page.evaluate(async()=>{const {store}=await import('/src/store/store.ts');const {logoutUser}=await import('/src/store/slices/user.slice.ts');return (await store.dispatch(logoutUser({allDevices:false}))).meta.requestStatus;});
- await c.until(async()=>!(await c.state(a)).user);release();assert.equal(await refresh,'cancelled');assert.equal(await logout,'fulfilled');await a.page.unroute(c.API+'/auth/refresh');assert.equal((await c.state(a)).user,undefined);await a.page.reload();await a.page.waitForURL('**/auth/login');return {refresh:'cancelled',logout:'fulfilled',reload:'login'};
+ await c.until(async()=>!(await c.state(a)).user);artifacts/stages/release();assert.equal(await refresh,'cancelled');assert.equal(await logout,'fulfilled');await a.page.unroute(c.API+'/auth/refresh');assert.equal((await c.state(a)).user,undefined);await a.page.reload();await a.page.waitForURL('**/auth/login');return {refresh:'cancelled',logout:'fulfilled',reload:'login'};
 });
 await r.run('account switch resets Redux scope and old STOMP subscriptions',async()=>{
  await a.page.locator('[name=usernameOrEmail]').fill(other.name);await a.page.locator('[name=password]').fill('Stage10-only-pass!');await a.page.locator('form button').click();await a.page.waitForURL(c.BASE+'/');await c.ready(a);await c.until(async()=> (await c.state(a)).user===other.name);assert.ok(!(await c.state(a)).rooms.some(x=>x.id===oldRoom.id));

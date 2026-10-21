@@ -20,6 +20,7 @@ import {
 import type { PublishActionResult, WebSocketPublishContext } from "./types";
 import { callApi } from "../../../api/callApi";
 import { callActions } from "../../slices/call.slice";
+import { rotateMediaClient } from "../../../api/mediaClient";
 
 export function handleWebSocketPublishAction(
 	context: WebSocketPublishContext,
@@ -76,6 +77,7 @@ export function handleWebSocketPublishAction(
 		}
 		case "call/sendInvite": {
 			if (!context.client?.connected) return blockPublish();
+			rotateMediaClient();
 
 			context.client.publish({
 				destination: WS_SEND_INVITE_PATH,
@@ -89,6 +91,8 @@ export function handleWebSocketPublishAction(
 		}
 		case "call/sendAccept": {
 			if (!context.client?.connected) return blockPublish();
+			rotateMediaClient();
+			context.storeApi.dispatch(callActions.requestMedia());
 
 			context.client.publish({
 				destination: WS_SEND_ACCEPT_PATH,
@@ -102,6 +106,7 @@ export function handleWebSocketPublishAction(
 		}
 		case "call/sendJoin": {
 			if (!context.client?.connected) return blockPublish();
+			rotateMediaClient();
 			const state = context.storeApi.getState();
 			const activeCall = Object.values(state.activeCall.activeCallsByRoomId)
 				.find(call => call.callId === action.payload.callId);

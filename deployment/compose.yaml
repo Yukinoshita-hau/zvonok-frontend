@@ -1,0 +1,193 @@
+name: ${COMPOSE_PROJECT_NAME:?Set a unique deployment project name}
+x-service: &service
+  restart: unless-stopped
+  stop_grace_period: 30s
+  networks: [private]
+  labels:
+    io.zvonok.deployment: stage5e
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: '3'}
+services:
+  postgres:
+    <<: *service
+    image: postgres:16.10-alpine
+    mem_limit: 768m
+    environment:
+      POSTGRES_DB: zvonok
+      POSTGRES_USER: zvonok
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Required}
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U zvonok -d zvonok']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    <<: *service
+    image: redis:7.4.6-alpine
+    mem_limit: 256m
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  rustfs:
+    <<: *service
+    image: rustfs/rustfs:1.0.3@sha256:9ca9559533b537d10482fe923288b676ad08f92a7069d9a17327fbae3cab688b
+    mem_limit: 1024m
+    stop_grace_period: 60s
+    command: [/data]
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?Required}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?Required}
+      RUSTFS_ADDRESS: ':9000'
+      RUSTFS_CONSOLE_ENABLE: 'false'
+      RUSTFS_REGION: us-east-1
+      RUSTFS_CORS_ALLOWED_ORIGINS: ${APP_URL:?Required}
+    volumes: [objects:/data]
+    healthcheck:
+      test: [CMD, curl, -fsS, 'http://127.0.0.1:9000/health/ready']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  bootstrap:
+    <<: *service
+    image: node:22.14.0-alpine
+    restart: 'no'
+    command: [node, /ops/storage.cjs, bootstrap]
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?Required}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?Required}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Required}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Required}
+      APP_URL: ${APP_URL:?Required}
+    volumes: ['./:/ops:ro', '../../zvonok-backend/storage/application-policy.json:/policy.json:ro']
+    depends_on:
+      rustfs: {condition: service_healthy}
+  livekit:
+    <<: *service
+    image: livekit/livekit-server:v1.13.10@sha256:89ca9ce0791e18d6e03bf6e2c49ceb27e1c754eae8bd50c989386c1a5963791a
+    mem_limit: 1536m
+    command: [--config, /etc/livekit.yaml, --node-ip, '${LIVEKIT_NODE_IP:?Required}']
+    environment:
+      LIVEKIT_KEYS: '${LIVEKIT_API_KEY:?Required}: ${LIVEKIT_API_SECRET:?Required}'
+    volumes: ['${LIVEKIT_CONFIG_FILE:?Required}:/etc/livekit.yaml:ro']
+    ports:
+      - '${ICE_BIND_IP:?Required}:${ICE_TCP_PORT:?Required}:${ICE_TCP_PORT:?Required}/tcp'
+      - '${ICE_BIND_IP:?Required}:${ICE_UDP_START:?Required}-${ICE_UDP_END:?Required}:${ICE_UDP_START:?Required}-${ICE_UDP_END:?Required}/udp'
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, --spider, 'http://127.0.0.1:7880/']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  backend:
+    <<: *service
+    image: zvonok-backend:${BACKEND_TAG:?Required}
+    mem_limit: 2560m
+    build:
+      context: ../../zvonok-backend
+      dockerfile: ../zvonok-frontend/deployment/backend.Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/zvonok
+      SPRING_DATASOURCE_USERNAME: zvonok
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Required}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: 'false'
+      APP_JWT_SECRET: ${JWT_SECRET:?Required}
+      APP_PUBLIC_URL: ${APP_URL:?Required}
+      SECURITY_ALLOWED_ORIGINS: ${APP_URL:?Required}
+      SECURITY_COOKIE_SECURE: ${COOKIE_SECURE:?Required}
+      SECURITY_COOKIE_SAME_SITE: Lax
+      SECURITY_COOKIE_PATH: /api/auth
+      SECURITY_COOKIE_MAX_AGE: '1209600'
+      S3_PROVIDER: rustfs
+      S3_ENDPOINT: http://rustfs:9000
+      S3_SIGNING_ENDPOINT: ${S3_PUBLIC_URL:?Required}
+      S3_LOCAL_ENDPOINT: ${API_URL:?Required}/s3/download
+      S3_BUCKET: zvonok-data
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Required}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Required}
+      S3_ALLOW_LOOPBACK_HTTP: ${ALLOW_LOOPBACK_HTTP:?Required}
+      LIVEKIT_API_URL: http://livekit:7880
+      LIVEKIT_SERVER_URL: ${LIVEKIT_PUBLIC_URL:?Required}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?Required}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?Required}
+      LIVEKIT_TOKEN_TTL_MINUTES: '10'
+      SERVER_SHUTDOWN: graceful
+      SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: 25s
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 55MB
+      LOGGING_LEVEL_APP: INFO
+      LOGGING_LEVEL_SECURITY: WARN
+      JAVA_LSP_ENABLED: 'false'
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    tmpfs: ['/tmp:size=256m,mode=1777']
+    depends_on:
+      postgres: {condition: service_healthy}
+      bootstrap: {condition: service_completed_successfully}
+      livekit: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, -fsS, 'http://localhost:8080/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+  frontend:
+    <<: *service
+    image: zvonok-frontend:${FRONTEND_TAG:?Required}
+    mem_limit: 384m
+    build:
+      context: ..
+      dockerfile: deployment/frontend.Dockerfile
+      args:
+        VITE_API_URL: '${APP_URL:?Required}/api'
+        VITE_WS_URL: '${WS_PUBLIC_URL:?Required}/api/ws-raw'
+        VITE_LIVEKIT_URL: ${LIVEKIT_PUBLIC_URL:?Required}
+        VITE_BROWSER_ACTIVITY: ${VITE_BROWSER_ACTIVITY:-false}
+    healthcheck:
+      test: [CMD, wget, -q, --spider, 'http://127.0.0.1:3000/']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  caddy:
+    <<: *service
+    image: caddy:2.10.2-alpine
+    mem_limit: 256m
+    environment:
+      APP_SITE: ${APP_URL:?Required}
+      S3_SITE: ${S3_PUBLIC_URL:?Required}
+      LIVEKIT_SITE: ${LIVEKIT_HTTP_URL:?Required}
+    volumes:
+      - '${CADDY_CONFIG_FILE:?Required}:/etc/caddy/Caddyfile:ro'
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend: {condition: service_healthy}
+      frontend: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, --spider, 'http://127.0.0.1:2016/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+networks:
+  private: {}
+volumes:
+  postgres:
+    labels: {io.zvonok.deployment: stage5e}
+  redis:
+    labels: {io.zvonok.deployment: stage5e}
+  objects:
+    labels: {io.zvonok.deployment: stage5e}
+  caddy_data:
+    labels: {io.zvonok.deployment: stage5e}
+  caddy_config:
+    labels: {io.zvonok.deployment: stage5e}

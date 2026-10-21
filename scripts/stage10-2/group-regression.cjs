@@ -1,6 +1,6 @@
 const c=require('../stage10-1/common.cjs'),install=require('./browser-diagnostics.cjs'),fs=require('node:fs'),assert=require('node:assert/strict');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const OUT=process.env.STAGE102_EVIDENCE_DIR||'stage10-2-evidence';fs.mkdirSync(OUT,{recursive:true});
+const OUT=process.env.STAGE102_EVIDENCE_DIR||'artifacts/stages/stage10-2-evidence';fs.mkdirSync(OUT,{recursive:true});
 const bytes=s=>s.peers.filter(p=>p.connection==='connected').flatMap(p=>p.rtp).filter(v=>v.kind==='audio'&&v.type==='inbound-rtp').reduce((sum,v)=>sum+(v.bytesReceived||0),0);
 (async()=>{const browser=await c.browser(),suffix=Date.now().toString(36),users=[],result={status:'FAIL'};const save=(name,data)=>{let text=JSON.stringify(data,null,2);users.forEach((u,i)=>text=text.replaceAll(u.name,['A','B','C'][i]));fs.writeFileSync(OUT+'/'+name,c.redact(text));};const snapshots=label=>Promise.all(users.map(u=>u.page.evaluate(label=>window.__mediaDiag.collect(label),label)));
 try{

@@ -1,5 +1,5 @@
 const c=require('../stage10-1/common.cjs'),install=require('./browser-diagnostics.cjs'),fs=require('node:fs'),assert=require('node:assert/strict');
-const OUT=process.env.STAGE102_EVIDENCE_DIR||'stage10-2-evidence',COUNT=Number(process.env.STAGE102_COUNT||30),variants=(process.env.STAGE102_VARIANTS||'legacy,delayed,simultaneous,after-connected,refresh,stomp-publish').split(','),captureDelays=(process.env.STAGE103_CAPTURE_DELAYS_MS||'500').split(',').map(Number);
+const OUT=process.env.STAGE102_EVIDENCE_DIR||'artifacts/stages/stage10-2-evidence',COUNT=Number(process.env.STAGE102_COUNT||30),variants=(process.env.STAGE102_VARIANTS||'legacy,delayed,simultaneous,after-connected,refresh,stomp-publish').split(','),captureDelays=(process.env.STAGE103_CAPTURE_DELAYS_MS||'500').split(',').map(Number);
 fs.mkdirSync(OUT,{recursive:true});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const total=(s,type,key)=>s.peers.filter(p=>p.connection==='connected').flatMap(p=>p.rtp).filter(v=>v.kind==='audio'&&v.type===type).reduce((sum,v)=>sum+(v[key]||0),0);
@@ -15,7 +15,7 @@ a=await c.register(browser,'s102a'+suffix);b=await c.register(browser,'s102b'+su
 await c.send(a,'/app/friend/send/'+b.name);const request=await c.until(async()=>(await c.http(b,'/friends/requests/incoming'))[0]);await c.send(b,'/app/friend/accept/'+request.requestId);dm=await c.until(async()=>(await c.http(a,'/rooms/all')).find(v=>v.type==='PRIVATE'));for(const u of [a,b])await c.room(u,dm.id);
 if(process.env.STAGE102_RNNOISE==='1')for(const u of [a,b])await u.page.evaluate(async()=>{const {store}=await import('/src/store/store.ts');const {deviceActions}=await import('/src/store/slices/device.slice.ts');store.dispatch(deviceActions.setRnnoise(true));});
 for(let i=0;i<COUNT;i++){
- const variant=variants[i%variants.length],captureDelayMs=captureDelays[i%captureDelays.length],trial={number:i+1,variant,roomId:dm.id,status:'FAIL',captureDelayMs},name=`trial-${suffix}-${String(i+1).padStart(2,'0')}`;const tasks=[];let releaseSignal;const signalGate=new Promise(resolve=>releaseSignal=resolve);
+ const variant=variants[i%variants.length],captureDelayMs=captureDelays[i%captureDelays.length],trial={number:i+1,variant,roomId:dm.id,status:'FAIL',captureDelayMs},name=`trial-${suffix}-${String(i+1).padStart(2,'0')}`;const tasks=[];let artifacts/stages/releaseSignal;const signalGate=new Promise(resolve=>artifacts/stages/releaseSignal=resolve);
  try{
  for(const u of [a,b])await u.page.evaluate(()=>{window.__mediaDiag.events=[];window.__captureDelayMs=0;});await checkpoint('before-connect');
  for(const [u,label]of [[a,'A'],[b,'B']]){
@@ -24,7 +24,7 @@ for(let i=0;i<COUNT;i++){
   if(variant===`delay-${label}-token`)await u.page.route('**/calls/*/token',async route=>{const response=await route.fetch();await sleep(700);await route.fulfill({response});});
  }
  await a.page.locator('button').filter({has:a.page.locator('svg.lucide-phone')}).first().click();
- if(variant.startsWith('preconnect')){const earlyMic=a.page.getByRole('button',{name:'Микрофон: выключен',exact:true});await earlyMic.waitFor();trial.preconnectGuardObserved=await earlyMic.isDisabled();assert.ok(trial.preconnectGuardObserved,'microphone unmute must remain disabled before LiveKit connects');trial.preconnectGuardMonotonicMs=await a.page.evaluate(()=>performance.now());await checkpoint('early-unmute-blocked');releaseSignal();}
+ if(variant.startsWith('preconnect')){const earlyMic=a.page.getByRole('button',{name:'Микрофон: выключен',exact:true});await earlyMic.waitFor();trial.preconnectGuardObserved=await earlyMic.isDisabled();assert.ok(trial.preconnectGuardObserved,'microphone unmute must remain disabled before LiveKit connects');trial.preconnectGuardMonotonicMs=await a.page.evaluate(()=>performance.now());await checkpoint('early-unmute-blocked');artifacts/stages/releaseSignal();}
  const invite=await c.until(async()=>{const v=await c.incoming(b,'CALL_INVITE');return v.callId!==lastCall?v:false;});trial.callId=invite.callId;lastCall=invite.callId;
  if(variant==='delayed')await sleep(800);
  await b.page.locator('button[class*="accept-button"]').click();
@@ -34,14 +34,14 @@ for(let i=0;i<COUNT;i++){
  const mic=async u=>{await u.page.getByRole('button',{name:'Микрофон: выключен',exact:true}).click();await u.page.evaluate(()=>window.__mediaDiag.collect('after-microphone-request'));};
  if(variant.startsWith('preconnect')){
   const off=a.page.getByRole('button',{name:'Микрофон: выключен',exact:true});await off.waitFor();
-  if(await off.isDisabled()){trial.preconnectGuardObserved=true;await checkpoint('early-unmute-blocked');releaseSignal();}
+  if(await off.isDisabled()){trial.preconnectGuardObserved=true;await checkpoint('early-unmute-blocked');artifacts/stages/releaseSignal();}
  }
  if(variant==='logout-pending'){
   await mic(a);await a.page.waitForFunction(()=>window.__mediaDiag.events.some(e=>e.event==='capture.controlledDelay'),undefined,{timeout:10000});
   const result=await a.page.evaluate(async()=>{const {store}=await import('/src/store/store.ts');const {logoutUser}=await import('/src/store/slices/user.slice.ts');try{await store.dispatch(logoutUser({allDevices:false})).unwrap();return {ok:true};}catch(error){return {ok:false,error:String(error)};}});trial.logoutRequested=true;trial.logoutSucceeded=result.ok;trial.logoutError=result.error;
  }else if(variant==='simultaneous')await Promise.all([mic(a),mic(b)]);else{await mic(a);await mic(b);}
  if(variant.startsWith('preconnect')){trial.preconnectObservation=await checkpoint('preconnect-order-proof');assert.ok(trial.signalRouteHits?.includes('A'),'WebSocket order control not active; this is a harness coverage failure');}
- releaseSignal();
+ artifacts/stages/releaseSignal();
  if(variant==='pending-exit'||variant==='logout-pending'){
   if(variant==='logout-pending')await a.page.waitForFunction(()=>window.__mediaDiag.events.some(e=>e.event==='react.unmount'),undefined,{timeout:10000});
   trial.expected=variant==='logout-pending'?'logout while real browser capture is acquired and its result is held before LiveKit createTracks resolves':'hangup while real browser capture is acquired and its result is held before LiveKit createTracks resolves';if(variant==='pending-exit'){await a.page.getByTitle('Завершить звонок',{exact:true}).click();await checkpoint('pending-exit-immediate');}await a.page.waitForFunction(()=>window.__mediaDiag.events.some(e=>e.event==='createTracks.resolved'||e.event==='createTracks.rejected'),undefined,{timeout:10000}).catch(()=>{});trial.afterCaptureCompletion=await checkpoint('pending-exit-after-capture-completion');trial.captureTimeline=await a.page.evaluate(()=>{const e=window.__mediaDiag.events;const pick=name=>e.find(v=>v.event===name);const unmount=pick('react.unmount'),stop=pick('capture.stop.completed');return {callId:unmount?.callId,mediaGeneration:unmount?.generation,terminalUnmountMonotonicMs:unmount?.monotonicMs,captureRequestMonotonicMs:pick('capture.request')?.monotonicMs,captureResolvedMonotonicMs:pick('capture.resolved')?.monotonicMs,createTracksResolvedMonotonicMs:pick('createTracks.resolved')?.monotonicMs,publishRequestMonotonicMs:pick('publishTrack.request')?.monotonicMs,publishResolvedMonotonicMs:pick('publishTrack.resolved')?.monotonicMs,stopRequestMonotonicMs:pick('capture.stop.request')?.monotonicMs,stopCompletedMonotonicMs:stop?.monotonicMs,stopReadyState:stop?.track?.readyState,stopAfterUnmountMs:unmount&&stop?Math.round(stop.monotonicMs-unmount.monotonicMs):null,latePublishAfterUnmount:Boolean(unmount&&pick('publishTrack.request')&&pick('publishTrack.request').monotonicMs>unmount.monotonicMs)};});assert.equal(trial.captureTimeline.stopReadyState,'ended');assert.equal(trial.captureTimeline.latePublishAfterUnmount,false);if(variant==='logout-pending')assert.equal(trial.logoutSucceeded,true);trial.status='PASS';
@@ -58,7 +58,7 @@ for(let i=0;i<COUNT;i++){
  }
  }catch(error){trial.status='FAIL';trial.error=c.redact(error.message);trial.stats=await checkpoint('immediately-before-timeout-teardown');}
  finally{
-  releaseSignal();
+  artifacts/stages/releaseSignal();
   await dump(name+'-before-end');
   try{for(const u of [a,b]){const end=u.page.getByTitle('Завершить звонок',{exact:true});if(await end.isVisible()){await end.click();break;}}await c.until(async()=>!(await c.state(a)).call.id&&!(await c.state(b)).call.id,15000);await checkpoint('terminal-disconnect');await dump(name+'-terminal');
    const inspect=()=>Promise.all([a,b].map(u=>u.page.evaluate(()=>({openPeers:window.__pcs.filter(p=>p.connectionState!=='closed').length,liveTracks:window.__mediaTracks.filter(t=>t.readyState!=='ended').length,openContexts:window.__audioContexts.filter(a=>a.state!=='closed').length}))));

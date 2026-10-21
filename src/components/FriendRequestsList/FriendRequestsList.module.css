@@ -1,14 +1,9 @@
 .request-list {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 0;
 	overflow-y: auto;
-	scrollbar-width: none;
-}
-
-
-.request-list::-webkit-scrollbar {
-	display: none;
+	scrollbar-width: thin;
 }
 
 .request {
@@ -17,9 +12,9 @@
 	align-items: center;
 	gap: 12px;
 	padding: 10px;
-	border: 1px solid var(--border);
-	border-radius: 14px;
-	background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+	border-top: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	background: transparent;
 	cursor: pointer;
 	transition:
 		background-color 0.14s ease,
@@ -30,7 +25,6 @@
 .request:hover {
 	background-color: var(--bg-hover);
 	border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
-	transform: translateY(-1px);
 }
 
 .info {
@@ -65,7 +59,7 @@
 
 .username {
 	color: var(--text-primary);
-	font-size: 16px;
+	font-size: 14px;
 	font-weight: 600;
 }
 
@@ -82,7 +76,7 @@
 .btn {
 	height: 32px;
 	padding: 0 12px;
-	border-radius: 10px;
+	border-radius: var(--radius-sm);
 	border: none;
 	cursor: pointer;
 	font-weight: 600;
@@ -115,4 +109,17 @@
 	color: var(--text-secondary);
 	text-align: center;
 	font-size: 13px;
+}
+
+.info,
+.meta {
+	min-width: 0;
+}
+.username {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.actions {
+	flex-shrink: 0;
 }

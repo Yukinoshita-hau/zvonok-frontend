@@ -26,10 +26,11 @@ export function VoiceProcessingSection({
 	onOutputVolumePercentChange,
 }: VoiceProcessingSectionProps) {
 	return (
+		<div className={styles['processing-grid']}>
 		<section className={styles["settings-card"]}>
 			<div className={styles["section-header"]}>
 				<div>
-					<h3 className={styles["section-title"]}>Голос</h3>
+					<h3 className={styles["section-title"]}>Профиль обработки</h3>
 					<p className={styles["section-subtitle"]}>
 						Базовая обработка голоса: пресет, громкость и RNNoise.
 					</p>
@@ -40,12 +41,13 @@ export function VoiceProcessingSection({
 				<label className={styles["label"]}>Пресет голоса</label>
 
 				<select
+					aria-label="Пресет голоса"
 					className={styles["input"]}
 					value={voiceProcessingPreset}
 					onChange={(e) =>
 						dispatch(
 							deviceActions.setVoiceProcessingPreset(
-								e.target.value as "default" | "clearVoice" | "softVoice"
+								e.target.value as ZvonokVoicePresetId
 							)
 						)
 					}
@@ -53,6 +55,7 @@ export function VoiceProcessingSection({
 					<option value="default">Default</option>
 					<option value="clearVoice">Clear Voice</option>
 					<option value="softVoice">Soft Voice</option>
+					<option value="custom">Custom — ручная настройка</option>
 				</select>
 
 				<span className={styles["help-text"]}>
@@ -61,6 +64,9 @@ export function VoiceProcessingSection({
 				</span>
 			</div>
 
+		</section>
+		<section className={styles['settings-card']}>
+			<h3 className={styles['section-title']}>Усиление голоса</h3>
 			<div className={styles["form-group"]}>
 				<label className={styles["label"]}>
 					Громкость микрофона: {inputVolumePercent}%
@@ -70,6 +76,7 @@ export function VoiceProcessingSection({
 					type="range"
 					min={0}
 					max={300}
+					aria-label="Громкость микрофона"
 					value={inputVolumePercent}
 					onChange={(e) => onInputVolumePercentChange(Number(e.target.value))}
 				/>
@@ -88,6 +95,7 @@ export function VoiceProcessingSection({
 					type="range"
 					min={0}
 					max={200}
+					aria-label="Итоговая громкость"
 					value={outputVolumePercent}
 					onChange={(e) => onOutputVolumePercentChange(Number(e.target.value))}
 				/>
@@ -103,6 +111,7 @@ export function VoiceProcessingSection({
 				<label className={styles["toggle-row"]}>
 					<input
 						type="checkbox"
+						aria-label="RNNoise"
 						checked={voiceProcessingConfig.rnnoise.enabled}
 						onChange={(e) =>
 							dispatch(deviceActions.setVoiceRnnoiseEnabled(e.target.checked))
@@ -118,5 +127,6 @@ export function VoiceProcessingSection({
 				</span>
 			</div>
 		</section>
+		</div>
 	);
 }

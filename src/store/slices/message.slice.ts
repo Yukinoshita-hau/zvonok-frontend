@@ -4,6 +4,7 @@ import type { ShortMessage, ShortMessageResponse } from "../../entities/shortMes
 import type { GetRoomMessageParams } from "../../api/interfaces/GetRoomMessagesParams";
 import { roomApi } from "../../api/roomApi";
 import { messageApi } from "../../api/messageApi";
+import { api } from '../../api/api';
 import type { MessageReaderDto } from "../../api/interfaces/MessageReadersDto";
 import { normalizeMessage, normalizeMessages } from "../../utils/normalizeMessage";
 import { usersActions } from "./users.slice";
@@ -12,6 +13,9 @@ import { messageAttachmentsApi } from "../../api/messageAttachmentsApi";
 import type { AttachmentType } from "../../api/interfaces/MessageAttachmentDtos";
 
 export interface MessageState {
+    jumpTargetId: number | null;
+    historyContext: boolean;
+    libraryRevision: number;
 	requests: Record<string, string>;
 	live: Record<number, ShortMessage>;
 	messages: ShortMessage[];
@@ -31,6 +35,9 @@ export interface MessageState {
 }
 
 const initialState: MessageState = {
+    jumpTargetId: null,
+    historyContext: false,
+    libraryRevision: 0,
 	requests: {},
 	live: {},
 	messages: [],
@@ -68,7 +75,7 @@ export const fetchRoomMessages = createAsyncThunk<
 				}
 			};
 			assertCurrent();
-			const floor = params.resync ? state.message.oldestMessageId : null;
+			const floor = params.resync && !state.message.historyContext ? state.message.oldestMessageId : null;
 			let { data } = await roomApi.getRoomMessage(params);
 			assertCurrent();
 			// Walk actual history pages to the previously loaded boundary, including long outages.
@@ -97,6 +104,17 @@ export const fetchRoomMessages = createAsyncThunk<
 			return thunkAPI.rejectWithValue(message);
 		}
 	}
+);
+
+export const jumpToRoomMessage = createAsyncThunk(
+    'message/jumpToRoomMessage',
+    async ({ roomId, messageId }: { roomId: number; messageId: number }, thunkAPI) => {
+        const { data } = await api.get<ShortMessageResponse[]>(`/rooms/${roomId}/messages/${messageId}/context`, { signal: thunkAPI.signal, timeout: 15000 });
+        const normalized = normalizeMessages(data);
+        if ((thunkAPI.getState() as RootState).message.activeRoomId !== roomId) throw new Error('Room changed');
+        thunkAPI.dispatch(usersActions.upsertUsers(normalized.users));
+        return normalized.messages;
+    }
 );
 
 export const getMessagesReaders = createAsyncThunk(
@@ -186,6 +204,7 @@ export const messageSlice = createSlice({
 			if (!isForActiveRoom) {
 				return;
 			}
+            if (incomingMessage.eventType === 'MESSAGE_DELETE' || incomingMessage.attachments?.length) state.libraryRevision++;
 			const previous = state.live[incomingMessage.id] ?? state.messages.find(message => message.id === incomingMessage.id);
             if (previous?.eventType === "MESSAGE_DELETE") return;
             if (previous && incomingMessage.eventType === "MESSAGE" && previous.eventType === "MESSAGE_EDIT") {
@@ -205,7 +224,7 @@ export const messageSlice = createSlice({
 						msg => msg.id === incomingMessage.id
 					);
 
-					if (!isDuplicate) {
+					if (!isDuplicate && !state.historyContext) {
 						state.messages.push(incomingMessage);
 						state.messages.sort(compareMessages);
 					}
@@ -321,6 +340,8 @@ export const messageSlice = createSlice({
 		},
 
 		clearMessages: (state) => {
+            state.jumpTargetId = null;
+            state.historyContext = false;
 			state.requests = {};
 			state.live = {};
 			state.messages = [];
@@ -345,13 +366,37 @@ export const messageSlice = createSlice({
 		setNewDividerMessageId: (state, action: PayloadAction<number | null>) => {
 			state.newDividerMessageId = action.payload;
 		},
+        jumpPositioned: (state, action: PayloadAction<number>) => {
+            if (state.jumpTargetId === action.payload) state.jumpTargetId = null;
+        },
 	},
 
 	extraReducers: builder => {
 		builder
+            .addCase(jumpToRoomMessage.pending, (state, action) => {
+                if (state.activeRoomId !== action.meta.arg.roomId) return;
+                state.requests = { context: action.meta.requestId };
+                state.jumpTargetId = null;
+            })
+            .addCase(jumpToRoomMessage.fulfilled, (state, action) => {
+                if (state.activeRoomId !== action.meta.arg.roomId || state.requests.context !== action.meta.requestId) return;
+                state.requests = {};
+                const rows = action.payload.filter(m => state.live[m.id]?.eventType !== 'MESSAGE_DELETE').map(m => state.live[m.id] ?? m);
+                state.messages = rows.sort(compareMessages);
+                state.oldestMessageId = rows[0]?.id ?? null;
+                state.hasMore = true;
+                state.historyContext = true;
+                state.status = 'succeeded';
+                state.isAtBottom = false;
+                state.jumpTargetId = action.meta.arg.messageId;
+            })
+            .addCase(jumpToRoomMessage.rejected, (state, action) => {
+                if (state.requests.context === action.meta.requestId) delete state.requests.context;
+            })
 			.addCase(fetchRoomMessages.pending, (state, action) => {
 				if (action.meta.arg.roomId !== state.activeRoomId) return;
 				if (action.meta.arg.resync) {
+                    state.libraryRevision++;
 					state.live = {};
 					state.requests = {};
 				}
@@ -365,6 +410,10 @@ export const messageSlice = createSlice({
 				if (action.meta.arg.roomId !== state.activeRoomId || state.requests[key] !== action.meta.requestId) return;
 				delete state.requests[key];
 				state.status = "succeeded";
+				if (action.meta.arg.resync) {
+                    state.historyContext = false;
+                    state.jumpTargetId = null;
+                }
 
 				const newMessages = action.payload.messages;
 				const hadHistory = state.oldestMessageId !== null;

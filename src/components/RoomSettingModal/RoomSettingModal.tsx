@@ -7,7 +7,7 @@ import styles from "./RoomSettingModal.module.css";
 import type { RoomSettingModalProps } from "./RoomSettingModal.props";
 import { useNavigate } from "react-router-dom";
 import { RoomMembersPanel } from "../RoomMembersPanel/RoomMembersPanel";
-import { useDismissibleLayer } from "../../hooks/useDismissibleLayer";
+import { useModalFocus } from "../../hooks/useModalFocus";
 import type { UserSummary } from "../../entities/UserMini";
 import { AddGroupMembersModal } from "../AddGroupMembersModal/AddGroupMembersModal";
 import { UserMiniProfileModal } from "../UserMiniProfileModal/UserMiniProfileModal";
@@ -30,11 +30,16 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 	const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 	const [isSubmittingMembers, setIsSubmittingMembers] = useState(false);
 	const [isLeavingRoom, setIsLeavingRoom] = useState(false);
+	const [isClearing, setIsClearing] = useState(false);
 	const [inviteUrl, setInviteUrl] = useState<string | null>(null);
 	const [isInviteLoading, setIsInviteLoading] = useState(false);
 	const [isInviteCopied, setIsInviteCopied] = useState(false);
 
 	const isVisible = useModalAnimation(isOpen);
+	const busy = isSubmittingMembers || isLeavingRoom || isClearing || isInviteLoading;
+	const close = () => { if (!busy) onClose(); };
+	const modalRef = useModalFocus(isVisible, close);
+	const confirmRef = useModalFocus(isClearConfirmOpen, () => {if (!isClearing) setIsClearConfirmOpen(false);});
 	const existingMemberIds = useMemo(
 		() => new Set(room?.memberIds ?? []),
 		[room?.memberIds]
@@ -49,19 +54,6 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 
 		dispatch(fetchMyFriends());
 	}, [dispatch, isOpen, room?.type]);
-
-	useDismissibleLayer({
-		isOpen: isOpen,
-		dismissOnScroll: false,
-		onDismiss: () => {
-			if (selectedMember) {
-				closeMemberPopover();
-				return;
-			}
-
-			onClose();
-		},
-	});
 
 	if (!isVisible || !room) return null;
 
@@ -93,9 +85,11 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 		] as const;
 
 	const handleClearMessages = async () => {
-		if (!room) return;
+		if (!room || isClearing) return;
+		setIsClearing(true);
 
 		const result = await dispatch(clearRoomMessages({ roomId: room.id }));
+		setIsClearing(false);
 
 		if (clearRoomMessages.fulfilled.match(result)) {
 			dispatch(fetchMyRooms());
@@ -186,6 +180,7 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 
 	const handleLeaveRoom = async () => {
 		if (room.type !== "GROUP" || isLeavingRoom) return;
+		if (!window.confirm('Выйти из группы? Для возвращения понадобится новое приглашение.')) return;
 
 		setIsLeavingRoom(true);
 		const result = await dispatch(leaveRoom({ roomId: room.id }));
@@ -220,15 +215,17 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 					return;
 				}
 
-				onClose();
+				close();
 			}}
 		>
 			<div
 				className={styles["modal"]}
+				ref={modalRef} role="dialog" aria-modal="true" aria-label="Настройки комнаты" tabIndex={-1}
 				data-state={isOpen ? "open" : "close"}
 				onClick={(e) => e.stopPropagation()}
 			>
 				<div className={styles["header"]}>
+					<button className={styles['close-button']} disabled={busy} onClick={close} aria-label="Закрыть настройки комнаты">×</button>
 					<div className={styles["avatar"]}>{avatarLabel}</div>
 
 					<div className={styles["room-name"]}>{roomTitle}</div>
@@ -246,6 +243,7 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 					<div className={styles["btn-action-section"]}>
 						<RoomSettingButton
 							onClick={() => {
+								if (busy) return;
 								onClose();
 								navigate(`/dm?roomId=${room.id}`);
 							}}
@@ -253,7 +251,7 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 							Чат
 						</RoomSettingButton>
 
-						<RoomSettingButton onClick={onStartCall}>
+						<RoomSettingButton onClick={() => {if (!busy) onStartCall();}}>
 							Звонок
 						</RoomSettingButton>
 					</div>
@@ -266,6 +264,7 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 								key={section.id}
 								type="button"
 								data-active={activeSection === section.id}
+								disabled={busy}
 								onClick={() => setActiveSection(section.id)}
 							>
 								{section.label}
@@ -399,18 +398,18 @@ export function RoomSettingModal({ isOpen, onClose, onStartCall, room }: RoomSet
 			/>
 
 			{isClearConfirmOpen && (
-				<div className={styles["confirm-backdrop"]} onClick={() => setIsClearConfirmOpen(false)}>
-					<div className={styles["confirm-modal"]} onClick={(event) => event.stopPropagation()}>
+				<div className={styles["confirm-backdrop"]} onClick={event => {event.stopPropagation();if(!isClearing)setIsClearConfirmOpen(false);}}>
+					<div ref={confirmRef} role="dialog" aria-modal="true" aria-label="Очистить сообщения?" tabIndex={-1} className={styles["confirm-modal"]} onClick={(event) => event.stopPropagation()}>
 						<h3>Очистить сообщения?</h3>
 						<p>
 							Это действие удалит/очистит все сообщения комнаты для участников.
 							Отменить его нельзя.
 						</p>
 						<div className={styles["confirm-actions"]}>
-							<button type="button" onClick={() => setIsClearConfirmOpen(false)}>
+							<button type="button" disabled={isClearing} onClick={() => setIsClearConfirmOpen(false)}>
 								Отмена
 							</button>
-							<button type="button" onClick={() => void handleClearMessages()}>
+							<button type="button" disabled={isClearing} onClick={() => void handleClearMessages()}>
 								Очистить
 							</button>
 						</div>

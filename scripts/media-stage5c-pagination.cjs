@@ -1,0 +1,12 @@
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
+(async()=>{const s=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),'zvonok-stage5c-runtime.json'))),base=`http://127.0.0.1:18081/api/rooms/${s.libraryRoom.id}`,headers={Authorization:'Bearer '+s.owner.accessToken},result={status:'FAIL'};
+ const page=async(cursor,direction='desc')=>{const r=await fetch(base+'/attachments?limit=37&sortDirection='+direction+(cursor?'&cursor='+cursor:''),{headers});assert.equal(r.status,200);return r.json();};
+ const all=async(direction)=>{let cursor=null,rows=[];do{const p=await page(cursor,direction);rows.push(...p.items);cursor=p.nextCursor;}while(cursor);return rows;};
+ try{const desc=await all('desc'),asc=await all('asc');assert.deepEqual(asc.map(i=>i.attachment.id),desc.map(i=>i.attachment.id).reverse());
+ const first=await page(null),target=desc[50],removed=desc.filter(i=>i.messageId===target.messageId).map(i=>i.attachment.id);
+ const deleted=await fetch('http://127.0.0.1:18081/api/messages/'+target.messageId,{method:'DELETE',headers});assert.equal(deleted.status,204);
+ let rows=[...first.items],cursor=first.nextCursor;do{const p=await page(cursor);rows.push(...p.items);cursor=p.nextCursor;}while(cursor);
+ assert.equal(new Set(rows.map(i=>i.attachment.id)).size,rows.length);assert.deepEqual(rows.map(i=>i.attachment.id),desc.filter(i=>!removed.includes(i.attachment.id)).map(i=>i.attachment.id));
+ for(const id of removed)for(const suffix of ['download-access','playback-access'])assert.equal((await fetch('http://127.0.0.1:18081/api/message-attachments/'+id+'/'+suffix,{method:'POST',headers})).status,404);
+ Object.assign(result,{status:'PASS',before:desc.length,after:rows.length,deleted:removed.length,ascendingReverse:true,noDuplicates:true,deletedAccessDenied:true});
+ }catch(e){result.error=e.message;process.exitCode=1;}finally{fs.writeFileSync('artifacts/stages/media-stage5c-evidence/pagination-delete.json',JSON.stringify(result,null,2));console.log(result);}})();

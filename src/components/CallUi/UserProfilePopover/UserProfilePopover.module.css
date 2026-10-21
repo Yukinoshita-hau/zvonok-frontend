@@ -3,3 +3,4 @@
 	z-index: 42;
 	max-width: min(360px, calc(100vw - 16px));
 }
+.popover { width:320px; max-height:calc(100dvh - 24px); overflow:auto; }

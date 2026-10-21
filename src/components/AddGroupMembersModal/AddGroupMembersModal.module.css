@@ -231,3 +231,10 @@
 		transform: translateY(0) scale(1);
 	}
 }
+
+/* Shared Stage 4 dialog surfaces. */
+.backdrop { background:var(--overlay-backdrop); backdrop-filter:none; }
+.modal { max-height:calc(100dvh - 40px); border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); box-shadow:var(--shadow-dialog); color:var(--text-primary); }
+.modal button { border-radius:var(--radius-sm); }
+.modal button:disabled { opacity:.5; }
+.modal input { border-radius:var(--radius-sm); }

@@ -24,7 +24,8 @@ export function ScreenShareQualityGrid({
 		<div className={styles["root"]}>
 			<label className={styles["base-select-row"]}>
 				<span className={styles["mode-title"]}>Base mode</span>
-				<select value={value === "auto" ? "auto" : resolveBaseValue(value)} onChange={(event) => onChange(event.target.value as ScreenShareManualQuality | "auto")}>
+				<select value={value} onChange={(event) => onChange(event.target.value as ScreenShareManualQuality | "auto")}>
+					{value !== 'auto' && SCREEN_SHARE_QUALITY_PRESETS[value].group !== 'base' && <option value={value}>{SCREEN_SHARE_QUALITY_PRESETS[value].label}</option>}
 					<option value="auto">Auto</option>
 					<option value="low">Low</option>
 					<option value="medium">Medium</option>
@@ -82,9 +83,4 @@ export function ScreenShareQualityGrid({
 			)}
 		</div>
 	);
-}
-
-function resolveBaseValue(value: ScreenShareQualityGridProps["value"]): "low" | "medium" | "high" {
-	if (value === "low" || value === "medium" || value === "high") return value;
-	return "high";
 }

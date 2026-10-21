@@ -5,6 +5,7 @@ import type { CallParticipantStatus } from "./CallParticipantResponse";
 export type CallRestoreType = "NONE" | "INCOMING_CALL" | "ACTIVE_CALL";
 
 export interface RestoreCallSessionResponse {
+	mediaOwnership?: "OWNED" | "PASSIVE";
 	callRestoreType: CallRestoreType;
 	restorable: boolean;
 	callId: number | null;

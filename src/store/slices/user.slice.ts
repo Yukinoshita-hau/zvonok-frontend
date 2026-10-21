@@ -8,8 +8,11 @@ import type { LogoutDto } from "../../api/interfaces/LogoutDto";
 import type { LoginDto } from "../../api/interfaces/LoginDto";
 import type { RegisterDto } from "../../api/interfaces/RegisterDto";
 import authApi from "../../api/authApi";
+import { session } from '../../api/api';
+import { AVATAR_READBACK_FAILED, confirmedProfile, profileRequestError } from '../../api/profileResponse';
 
 export interface UserState {
+	logoutNotice: string | null;
 	accessToken: string | null;
 	tokenType: string | null;
 	expiresIn: number | null;
@@ -21,6 +24,7 @@ export interface UserState {
 }
 
 const initialState: UserState = {
+	logoutNotice: null,
 	accessToken: null,
 	tokenType: null,
 	expiresIn: null,
@@ -35,11 +39,13 @@ export const updateUser = createAsyncThunk(
 	"user/updateUser",
 	async (body: UpdateUserDto, thunkAPI) => {
 		try {
+			const owner = (thunkAPI.getState() as {user:UserState}).user.myUser?.id;
 			const updateUserData = (await userApi.updateMyUser(body)).data;
-			return updateUserData;
+			if (updateUserData?.id !== owner || (thunkAPI.getState() as {user:UserState}).user.myUser?.id !== owner) throw new Error('Аккаунт изменился. Перечитайте профиль.');
+			return confirmedProfile(updateUserData);
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(
-				e?.response?.data?.message ?? e?.message ?? "Failed to update user"
+				profileRequestError(e)
 			);
 		}
 	}
@@ -49,12 +55,17 @@ export const uploadAvatar = createAsyncThunk(
 	"user/uploadAvatar",
 	async (file: File, thunkAPI) => {
 		try {
+			const previous = (thunkAPI.getState() as {user:UserState}).user.myUser;
 			await userApi.uploadAvatar(file);
-			const { data } = await userApi.getMyUser();
-			return data;
+			try {
+				const { data } = await userApi.getMyUser();
+				const confirmed = confirmedProfile(data);
+				if (!confirmed.avatarUrl || confirmed.avatarUrl === previous?.avatarUrl || confirmed.id !== previous?.id || (thunkAPI.getState() as {user:UserState}).user.myUser?.id !== previous?.id) throw new Error('Missing avatar acknowledgement');
+				return confirmed;
+			} catch { return thunkAPI.rejectWithValue(AVATAR_READBACK_FAILED); }
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(
-				e?.response?.data?.message ?? e?.message ?? "Failed to upload user avatar"
+				profileRequestError(e)
 			);
 		}
 	}
@@ -63,10 +74,14 @@ export const uploadAvatar = createAsyncThunk(
 export const logoutUser = createAsyncThunk(
 	"user/logoutUser",
 	async (body: LogoutDto, thunkAPI) => {
+		const epoch = session.epoch;
 		try {
 			const { data } = await authApi.logout(body);
+			if (data.allDevices !== body.allDevices) throw new Error('Logout scope was not confirmed');
+			if (session.epoch === epoch) thunkAPI.dispatch(userActions.setLogoutNotice(body.allDevices ? 'Сервер подтвердил выход на всех устройствах.' : 'Сервер подтвердил выход из текущего сеанса.'));
 			return data;
 		} catch (e: any) {
+			if (session.epoch === epoch) thunkAPI.dispatch(userActions.setLogoutNotice('Локальный доступ закрыт. Сервер не подтвердил отзыв сеанса: проверьте соединение. Выход на других устройствах не подтверждён.'));
 			return thunkAPI.rejectWithValue(
 				e?.response?.data?.message ?? e?.message ?? "Failed to logout user"
 			);
@@ -107,7 +122,7 @@ export const getMyUser = createAsyncThunk(
 	async (_, thunkAPI) => {
 		try {
 			const { data } = await userApi.getMyUser();
-			return data;
+			return confirmedProfile(data);
 		} catch (e: any) {
 			return thunkAPI.rejectWithValue(
 				e?.response?.data?.message ?? e?.message ?? "Failed to load user"
@@ -120,7 +135,9 @@ export const userSlice = createSlice({
 	name: "user",
 	initialState: initialState,
 	reducers: {
+		setLogoutNotice: (state, action: PayloadAction<string>) => { if (!state.accessToken) state.logoutNotice = action.payload; },
 		addJwt: (previousState, action: PayloadAction<JwtPayload>) => {
+			previousState.logoutNotice = null;
 			previousState.accessToken = action.payload.accessToken;
 			previousState.tokenType = action.payload.tokenType;
 			previousState.expiresIn = action.payload.expiresIn;

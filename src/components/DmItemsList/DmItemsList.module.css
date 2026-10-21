@@ -1,15 +1,17 @@
 .messages {
 	flex: 1;
-	padding: 18px 18px 22px;
+	padding: 12px 0 20px;
+	min-height: 0;
+	font-family: var(--font-ui);
 	overflow-y: auto;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	scrollbar-width: none;
+	gap: 0;
+	scrollbar-width: thin;
 }
 
 .messages::-webkit-scrollbar {
-	display: none;
+	width: 8px;
 }
 
 .data-divider {
@@ -17,7 +19,7 @@
 	justify-content: center;
 	align-items: center;
 	gap: 8px;
-	margin: 6px 0;
+	margin: 16px 16px 8px;
 }
 
 .data-divider::before,
@@ -40,16 +42,14 @@
 	display: flex;
 	gap: 10px;
 	position: relative;
-	padding: 7px 8px;
-	border-radius: 14px;
-	transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-	animation: messageIn 0.18s ease;
+	padding: 2px 16px;
+	margin-top: 16px;
+	flex-shrink: 0;
+	border-radius: var(--radius-sm);
 }
 
 .message-row:hover {
 	background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
-	transform: translateY(-1px);
-	box-shadow: 0 12px 34px rgba(0, 0, 0, 0.1);
 }
 
 .message-row-highlighted {
@@ -78,8 +78,9 @@
 .msg-body {
 	display: flex;
 	flex-direction: column;
-	gap: 5px;
-	max-width: 70%;
+	gap: 0;
+	flex: 1;
+	max-width: calc(100% - 50px);
 	min-width: 0;
 }
 
@@ -90,8 +91,8 @@
 }
 
 .msg-author {
-	color: var(--accent);
-	font-family: Open Sans;
+	color: var(--text-primary);
+	font-family: var(--font-ui);
 	font-size: 14px;
 	font-weight: 600;
 }
@@ -111,13 +112,12 @@
 
 .msg-text {
 	color: var(--text-primary);
-	font-size: 17px;
-	display: flex;
-	gap: 12px;
+	font-size: 16px;
+	white-space: pre-wrap;
 	overflow-wrap: break-word;
 	word-break: break-word;
 	line-height: 22px;
-	padding: 2px 0;
+	padding: 0;
 }
 
 .reply-block {
@@ -127,7 +127,7 @@
 	gap: 2px;
 	padding: 7px 9px;
 	border-left: 3px solid var(--accent);
-	border-radius: 10px;
+	border-radius: var(--radius-sm);
 	background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
 	cursor: pointer;
 	border-top: none;
@@ -166,14 +166,63 @@
 }
 
 .msg-actions {
+	position: absolute;
+	top: 0;
+	right: 16px;
+	z-index: 2;
 	display: flex;
-	gap: 8px;
-	opacity: 0;
-	transition: opacity 0.15s ease;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	background: var(--bg-secondary);
+	visibility: hidden;
 }
-
-.message-row:hover .msg-actions {
+.msg-actions button {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border: 0;
+	background: transparent;
+	color: var(--text-secondary);
+}
+.msg-actions button:hover {
+	background: var(--bg-active);
+	color: var(--text-primary);
+}
+.message-row:hover .msg-actions,
+.message-row:focus-within .msg-actions {
+	visibility: visible;
+}
+.message-continuation {
+	margin-top: 0;
+	padding-left: 66px;
+	min-height: 24px;
+}
+.message-continuation .msg-avatar,
+.message-continuation .msg-meta {
+	display: none;
+}
+.message-continuation .msg-body {
+	max-width: 100%;
+}
+.continuation-time {
+	position: absolute;
+	left: 8px;
+	top: 6px;
+	font-size: 10px;
+	color: var(--text-muted);
+	opacity: 0;
+}
+.message-row:hover .continuation-time,
+.message-row:focus-within .continuation-time {
 	opacity: 1;
+}
+@media (hover: none) {
+	.msg-actions {
+		visibility: visible;
+		position: static;
+		margin-left: auto;
+	}
 }
 
 .edit-box {
@@ -183,12 +232,15 @@
 }
 
 .edit-input {
-	height: 25px;
+	min-height: 72px;
+	max-height: 260px;
+	resize: vertical;
+	width: 100%;
 	border-radius: 8px;
 	border: 1px solid var(--border);
 	background-color: var(--bg-input);
 	color: var(--text-primary);
-	padding: 0px 12px;
+	padding: 8px 12px;
 	font-size: 14px;
 	outline: none;
 }
@@ -203,7 +255,6 @@
 	gap: 8px;
 }
 
-/* Кнопка "Сохранить" — бирюзовая вместо дискорд-синей */
 .btn-primary {
 	background: var(--accent);
 	color: #0a0f12;
@@ -251,13 +302,12 @@
 	position: fixed;
 	background: color-mix(in srgb, var(--bg-secondary) 94%, black);
 	border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-	border-radius: 12px;
+	border-radius: var(--radius-sm);
 	padding: 6px 0;
-	min-width: 170px;
+	width: 200px;
 	z-index: 9999;
 	transform-origin: top left;
-	box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
-	backdrop-filter: blur(14px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
 }
 
 .context-menu button {
@@ -275,7 +325,8 @@
 	transition: background-color 0.1s ease;
 }
 
-.context-menu button:hover {
+.context-menu button:hover,
+.context-menu button:focus-visible {
 	background: var(--bg-hover);
 }
 
@@ -309,7 +360,6 @@
 	position: relative;
 }
 
-
 @media (max-width: 768px) {
 	.read-status {
 		font-size: 11px;
@@ -340,4 +390,20 @@
 		opacity: 1;
 		transform: translateY(0);
 	}
+}
+
+.edited-inline {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+.list-notice {
+	padding: 24px;
+	color: var(--text-secondary);
+}
+.list-notice button {
+	border: 0;
+	background: var(--bg-secondary);
+	padding: 6px 12px;
+	color: var(--text-primary);
+	border-radius: var(--radius-sm);
 }

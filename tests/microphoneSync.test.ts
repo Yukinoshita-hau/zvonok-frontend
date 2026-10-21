@@ -34,8 +34,10 @@ vi.mock("react", () => ({
 }));
 vi.mock("@livekit/components-react", () => ({ useRoomContext: () => h.room }));
 vi.mock("react-redux", () => ({
+	useDispatch: () => vi.fn(),
 	useSelector: (selector: (state: unknown) => unknown) => selector(h.state),
 }));
+vi.mock('../src/store/slices/device.slice', () => ({deviceActions: {setMediaError: vi.fn()}}));
 vi.mock("../src/components/CallUi/useMicrophoneCaptureOptions", () => ({
 	useMicrophoneCaptureOptions: () => h.capture,
 }));
@@ -103,6 +105,18 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 describe("microphone async lifecycle regressions", () => {
+	it('retains an SDK-confirmed device switch without republishing or stopping its processor', async () => {
+		const track = makeTrack();
+		track.mediaStreamTrack = {getSettings: () => ({deviceId: 'second'})};
+		h.room.localParticipant.createTracks.mockResolvedValue([track]);
+		render(MicrophoneSettingsSync); await flush();
+		h.room.localParticipant.getTrackPublication.mockReturnValue({track});
+		h.capture = {deviceId: 'second'};
+		render(MicrophoneSettingsSync); await flush();
+		expect(h.room.localParticipant.createTracks).toHaveBeenCalledOnce();
+		expect(h.room.localParticipant.unpublishTrack).not.toHaveBeenCalled();
+		expect(track.stopProcessor).not.toHaveBeenCalled();
+	});
 	it("uses the newest capture options queued during pending capture", async () => {
 		let finish!: (tracks: unknown[]) => void;
 		const first = makeTrack(),

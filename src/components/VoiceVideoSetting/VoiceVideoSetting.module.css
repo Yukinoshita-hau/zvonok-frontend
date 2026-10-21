@@ -132,6 +132,7 @@
 	gap: 8px;
 	align-items: center;
 }
+.hotkey-row input { min-width: 0; width: 100%; }
 
 .toggle-row {
 	display: inline-flex;
@@ -367,7 +368,7 @@
 
 .hotkey-setting-row {
 	display: grid;
-	grid-template-columns: minmax(160px, 0.7fr) minmax(0, 1fr);
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
 	gap: 12px;
 	align-items: start;
 	padding: 12px;
@@ -412,3 +413,50 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+/* Stage 4: the same geometry and tokens as the shell. */
+.container { height:auto; overflow:visible; width:100%; display:block; }
+.content { width:100%; padding:0; }
+.section-tabs { position:static; grid-template-columns:repeat(5,minmax(0,1fr)); padding:0 0 12px; gap:4px; border:0; border-bottom:1px solid var(--border); border-radius:0; background:transparent; backdrop-filter:none; }
+.section-tabs button { padding:8px; border-radius:var(--radius-sm); }
+.section-tabs button:hover { transform:none; }
+.section-tabs button[data-active=true] { box-shadow:none; background:var(--bg-active); border-color:transparent; }
+.section-tabs span { display:none; }
+.settings-card { padding:18px 20px; border:1px solid var(--border); border-radius:11px; background:color-mix(in srgb,var(--bg-secondary) 80%,var(--bg-primary)); min-width:0; transition:border-color .16s; }
+.btn-primary { background:var(--accent); color:var(--text-on-accent); }
+.btn-primary:hover { background:var(--accent-hover); }
+.btn-secondary { background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border); }
+.btn-secondary:hover { background:var(--bg-hover); }
+.btn-secondary-neutral:hover { border-color:var(--accent); }
+.volume-bar-fill { background:var(--accent); }
+.error-text { border-color:var(--danger); color:var(--danger); background:color-mix(in srgb,var(--danger) 8%,transparent); }
+.recommendation-box { border-color:var(--accent); background:var(--accent-muted); }
+.toggle-row input { accent-color:var(--accent); }
+.settings-card:hover { border-color:color-mix(in srgb,var(--text-muted) 55%,var(--border)); }
+.settings-card p { margin:0; }
+.settings-card { gap:12px; }
+.form-group { gap:6px; }
+.media-grid { display:grid; grid-template-columns:minmax(0,1fr) 256px; gap:17px; align-items:start; }
+.media-grid > section { grid-column:1; }
+.media-grid > .preview-panel { grid-column:2; grid-row:1 / span 2; }
+.processing-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:17px; align-items:start; }
+.section-header { padding:0; border:0; }
+.section-title { font-size:14px; }
+.label { text-transform:none; color:var(--text-primary); font-size:12px; }
+.inline-grid { display:flex; flex-direction:column; gap:12px; }
+.inline-grid > * { padding-top:12px; border-top:1px solid var(--border); }
+.inline-grid > .toggle-row { flex-direction:row-reverse; justify-content:space-between; font-size:12px; }
+.inline-grid > .help-text { border:0; padding:0; margin-top:-6px; }
+.input { min-height:38px; border-radius:7px; max-width:100%; }
+.preview-idle { min-height:160px; display:grid; place-items:center; padding:16px; text-align:center; background:var(--bg-input); border:1px solid var(--border); border-radius:8px; color:var(--text-secondary); font-size:12px; }
+.volume-bar-bg { height:18px; margin:8px 0; border:1px solid var(--border); background:var(--bg-input); }
+.volume-bar-fill { transition:none; }
+.advanced-section { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:17px; }
+.advanced-section > .form-group { padding:16px; border:1px solid var(--border); border-radius:9px; }
+.hotkey-setting-row { background:transparent; border-width:0 0 1px; border-radius:0; padding:14px 0; }
+.hotkeys-list { gap:0; }
+.hotkey-copy strong { font-size:13px; }
+.hotkey-row input[data-hotkey-capturing=true] { border-color:var(--accent); color:var(--accent); }
+@container (max-width:1100px) { .media-grid { grid-template-columns:minmax(0,1fr); } .media-grid > .preview-panel { grid-column:1; grid-row:auto; } }
+@container (max-width:760px) { .processing-grid,.advanced-section { grid-template-columns:minmax(0,1fr); } .settings-card { padding:16px; } }
+@media(prefers-reduced-motion:reduce) { .container *, .container *::before { transition:none; animation:none; } }

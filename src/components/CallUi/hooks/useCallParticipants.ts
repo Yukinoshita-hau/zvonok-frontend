@@ -1,6 +1,9 @@
-import { useParticipants, useTracks, isTrackReference, type TrackReference } from "@livekit/components-react";
-import { Track, type Participant } from "livekit-client";
-import { useMemo } from "react";
+import { useParticipants, useTracks, useConnectionState, isTrackReference, type TrackReference } from "@livekit/components-react";
+import { ConnectionState, RoomEvent, Track, type Participant } from "livekit-client";
+import { useEffect, useMemo, useRef } from "react";
+import { createPresentation } from "../sourcePresentation";
+import type { MediaSourcePresentation } from "../sourcePresentation";
+import { mediaAspectRatio, stableCardOrder } from "../adaptiveLayout";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store/store";
 import type { UserMini } from "../../../entities/UserMini";
@@ -15,7 +18,11 @@ export interface ParticipantCard {
 	isScreenShareCard: boolean;
 	displayName: string;
 	avatarUrl: string | null;
+	aspectRatio?: number;
 }
+
+const mediaUpdates = [RoomEvent.TrackMuted, RoomEvent.TrackUnmuted, RoomEvent.TrackSubscribed,
+	RoomEvent.TrackUnsubscribed, RoomEvent.TrackStreamStateChanged, RoomEvent.TrackSubscriptionFailed];
 
 export function useCallParticipants() {
 	const call = useSelector((s: RootState) => s.call);
@@ -23,12 +30,15 @@ export function useCallParticipants() {
 	const rooms = useSelector((s: RootState) => s.room.rooms);
 	const usersById = useSelector((s: RootState) => s.users.byId);
 
-	const participants = useParticipants();
+	const participants = useParticipants({ updateOnlyOn: [RoomEvent.ParticipantMetadataChanged, RoomEvent.ParticipantNameChanged] });
+	const connectionState = useConnectionState();
+	const previousCards = useRef<ParticipantCard[]>([]);
+	const previousSources = useRef<MediaSourcePresentation[]>([]);
 
-	const videoTracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: false }]);
-	const microphoneAudioTracks = useTracks([{ source: Track.Source.Microphone, withPlaceholder: false }]);
-	const screenTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false });
-	const screenAudioTracks = useTracks([{ source: Track.Source.ScreenShareAudio, withPlaceholder: false }]);
+	const videoTracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: false }], { onlySubscribed: false, updateOnlyOn: mediaUpdates });
+	const microphoneAudioTracks = useTracks([{ source: Track.Source.Microphone, withPlaceholder: false }], { updateOnlyOn: mediaUpdates });
+	const screenTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: false, updateOnlyOn: mediaUpdates });
+	const screenAudioTracks = useTracks([{ source: Track.Source.ScreenShareAudio, withPlaceholder: false }], { updateOnlyOn: mediaUpdates });
 
 	const currentRoom = useMemo(
 		() => rooms.find((room) => room.id === call.chatRoomId) ?? null,
@@ -76,7 +86,7 @@ export function useCallParticipants() {
 	}, [currentRoomMembers, myUser, usersById]);
 
 	const availableScreenTracks = useMemo(
-		() => screenTracks.filter((trackRef) => trackRef.publication && !trackRef.publication.isMuted),
+		() => screenTracks.filter((trackRef) => trackRef.publication),
 		[screenTracks]
 	);
 
@@ -135,15 +145,23 @@ export function useCallParticipants() {
 	);
 
 	const participantCards = useMemo<ParticipantCard[]>(() => {
+		// Participant snapshots can be transiently incomplete during Room recovery.
+		if (connectionState === ConnectionState.Reconnecting || connectionState === ConnectionState.SignalReconnecting) {
+			return previousCards.current;
+		}
 		const cards: ParticipantCard[] = [];
 		sortedParticipants.forEach((participant) => {
 			const avatarUrl = participantAvatarResolver(participant.identity, participant.isLocal);
 			const displayName = participant.name || participant.identity;
 
+			const cameraTrack = videoTrackByParticipant.get(participant.identity);
+			const dimensions = cameraTrack?.publication.dimensions;
 			cards.push({
 				id: participant.identity,
 				participant,
-				videoTrack: videoTrackByParticipant.get(participant.identity),
+				videoTrack: cameraTrack,
+				aspectRatio: (dimensions ? mediaAspectRatio(dimensions.width, dimensions.height) : undefined)
+					?? previousCards.current.find((card) => card.id === participant.identity)?.aspectRatio,
 				isScreenShareCard: false,
 				displayName,
 				avatarUrl,
@@ -162,8 +180,9 @@ export function useCallParticipants() {
 				});
 			}
 		});
-		return cards;
-	}, [sortedParticipants, videoTrackByParticipant, screenTrackByParticipant, participantAvatarResolver]);
+		return stableCardOrder(cards, previousCards.current.map((card) => card.id));
+	}, [sortedParticipants, videoTrackByParticipant, screenTrackByParticipant, participantAvatarResolver, connectionState]);
+	useEffect(() => { previousCards.current = participantCards; }, [participantCards]);
 
 	const participantCardByIdentity = useMemo(() => {
 		const map = new Map<string, { avatarUrl: string | null; displayName: string }>();
@@ -177,7 +196,13 @@ export function useCallParticipants() {
 		return map;
 	}, [participantCards]);
 
+	const reconnecting = connectionState === ConnectionState.Reconnecting || connectionState === ConnectionState.SignalReconnecting;
+	const presentation = createPresentation(participantCards,
+		reconnecting ? previousSources.current.map(s => s.trackRef) : [...videoTracks.filter(isTrackReference), ...screenTracks.filter(isTrackReference)], reconnecting);
+	useEffect(() => { previousSources.current = presentation.sources; });
 	return {
+		people: presentation.people,
+		mediaSources: presentation.sources,
 		participantCards,
 		sortedParticipants,
 		remoteMicrophoneParticipants,

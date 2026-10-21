@@ -13,28 +13,28 @@ export function UserProfileCard({
 
 	return (
 		<div className={styles["container"]}>
-			<div className={styles["header-section"]} style={{ background: `linear-gradient(180.00deg, ${avatarBg} 0%, var(--bg-primary))` }}>
+			<div className={styles["header-section"]}>
 				<div className={styles["avatar"]} style={!resolvedAvatarUrl ? { backgroundColor: avatarBg } : undefined}>
 					{resolvedAvatarUrl ? (
-						<img src={resolvedAvatarUrl} />
+						<img src={resolvedAvatarUrl} alt={displayName || username || 'Аватар'} />
 					) : (
 						<div>{(displayName?.[0] || "?").toUpperCase()}</div>
 					)}
 				</div>
 				<div className={styles["name"]}>
-					{displayName}{username && (<span className={styles["username"]}>#{username}</span>)}
+					{displayName || username}{username && (<span className={styles["username"]}>@{username}</span>)}
 				</div>
 			</div>
-			<div className={styles["info-section"]}>
+			{aboutMe && <div className={styles["info-section"]}>
 				<div className={styles["about-me"]}>
 					<div className={styles["about-me-label"]}>
-						ABOUT ME
+						Обо мне
 					</div>
 					<div className={styles["about-me-content"]}>
-						{aboutMe ?? "пока ничего"}
+						{aboutMe}
 					</div>
 				</div>
-			</div>
+			</div>}
 		</div>
 	);
 }

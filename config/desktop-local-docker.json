@@ -1,0 +1,8 @@
+{
+  "environment": "LOCAL_DOCKER",
+  "api": "http://localhost:8080/api",
+  "websocket": "ws://localhost:8080/api/ws-raw",
+  "livekit": "ws://127.0.0.1:7880",
+  "rendererOrigin": "http://localhost:3000",
+  "profile": "Zvonok-LOCAL_DOCKER"
+}

@@ -1,208 +1,144 @@
-import { Outlet, useNavigate } from "react-router-dom";
-import styles from "./InboxLayout.module.css";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { ArrowDownWideNarrow, MessageCircle, Plus, Users } from "lucide-react";
 import type { AppDispatch, RootState } from "../../store/store";
 import { createGroupRoom, fetchMyRooms } from "../../store/slices/room.slice";
-import { InboxHeaderButton } from "../../components/InboxHeaderButton/InboxHeaderButton";
-import { fetchIncomingRequests, fetchMyFriends, fetchOutgoingRequests, friendActions } from "../../store/slices/friend.slice";
+import {
+	fetchIncomingRequests,
+	fetchMyFriends,
+	fetchOutgoingRequests,
+} from "../../store/slices/friend.slice";
 import type { CreateGroupBody } from "../../api/interfaces/CreateGroupBody";
 import { GroupRoomModal } from "../../components/GroupRoomModal/GroupRoomModal";
-import { FriendRequestModal } from "../../components/FriendRequestModal/FriendRequestModal";
 import { RoomListItem } from "../../components/RoomListItem/RoomListItem";
-import { FriendListItem } from "../../components/FriendListItem/FriendListItem";
-
-export type buttonModeType = "Messages" | "Friends";
-
-const inboxFilterIconUrl = `${import.meta.env.BASE_URL}inbox-message-filter-icon.png`;
-const addRoomIconUrl = `${import.meta.env.BASE_URL}add-room-icon.png`;
+import styles from "./InboxLayout.module.css";
+import { SettingsContentSlot } from "../../features/settingsV2/SettingsContentSlot";
 
 export function InboxLayout() {
 	const navigate = useNavigate();
-	const [filterMode, setFilterMode] = useState<"Newest" | "Oldest">("Newest");
-	const [buttonMode, setButtonMode] = useState<buttonModeType>("Messages");
-	const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
-	const [isFriendModalOpen, setIsFriendModalOpen] = useState(false);
-
+	const location = useLocation();
 	const dispatch = useDispatch<AppDispatch>();
-
+	const [newestFirst, setNewestFirst] = useState(true);
+	const [groupOpen, setGroupOpen] = useState(false);
 	const room = useSelector((s: RootState) => s.room);
-	const friend = useSelector((s: RootState) => s.friend)
+	const friend = useSelector((s: RootState) => s.friend);
 	const call = useSelector((s: RootState) => s.call);
-	const isCallActive = call.status === "connecting" || call.status === "in_call";
-
-	const isFocusMode =
-		isCallActive &&
+	const focus =
+		(call.status === "connecting" || call.status === "in_call") &&
 		call.presentationMode === "expanded" &&
 		(call.isCallFocusMode || call.isTheaterMode);
-
-	const { rooms } = room;
-	const { friends } = friend
-	const unreadRoomCount = room.rooms.filter(r => r.unreadCount > 0).length;
+	const unread = room.rooms.filter((r) => r.unreadCount > 0).length;
+	const active = call.status === "connecting" || call.status === "in_call";
 
 	useEffect(() => {
-		if (room.status === "idle") {
-			dispatch(fetchMyRooms())
-		}
-	}, [dispatch, room.status])
-
+		if (room.status === "idle") dispatch(fetchMyRooms());
+	}, [dispatch, room.status]);
 	useEffect(() => {
 		if (friend.status === "idle") {
-			dispatch(fetchMyFriends())
-			dispatch(fetchIncomingRequests())
-			dispatch(fetchOutgoingRequests())
+			dispatch(fetchMyFriends());
+			dispatch(fetchIncomingRequests());
+			dispatch(fetchOutgoingRequests());
 		}
-	}, [dispatch, friend.status])
+	}, [dispatch, friend.status]);
 
-	useEffect(() => {
-		if (buttonMode === "Messages") {
-			setIsFriendModalOpen(false);
-		} else {
-			setIsRoomModalOpen(false)
-		}
-	}, [buttonMode])
+	const sortedRooms = useMemo(
+		() =>
+			[...room.rooms].sort((a, b) => {
+				const delta =
+					new Date(b.lastActivityAt || 0).getTime() -
+					new Date(a.lastActivityAt || 0).getTime();
+				return newestFirst ? delta : -delta;
+			}),
+		[room.rooms, newestFirst],
+	);
 
-	const handleAddClick = () => {
-		if (buttonMode === "Messages") {
-			setIsRoomModalOpen(true);
-		} else {
-			setIsFriendModalOpen(true);
-		}
-	}
-
-	const handleSendFriendRequest = (username: string) => {
-		dispatch(friendActions.sendFriendRequest({ username: username }))
-		setIsFriendModalOpen(false);
-	}
-
-	const handleCreateGroup = async (body: CreateGroupBody) => {
-		await dispatch(createGroupRoom(body)).unwrap();
+	const createGroup = async (body: CreateGroupBody) => {
+		const created = await dispatch(createGroupRoom(body)).unwrap();
 		dispatch(fetchMyRooms());
-		setIsRoomModalOpen(false);
-	}
-
-	const sortedRooms = useMemo(() => {
-		return [...rooms].sort((a, b) => {
-			const dateA = new Date(a.lastActivityAt || 0).getTime();
-			const dateB = new Date(b.lastActivityAt || 0).getTime();
-			if (filterMode === "Newest") {
-				return dateB - dateA;
-			} else {
-				return dateA - dateB
-			}
-		}).filter(r => r.type === "PRIVATE" && r.lastMessageId === null ? false : true)
-	}, [rooms, filterMode])
-
-	const sortedFriends = useMemo(() => {
-		return [...friends].sort((a, b) => {
-			const dateA = new Date(a.friendshipSince || 0).getTime();
-			const dateB = new Date(b.friendshipSince || 0).getTime();
-			if (filterMode === "Newest") {
-				return dateB - dateA;
-			} else {
-				return dateA - dateB
-			}
-		})
-	}, [friends, filterMode])
-
-	const handleFriendClick = (friendId: number) => {
-		const existing = rooms.find(r =>
-			r.type === "PRIVATE" &&
-			r.memberIds.includes(friendId)
-		);
-
-		if (existing) {
-			navigate(`/dm?roomId=${existing.id}`);
-		} else {
-			navigate(`/`);
-		}
-	}
+		setGroupOpen(false);
+		navigate(`/dm?roomId=${created.id}`);
+	};
 
 	return (
-		<div
-			className={[
-				styles["layout"],
-				isFocusMode ? styles["layout-focus"] : "",
-			].join(" ")}
-		>
-			<div className={styles["sidebar"]}>
-				<div className={styles["inbox-header"]}>
-					<InboxHeaderButton isActive={buttonMode === "Messages"} onClick={() => setButtonMode("Messages")}>
-						Messages
-						{unreadRoomCount > 0 && (
-							<span className={styles["messages-badge"]}>{unreadRoomCount}</span>
+		<div className={`${styles.layout} ${focus ? styles.focus : ""}`}>
+			<aside className={styles.sidebar} aria-label="Личные сообщения и группы">
+				<header className={styles.header}>
+					<span>ZVONOK</span>
+					<small>Личное пространство</small>
+				</header>
+				<div className={styles.navigation}>
+					<button
+						className={styles.friends}
+						aria-current={location.pathname === "/" ? "page" : undefined}
+						onClick={() => navigate("/")}
+					>
+						<Users size={21} />
+						<span>Друзья</span>
+						{friend.incomingRequests.length > 0 && (
+							<b className={styles.badge}>{friend.incomingRequests.length}</b>
 						)}
-					</InboxHeaderButton>
-					<InboxHeaderButton isActive={buttonMode === "Friends"} onClick={() => setButtonMode("Friends")}>
-						Friends
-					</InboxHeaderButton>
+					</button>
 				</div>
-
-				{buttonMode === "Messages" && (
+				<div className={styles.label}>
+					<span>
+						Личные сообщения{" "}
+						{unread > 0 && <b className={styles.badge}>{unread}</b>}
+					</span>
 					<button
-						type="button"
-						className={styles["create-group-button"]}
-						onClick={() => setIsRoomModalOpen(true)}
+						title="Создать группу"
+						aria-label="Создать группу"
+						onClick={() => setGroupOpen(true)}
 					>
-						<img src={addRoomIconUrl} alt="" />
-						<span>Создать группу.</span>
+						<Plus size={17} />
 					</button>
-				)}
-
-				<div className={styles["messages-header"]}>
-					<button
-						className={styles["messages-header-filter"]}
-						onClick={() => setFilterMode(filterMode === "Newest" ? "Oldest" : "Newest")}
-					>
-						<img src={inboxFilterIconUrl} alt="inbox icon" />
-						{filterMode}
-					</button>
-
-					{buttonMode === "Friends" && (
-						<button className={styles["add-button"]} onClick={handleAddClick}>
-							<img src={addRoomIconUrl} alt="Add" />
-						</button>
+				</div>
+				<button
+					className={styles.sort}
+					title="Изменить порядок переписок"
+					onClick={() => setNewestFirst(!newestFirst)}
+				>
+					<ArrowDownWideNarrow size={14} />
+					{newestFirst ? "Сначала новые" : "Сначала старые"}
+				</button>
+				<div className={styles.list}>
+					{sortedRooms.map((r) => (
+						<RoomListItem key={r.id} room={r} />
+					))}
+					{room.status === "loading" && (
+						<p className={styles.empty} role="status">
+							Загрузка переписок…
+						</p>
 					)}
-				</div>
-
-				<div className={styles["item-list"]}>
-					{buttonMode === "Messages" ? (
-						<div className={styles["room-list"]}>
-							{sortedRooms.map(r => (
-								<RoomListItem
-									key={r.id}
-									room={r}
-								/>
-							))}
+					{room.status === "failed" && (
+						<div className={styles.empty} role="alert">
+							Не удалось загрузить переписки.
+							<button onClick={() => dispatch(fetchMyRooms())}>
+								Повторить
+							</button>
 						</div>
-					) : (
-						<div className={styles["friend-list"]}>
-							{sortedFriends.map(f => (
-								<FriendListItem
-									key={f.friendId}
-									friend={f}
-									onClick={handleFriendClick} />
-							))}
+					)}
+					{room.status === "succeeded" && !sortedRooms.length && (
+						<div className={styles.empty}>
+							<MessageCircle size={24} />
+							<p>Здесь будут ваши переписки.</p>
+							<p>Выберите друга, чтобы начать общение.</p>
 						</div>
 					)}
 				</div>
-			</div>
-
+				{active && <div className={styles.callSpace} />}
+			</aside>
 			<GroupRoomModal
-				isOpen={isRoomModalOpen}
-				friends={sortedFriends}
-				onClose={() => setIsRoomModalOpen(false)}
-				onCreate={handleCreateGroup}
+				isOpen={groupOpen}
+				friends={friend.friends}
+				onClose={() => setGroupOpen(false)}
+				onCreate={createGroup}
 			/>
-			<FriendRequestModal
-				isOpen={isFriendModalOpen}
-				onClose={() => setIsFriendModalOpen(false)}
-				onSubmit={handleSendFriendRequest}
-			/>
-
-			<div className={styles["chat"]}>
-				<Outlet />
-			</div>
+			<main className={styles.chat}>
+				<SettingsContentSlot>
+					{!(active && call.presentationMode === "expanded") && <Outlet />}
+				</SettingsContentSlot>
+			</main>
 		</div>
 	);
 }

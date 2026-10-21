@@ -1,4 +1,4 @@
-export type AttachmentType = "IMAGE" | "VIDEO" | "AUDIO" | "VIDEO_NOTE";
+export type AttachmentType = "IMAGE" | "VIDEO" | "AUDIO" | "VIDEO_NOTE" | "FILE";
 
 export interface MessageAttachment {
 	id: number;

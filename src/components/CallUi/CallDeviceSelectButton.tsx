@@ -1,10 +1,10 @@
 import { ChevronUp } from "lucide-react";
 import { Room } from "livekit-client";
 import { useRoomContext } from "@livekit/components-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { ChangeEvent } from "react";
-import { deviceActions } from "../../store/slices/device.slice";
-import type { AppDispatch } from "../../store/store";
+import { selectMediaDevice } from "../../store/slices/device.slice";
+import type { AppDispatch, RootState } from "../../store/store";
 import styles from "./CallUi.module.css";
 
 interface CallDeviceSelectButtonProps {
@@ -18,8 +18,9 @@ export function CallDeviceSelectButton({
 	devices,
 	selectedDeviceId,
 }: CallDeviceSelectButtonProps) {
-	const room = useRoomContext();
+	useRoomContext();
 	const dispatch = useDispatch<AppDispatch>();
+	const {deviceSwitchPending, mediaError} = useSelector((s: RootState) => s.device);
 	const mediaKind: MediaDeviceKind = kind === "microphone" ? "audioinput" : "videoinput";
 	const title = kind === "microphone" ? "Выбрать микрофон" : "Выбрать камеру";
 	const fallbackLabel = kind === "microphone" ? "Microphone" : "Camera";
@@ -28,28 +29,18 @@ export function CallDeviceSelectButton({
 
 	const handleChange = async (event: ChangeEvent<HTMLSelectElement>) => {
 		const nextDeviceId = event.target.value;
-		if (kind === "microphone") {
-			dispatch(deviceActions.setMicrophone(nextDeviceId));
-		} else {
-			dispatch(deviceActions.setCamera(nextDeviceId));
-		}
-
-		try {
-			await room.switchActiveDevice(mediaKind, nextDeviceId, nextDeviceId !== "default");
-		} catch (error) {
-			console.error(`Failed to switch ${kind}`, error);
-		}
+		await dispatch(selectMediaDevice({kind: mediaKind, id: nextDeviceId}));
 	};
 
 	return (
-		<label className={styles["device-select-button"]} title={title} aria-label={title}>
+		<><label className={styles["device-select-button"]} title={title} aria-label={title}>
 			<ChevronUp size={14} />
 			<select
 				className={styles["device-select-native"]}
 				value={selectedDeviceId}
 				onChange={handleChange}
 				aria-label={title}
-				disabled={devices.length === 0 && selectedDeviceId === "default"}
+				disabled={deviceSwitchPending || (devices.length === 0 && selectedDeviceId === "default")}
 			>
 				<option value="default">Default</option>
 				{!selectedDeviceIsListed && (
@@ -61,7 +52,7 @@ export function CallDeviceSelectButton({
 					</option>
 				))}
 			</select>
-		</label>
+		</label>{mediaError && <span role="alert">{mediaError}</span>}</>
 	);
 }
 

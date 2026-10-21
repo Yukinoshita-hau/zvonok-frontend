@@ -1,7 +1,10 @@
 export const SECTIONS = {
-	ACCOUNT: "Аккаунт",
+	ACCOUNT: "Мой аккаунт",
 	VOICE: "Голос и видео",
-	APPEARANCE: "Внешний вид"
+	APPEARANCE: "Внешний вид",
+	NOTIFICATIONS: "Уведомления",
+	HOTKEYS: "Горячие клавиши",
+	APPLICATION: "Приложение"
 } as const;
 
 export type SectionType = typeof SECTIONS[keyof typeof SECTIONS];

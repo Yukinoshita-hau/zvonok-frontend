@@ -5,6 +5,7 @@ import {
 	type ScreenShareQualityPreset,
 } from "../../utils/callQuality";
 import type { ScreenShareSource } from "./ScreenSharePicker.types";
+import type { ScreenShareQualitySetting, CallQualityRecommendation } from '../../utils/callQuality';
 
 export interface ScreenShareQualityGroup {
 	group: ScreenSharePresetGroup;
@@ -66,8 +67,8 @@ export function getScreenShareQualityPreset(value: ScreenShareManualQuality) {
 	return SCREEN_SHARE_QUALITY_PRESETS[value] ?? SCREEN_SHARE_QUALITY_PRESETS[DEFAULT_QUALITY];
 }
 
-export function getDefaultScreenShareQuality() {
-	return DEFAULT_QUALITY;
+export function getDefaultScreenShareQuality(setting: ScreenShareQualitySetting = 'medium', recommendation?: CallQualityRecommendation | null): ScreenShareManualQuality {
+	return setting === 'auto' ? recommendation?.screenShareQuality ?? 'medium' : setting;
 }
 
 function getGroupLabel(group: ScreenSharePresetGroup) {

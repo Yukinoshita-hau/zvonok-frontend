@@ -1,97 +1,48 @@
 .navigate-bar {
-	width: 72px;
-	background-color: var(--bg-tertiary);
+	width: var(--rail-width);
+	flex-shrink: 0;
+	background: var(--bg-tertiary);
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
 	align-items: center;
-	padding: 12px;
-	gap: 8px 0;
+	padding: 12px 4px;
+	gap: 10px;
 	overflow-y: auto;
-	scrollbar-width: none;
 }
-
-.navigate-bar::-webkit-scrollbar {
-	display: none;
-}
-
-.top {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-}
-
-.middle {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-	margin: 8px 0px;
-	overflow-y: auto;
-	scrollbar-width: none;
-}
-
-.middle::-webkit-scrollbar {
-	display: none;
-}
-
-.bottom {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-}
-
-.user {
-	width: 48px;
-	height: 48px;
-	border-radius: 14px;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	border: none;
-	cursor: pointer;
-	background: var(--bg-active);
-	color: var(--text-primary);
-	font-weight: 700;
-	font-size: 20px;
-	transition: border-radius 0.2s ease, background-color 0.15s ease;
-}
-
-.user-button:hover {
-	border-radius: 10px;
-	background: var(--bg-hover);
-}
-
-.user img {
-	width: 100%;
-	height: 100%;
-	border-radius: 14px;
-}
-
 .divider {
 	width: 32px;
 	height: 2px;
-	background-color: var(--border);
-	margin: 4px 0;
+	background: var(--bg-active);
+	flex-shrink: 0;
 }
-
-.messages-badge {
+.badge {
 	position: absolute;
-	left: 25px;
-	bottom: 35px;
-	margin-left: 6px;
-	min-width: 14px;
-	height: 14px;
-	border-radius: 9px;
+	right: -3px;
+	bottom: -3px;
+	border: 3px solid var(--bg-tertiary);
+	min-width: 22px;
+	height: 22px;
+	padding: 0 4px;
+	border-radius: 12px;
 	background: var(--danger);
-	color: #fff;
+	color: white;
 	font-size: 11px;
 	font-weight: 700;
-	display: inline-flex;
-	justify-content: center;
-	align-items: center;
-	padding: 0 5px;
+	display: grid;
+	place-items: center;
+}
+.brand {
+	position: absolute;
+	font-weight: 800;
+	font-size: 11px;
+	top: 15px;
+	left: 21px;
+	color: var(--bg-tertiary);
+}
+.wordmark {
+	margin-top: auto;
+	padding-top: 16px;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-weight: 800;
 }

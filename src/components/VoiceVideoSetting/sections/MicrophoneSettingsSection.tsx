@@ -1,5 +1,7 @@
 import type { RefObject } from "react";
-import { deviceActions } from "../../../store/slices/device.slice";
+import { deviceActions, selectMediaDevice } from "../../../store/slices/device.slice";
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../store/store';
 import type { AppDispatch } from "../../../store/store";
 import {
 	MICROPHONE_QUALITY_PRESETS,
@@ -16,10 +18,10 @@ interface MicrophoneSettingsSectionProps {
 	isNoiseSuppressionEnabled: boolean;
 	isEchoCancellationEnabled: boolean;
 	effectiveRnnoiseEnabled: boolean;
-	volumeLevel: number;
+	meterRef: RefObject<HTMLDivElement | null>;
+	activityRef: RefObject<HTMLDivElement | null>;
 	isListening: boolean;
-	isAutoInputSensitivity: boolean;
-	voiceActivityThreshold: number;
+	testDisabled?: boolean;
 	audioPreviewRef: RefObject<HTMLAudioElement | null>;
 	onListeningToggle: () => void;
 }
@@ -31,21 +33,22 @@ export function MicrophoneSettingsSection({
 	micQualitySetting,
 	isNoiseSuppressionEnabled,
 	isEchoCancellationEnabled,
-	effectiveRnnoiseEnabled,
-	volumeLevel,
+	meterRef,
+	activityRef,
 	isListening,
-	isAutoInputSensitivity,
-	voiceActivityThreshold,
+	testDisabled,
 	audioPreviewRef,
 	onListeningToggle,
 }: MicrophoneSettingsSectionProps) {
+	const {deviceSwitchPending, isAutoGainControlEnabled} = useSelector((s: RootState) => s.device);
 	return (
+		<div className={styles['media-grid']}>
 		<section className={styles["settings-card"]}>
 			<div className={styles["section-header"]}>
 				<div>
-					<h3 className={styles["section-title"]}>Микрофон</h3>
+					<h3 className={styles["section-title"]}>Устройство ввода</h3>
 					<p className={styles["section-subtitle"]}>
-						Устройство, качество звонка, шумоподавление и проверка микрофона.
+						Выберите микрофон для передачи голоса.
 					</p>
 				</div>
 			</div>
@@ -54,19 +57,26 @@ export function MicrophoneSettingsSection({
 				<label className={styles["label"]}>Устройство</label>
 
 				<select
+					title={microphones.find(device=>device.deviceId===selectedMicrophoneId)?.label || 'Системный микрофон'}
+					aria-label="Микрофон"
 					className={styles["input"]}
 					value={selectedMicrophoneId}
-					onChange={(e) => dispatch(deviceActions.setMicrophone(e.target.value))}
+					disabled={deviceSwitchPending}
+					onChange={(e) => void dispatch(selectMediaDevice({kind: 'audioinput', id: e.target.value}))}
 				>
-					<option value="default">Default</option>
+					<option value="default">Системный микрофон</option>
+					{selectedMicrophoneId !== 'default' && !microphones.some(d => d.deviceId === selectedMicrophoneId) && <option value={selectedMicrophoneId}>Выбранный микрофон (недоступен или нет разрешения)</option>}
 					{microphones.map((microphone, index) => (
 						<option key={microphone.deviceId} value={microphone.deviceId}>
 							{getDeviceLabel(microphone, index, "Microphone")}
 						</option>
 					))}
 				</select>
+				<p role="status">{deviceSwitchPending ? 'Переключаем устройство…' : testDisabled ? 'Выбор применяется к текущему звонку после подтверждения устройства.' : 'Предпочтение для следующего захвата. Проверка запускается отдельно.'}</p>
 			</div>
-
+		</section>
+		<section className={styles['settings-card']}>
+			<h3 className={styles['section-title']}>Основные параметры</h3>
 			<div className={styles["form-group"]}>
 				<label className={styles["label"]}>Качество микрофона в звонке</label>
 
@@ -90,72 +100,64 @@ export function MicrophoneSettingsSection({
 			</div>
 
 			<div className={styles["inline-grid"]}>
-				<div className={styles["form-group"]}>
-					<label className={styles["label"]}>Браузерное шумоподавление</label>
-
+				<label className={styles['toggle-row']}><input aria-label="Автоматическая регулировка усиления (AGC)" type="checkbox" checked={isAutoGainControlEnabled} onChange={e => dispatch(deviceActions.setAutoGainControl(e.target.checked))}/>Автоматическая регулировка усиления (AGC)</label>
 					<label className={styles["toggle-row"]}>
 						<input
 							type="checkbox"
+							aria-label="Браузерное шумоподавление"
 							checked={isNoiseSuppressionEnabled}
 							onChange={(e) =>
 								dispatch(deviceActions.setNoiseSuppression(e.target.checked))
 							}
 						/>
-						<span>
-							{isNoiseSuppressionEnabled || !effectiveRnnoiseEnabled
-								? "Включено"
-								: "Выключено"}
-						</span>
+						<span>Браузерное шумоподавление</span>
 					</label>
 
 					<span className={styles["help-text"]}>
 						Если RNNoise включён, browser NS отключается при захвате.
 					</span>
-				</div>
-
-				<div className={styles["form-group"]}>
-					<label className={styles["label"]}>Эхоподавление</label>
-
 					<label className={styles["toggle-row"]}>
 						<input
 							type="checkbox"
+							aria-label="Эхоподавление"
 							checked={isEchoCancellationEnabled}
 							onChange={(e) =>
 								dispatch(deviceActions.setEchoCancellation(e.target.checked))
 							}
 						/>
-						<span>{isEchoCancellationEnabled ? "Включено" : "Выключено"}</span>
+						<span>Эхоподавление</span>
 					</label>
-				</div>
 			</div>
 
+		</section>
+		<section className={`${styles['settings-card']} ${styles['preview-panel']}`}>
+			<h3 className={styles['section-title']}>Проверка микрофона</h3>
+			<p className={styles['help-text']}>Говорите в микрофон. Используйте наушники, чтобы избежать обратной связи.</p>
 			<div className={styles["form-group"]}>
-				<label className={styles["label"]}>Проверка микрофона</label>
 
-				<div className={styles["volume-bar-bg"]}>
+				<div ref={meterRef} className={styles["volume-bar-bg"]} role="meter" aria-label="Уровень микрофона" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0}>
 					<div
 						className={styles["volume-bar-fill"]}
-						style={{ width: `${volumeLevel}%` }}
+						style={{ width: '0%' }}
 					/>
 				</div>
 
 				<button
+					disabled={testDisabled}
 					className={isListening ? styles["btn-secondary"] : styles["btn-primary"]}
 					onClick={onListeningToggle}
 				>
 					{isListening ? "Закончить прослушивание" : "Послушать себя"}
 				</button>
 
-				<div className={styles["help-text"]}>
-					Voice activity:{" "}
-					{volumeLevel >= (isAutoInputSensitivity ? 30 : voiceActivityThreshold)
-						? "Detected"
-						: "Below threshold"}
+				<div ref={activityRef} className={styles["help-text"]}>
+					Активность голоса: ниже порога
 				</div>
 
 				<audio ref={audioPreviewRef} style={{ display: "none" }} />
 			</div>
 		</section>
+		</div>
 	);
 }
 

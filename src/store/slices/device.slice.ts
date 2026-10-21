@@ -1,4 +1,7 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { switchCallDevice } from '../../services/callDevices';
+import { normalizeDevicePreferences } from '../../utils/devicePreferences';
+import { normalizeNotificationPolicy, type NotificationPolicy } from '../../utils/notificationPolicy';
 import type {
 	CallQualityRecommendation,
 	CallQualitySetting,
@@ -10,6 +13,7 @@ import type { ZvonokAudioGraphConfig, ZvonokVoicePresetId } from "../../livekit/
 import { getVoicePresetConfig } from "../../livekit/audio/ZvonokAudioPresets";
 import {
 	normalizeKeyboardShortcut,
+	isKeyboardShortcutEvent,
 	type KeyboardShortcutPreference,
 } from "../../utils/keyboardShortcut";
 
@@ -41,6 +45,15 @@ export interface ConnectionTestResult {
 }
 
 export interface DeviceState {
+	notificationPolicy: NotificationPolicy;
+	selectedAudioOutputId: string;
+	notificationSoundsEnabled: boolean;
+	desktopNotificationsEnabled: boolean;
+	persistenceError: string | null;
+	mediaError: string | null;
+	hotkeyError: string | null;
+	notificationError: string | null;
+	deviceSwitchPending: boolean;
 	selectedCameraId: string;
 	selectedMicrophoneId: string;
 	micQualitySetting: MicQualitySetting;
@@ -97,12 +110,26 @@ export const DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY: KeyboardShortcutPreference = {
 	label: "Ctrl+Alt+S",
 };
 
+type ShortcutKey = 'muteMicrophoneHotkey' | 'toggleCameraHotkey' | 'toggleScreenShareHotkey';
+function setShortcut(state: DeviceState, key: ShortcutKey, shortcut: KeyboardShortcutPreference) {
+	const keys: ShortcutKey[] = ['muteMicrophoneHotkey', 'toggleCameraHotkey', 'toggleScreenShareHotkey'];
+	if (keys.some(other => other !== key && isKeyboardShortcutEvent(shortcut, state[other]))) {
+		state.hotkeyError = 'Комбинация уже назначена другой команде.';
+		return;
+	}
+	state[key] = shortcut;
+	state.hotkeyError = null;
+	saveStoredPreferences(state);
+}
+
+let preferenceLoadError: string | null = null;
 function loadStoredPreferences() {
 	try {
 		const raw = localStorage.getItem(DEVICE_PREFS_STORAGE_KEY);
 		if (!raw) return null;
-		return JSON.parse(raw) as Partial<DeviceState>;
+		return normalizeDevicePreferences(JSON.parse(raw));
 	} catch (error) {
+		preferenceLoadError = 'Не удалось восстановить локальные настройки. Используются безопасные значения по умолчанию.';
 		console.error("Failed to parse device preferences", error);
 		return null;
 	}
@@ -110,9 +137,11 @@ function loadStoredPreferences() {
 
 function saveStoredPreferences(state: DeviceState) {
 	try {
-		localStorage.setItem(
-			DEVICE_PREFS_STORAGE_KEY,
-			JSON.stringify({
+		const serialized = JSON.stringify({
+				notificationPolicy: state.notificationPolicy,
+				selectedAudioOutputId: state.selectedAudioOutputId,
+				notificationSoundsEnabled: state.notificationSoundsEnabled,
+				desktopNotificationsEnabled: state.desktopNotificationsEnabled,
 				selectedCameraId: state.selectedCameraId,
 				selectedMicrophoneId: state.selectedMicrophoneId,
 				micQualitySetting: state.micQualitySetting,
@@ -131,9 +160,12 @@ function saveStoredPreferences(state: DeviceState) {
 				muteMicrophoneHotkey: state.muteMicrophoneHotkey,
 				toggleCameraHotkey: state.toggleCameraHotkey,
 				toggleScreenShareHotkey: state.toggleScreenShareHotkey,
-			})
-		);
+			});
+		localStorage.setItem(DEVICE_PREFS_STORAGE_KEY, serialized);
+		if (localStorage.getItem(DEVICE_PREFS_STORAGE_KEY) !== serialized) throw new Error('Storage readback mismatch');
+		state.persistenceError = null;
 	} catch (error) {
+		state.persistenceError = 'Настройки действуют в этой сессии, но не сохранены. Хранилище недоступно.';
 		console.error("Failed to save device preferences", error);
 	}
 }
@@ -141,6 +173,15 @@ function saveStoredPreferences(state: DeviceState) {
 const storedPrefs = loadStoredPreferences();
 
 const initialState: DeviceState = {
+	notificationPolicy: normalizeNotificationPolicy(storedPrefs?.notificationPolicy),
+	selectedAudioOutputId: storedPrefs?.selectedAudioOutputId ?? 'default',
+	notificationSoundsEnabled: storedPrefs?.notificationSoundsEnabled ?? true,
+	desktopNotificationsEnabled: storedPrefs?.desktopNotificationsEnabled ?? true,
+	persistenceError: preferenceLoadError,
+	mediaError: null,
+	hotkeyError: null,
+	notificationError: null,
+	deviceSwitchPending: false,
 	selectedCameraId: storedPrefs?.selectedCameraId ?? "default",
 	selectedMicrophoneId: storedPrefs?.selectedMicrophoneId ?? "default",
 	micQualitySetting: normalizeMicQualitySetting(storedPrefs?.micQualitySetting),
@@ -190,10 +231,48 @@ const initialState: DeviceState = {
 	),
 }
 
+const shortcutKeys: ShortcutKey[] = ['muteMicrophoneHotkey', 'toggleCameraHotkey', 'toggleScreenShareHotkey'];
+if (shortcutKeys.some((key, index) => shortcutKeys.slice(index + 1).some(other => isKeyboardShortcutEvent(initialState[key], initialState[other])))) {
+	initialState.muteMicrophoneHotkey = DEFAULT_MUTE_MICROPHONE_HOTKEY;
+	initialState.toggleCameraHotkey = DEFAULT_TOGGLE_CAMERA_HOTKEY;
+	initialState.toggleScreenShareHotkey = DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY;
+	initialState.hotkeyError = 'В хранилище найдены совпадающие комбинации. Восстановлены стандартные клавиши.';
+}
+
+export const selectMediaDevice = createAsyncThunk(
+	'device/selectMediaDevice',
+	async ({kind, id}: {kind: MediaDeviceKind; id: string}, {getState}) => {
+		const state = getState() as {call: {status: string}; device: DeviceState};
+		if (kind === 'audiooutput' && !['connecting', 'in_call'].includes(state.call.status)) {
+			const audio = document.createElement('audio');
+			await audio.setSinkId(id === 'default' ? '' : id);
+		}
+		const previousId = kind === 'audioinput' ? state.device.selectedMicrophoneId : kind === 'videoinput' ? state.device.selectedCameraId : state.device.selectedAudioOutputId;
+		await switchCallDevice(kind, id, ['connecting', 'in_call'].includes(state.call.status), previousId);
+		return {kind, id};
+	},
+	{condition: (_, {getState}) => !(getState() as {device: DeviceState}).device.deviceSwitchPending},
+);
+
 export const deviceSlice = createSlice({
 	name: "device",
 	initialState: initialState,
 	reducers: {
+		setNotificationPolicy: (state, action: PayloadAction<Partial<NotificationPolicy>>) => {
+			state.notificationPolicy = normalizeNotificationPolicy({ ...state.notificationPolicy, ...action.payload });
+			saveStoredPreferences(state);
+		},
+		setNotificationError: (state, action: PayloadAction<string | null>) => { state.notificationError = action.payload; },
+		setHotkeyError: (state, action: PayloadAction<string | null>) => { state.hotkeyError = action.payload; },
+		setMediaError: (state, action: PayloadAction<string | null>) => { state.mediaError = action.payload; },
+		setNotificationSounds: (state, action: PayloadAction<boolean>) => {
+			state.notificationSoundsEnabled = action.payload;
+			saveStoredPreferences(state);
+		},
+		setDesktopNotifications: (state, action: PayloadAction<boolean>) => {
+			state.desktopNotificationsEnabled = action.payload;
+			saveStoredPreferences(state);
+		},
 		setCamera: (previousState, action: PayloadAction<string>) => {
 			previousState.selectedCameraId = action.payload;
 			saveStoredPreferences(previousState);
@@ -207,37 +286,31 @@ export const deviceSlice = createSlice({
 			saveStoredPreferences(state);
 		},
 		setMuteMicrophoneHotkey: (state, action: PayloadAction<KeyboardShortcutPreference>) => {
-			state.muteMicrophoneHotkey = normalizeKeyboardShortcut(
+			setShortcut(state, 'muteMicrophoneHotkey', normalizeKeyboardShortcut(
 				action.payload,
 				DEFAULT_MUTE_MICROPHONE_HOTKEY
-			);
-			saveStoredPreferences(state);
+			));
 		},
 		resetMuteMicrophoneHotkey: (state) => {
-			state.muteMicrophoneHotkey = DEFAULT_MUTE_MICROPHONE_HOTKEY;
-			saveStoredPreferences(state);
+			setShortcut(state, 'muteMicrophoneHotkey', DEFAULT_MUTE_MICROPHONE_HOTKEY);
 		},
 		setToggleCameraHotkey: (state, action: PayloadAction<KeyboardShortcutPreference>) => {
-			state.toggleCameraHotkey = normalizeKeyboardShortcut(
+			setShortcut(state, 'toggleCameraHotkey', normalizeKeyboardShortcut(
 				action.payload,
 				DEFAULT_TOGGLE_CAMERA_HOTKEY
-			);
-			saveStoredPreferences(state);
+			));
 		},
 		resetToggleCameraHotkey: (state) => {
-			state.toggleCameraHotkey = DEFAULT_TOGGLE_CAMERA_HOTKEY;
-			saveStoredPreferences(state);
+			setShortcut(state, 'toggleCameraHotkey', DEFAULT_TOGGLE_CAMERA_HOTKEY);
 		},
 		setToggleScreenShareHotkey: (state, action: PayloadAction<KeyboardShortcutPreference>) => {
-			state.toggleScreenShareHotkey = normalizeKeyboardShortcut(
+			setShortcut(state, 'toggleScreenShareHotkey', normalizeKeyboardShortcut(
 				action.payload,
 				DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY
-			);
-			saveStoredPreferences(state);
+			));
 		},
 		resetToggleScreenShareHotkey: (state) => {
-			state.toggleScreenShareHotkey = DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY;
-			saveStoredPreferences(state);
+			setShortcut(state, 'toggleScreenShareHotkey', DEFAULT_TOGGLE_SCREEN_SHARE_HOTKEY);
 		},
 		setCameraQuality: (previousState, action: PayloadAction<CallQualitySetting>) => {
 			previousState.cameraQuality = action.payload;
@@ -361,10 +434,10 @@ export const deviceSlice = createSlice({
 		},
 		setVoiceProcessingPreset: (
 			state,
-			action: PayloadAction<Exclude<ZvonokVoicePresetId, "custom">>
+			action: PayloadAction<ZvonokVoicePresetId>
 		) => {
 			state.voiceProcessingPreset = action.payload;
-			state.voiceProcessingConfig = getVoicePresetConfig(action.payload);
+			if (action.payload !== 'custom') state.voiceProcessingConfig = getVoicePresetConfig(action.payload);
 
 			// так как старая логика этого требует надо будет это пофисить
 			state.isRnnoiseEnabled = state.voiceProcessingConfig.rnnoise.enabled;
@@ -460,7 +533,20 @@ export const deviceSlice = createSlice({
 			state.screenShareQuality = "auto";
 			saveStoredPreferences(state);
 		},
-	}
+	},
+	extraReducers: builder => builder
+		.addCase(selectMediaDevice.pending, state => { state.deviceSwitchPending = true; state.mediaError = null; })
+		.addCase(selectMediaDevice.fulfilled, (state, {payload: {kind, id}}) => {
+			state.deviceSwitchPending = false;
+			if (kind === 'audioinput') state.selectedMicrophoneId = id;
+			if (kind === 'videoinput') state.selectedCameraId = id;
+			if (kind === 'audiooutput') state.selectedAudioOutputId = id;
+			saveStoredPreferences(state);
+		})
+		.addCase(selectMediaDevice.rejected, (state, action) => {
+			state.deviceSwitchPending = false;
+			state.mediaError = `Устройство не переключено: ${action.error.message ?? 'проверьте разрешения и доступность устройства'}`;
+		}),
 })
 
 export default deviceSlice.reducer;

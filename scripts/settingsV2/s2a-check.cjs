@@ -1,0 +1,76 @@
+const { chromium } = require(process.env.STAGE10_PLAYWRIGHT || 'C:/Users/Пользователь/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs = require('node:fs'), assert = require('node:assert/strict');
+const out = process.env.S2A_EVIDENCE || 'artifacts/stages/work/settings-promotion/appearance'; fs.mkdirSync(out, {recursive:true});
+(async () => {
+ const browser = await chromium.launch(), page = await browser.newPage({viewport:{width:1440,height:900}});
+ const results = [], errors = []; page.on('pageerror', e => errors.push(e.message));
+ const record = name => { results.push({name,status:'PASS'}); console.log('PASS',name); };
+ const ui = () => page.evaluate(() => window.settingsFixture.view().ui);
+ const theme = name => page.getByRole('group',{name:'Темы Zvonok'}).getByRole('button',{name:new RegExp('^'+name)});
+ const entry = () => page.getByRole('button',{name:'Настройки пользователя',exact:true}).click();
+ async function open() { await entry(); await page.getByRole('navigation',{name:'Разделы настроек',exact:true}).getByRole('button',{name:'Внешний вид',exact:true}).click(); }
+ try {
+  await page.goto('http://127.0.0.1:5199/dm?roomId=42');
+   await open();
+  assert.equal(await page.getByRole('group',{name:'Темы Zvonok'}).getByRole('button').count(),13);
+  for (const name of ['Тёмная','Светлая','Фиолетовая','Океан','Матрица','Закат','Полночь','Дракула','Киберпанк','Терминал','Север','Кофе','Своя']) {
+   await theme(name).click(); assert.equal(await theme(name).getAttribute('aria-pressed'),'true');
+   assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),(await ui()).theme);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('app-theme')),(await ui()).theme);
+  } record('all 13 themes: active Redux / DOM / real storage readback');
+  const border=page.locator('input[data-color=border]'); assert.equal(await border.inputValue(),'rgba(126, 156, 190, 0.34)');
+  assert.equal(await page.getByLabel('Палитра: Границы',{exact:true}).inputValue(),'#7e9cbe'); record('S34 displays actual RGBA and native RGB without fallback');
+  await page.getByLabel('Палитра: Границы',{exact:true}).fill('#123456');
+  assert.equal(await border.inputValue(),'rgba(18, 52, 86, 0.34)');
+  assert.equal((await ui()).customTheme.border,'rgba(126, 156, 190, 0.34)');
+  await page.getByRole('button',{name:'Применить границы',exact:true}).click();
+  assert.equal((await ui()).customTheme.border,'rgba(18, 52, 86, 0.34)'); record('picker changes draft only; commit preserves alpha');
+  await page.locator('input[data-color=bgPrimary]').fill('#182435'); await page.getByRole('button',{name:'Применить основной фон',exact:true}).click();
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim()),'#182435');
+  await page.getByText('Оформление применено и сохранено с проверкой чтения.',{exact:true}).first().waitFor(); record('custom commit applies computed CSS variable and acknowledges persistence');
+  await page.locator('input[data-color=accent]').fill('rgba(500,0,0,.5)'); assert(await page.getByRole('button',{name:'Применить акцент',exact:true}).isDisabled());
+  assert.equal(await page.locator('input[data-color=accent]').getAttribute('aria-invalid'),'true');
+  const accent=(await ui()).customTheme.accent; assert.equal(accent,'#58c7ff');
+  await page.getByRole('button',{name:'Отменить акцент',exact:true}).click(); assert.equal(await page.locator('input[data-color=accent]').inputValue(),accent); record('invalid draft rejected; cancel restores applied value');
+  const saved=await ui(); await page.reload(); await page.locator('input[data-color=border]').waitFor();
+  assert.equal((await ui()).theme,'custom'); assert.deepEqual((await ui()).customTheme,saved.customTheme);
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--border').trim()),saved.customTheme.border); record('reload real storage -> Redux initializer -> actual AuthInitializator CSS');
+  await page.getByRole('button',{name:'Закрыть настройки',exact:true}).click();await page.evaluate(()=>localStorage.setItem('zvonok.settingsUI','legacy'));await page.getByRole('button',{name:'Настройки пользователя',exact:true}).click();
+  const dialog=page.getByRole('dialog'); await dialog.getByRole('button',{name:'Внешний вид',exact:true}).click();
+  assert.equal(await dialog.locator('input[data-color=border]').inputValue(),saved.customTheme.border);
+  await dialog.getByRole('group',{name:'Темы Zvonok'}).getByRole('button',{name:/^Светлая/}).click();
+  await page.getByRole('button',{name:'Закрыть настройки',exact:true}).click();
+  await page.evaluate(()=>localStorage.removeItem('zvonok.settingsUI'));await entry();assert.equal(await theme('Светлая').getAttribute('aria-pressed'),'true'); record('V2 -> Legacy reads palette; Legacy -> V2 reads selected Redux theme');
+  await page.getByRole('button',{name:'Закрыть настройки',exact:true}).click(); await page.evaluate(()=>localStorage.setItem('zvonok.settingsUI','legacy')); await entry();
+  await dialog.getByRole('button',{name:'Внешний вид',exact:true}).click();
+  assert.equal(await dialog.getByRole('group',{name:'Темы Zvonok'}).getByRole('button',{name:/^Светлая/}).getAttribute('aria-pressed'),'true');
+  await page.getByRole('button',{name:'Закрыть настройки',exact:true}).click(); await page.evaluate(()=>localStorage.removeItem('zvonok.settingsUI')); await open(); record('rollback OFF / ON preserves preferences');
+  await page.evaluate(()=>{window.originalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k.startsWith('app-'))throw new DOMException('denied','SecurityError');return window.originalSetItem.call(this,k,v);};});
+  await theme('Океан').click(); assert.equal((await ui()).theme,'ocean');
+  await page.getByText(/Применено только в этой сессии/).first().waitFor();
+  assert.equal(await page.evaluate(()=>localStorage.getItem('app-theme')),'light'); record('storage denial applies session theme and reports error, never save success');
+  await page.evaluate(()=>Storage.prototype.setItem=window.originalSetItem); await theme('Своя').click();
+  await page.locator('input[data-color=textPrimary]').fill('#182435'); await page.getByRole('button',{name:'Применить основной текст',exact:true}).click();
+  await page.getByText(/В палитре возможен низкий контраст/).waitFor();
+  const recovery=page.getByRole('button',{name:'Восстановить стандартную тему',exact:true}).first(); await recovery.focus(); await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
+  assert.equal(await recovery.evaluate(e=>getComputedStyle(e).outlineStyle),'solid'); await page.keyboard.press('Enter');
+  assert.equal((await ui()).theme,'dark'); assert.equal((await ui()).customTheme.bgPrimary,'#182435'); record('low contrast warning; keyboard recovery retains custom palette');
+  await page.getByRole('button',{name:'Вернуть предыдущее оформление',exact:true}).first().click(); assert.equal((await ui()).theme,'custom'); record('undo restores previous valid theme and palette');
+  await page.getByRole('button',{name:'Сбросить пользовательские цвета',exact:true}).first().click(); assert.equal((await ui()).customTheme.border,'rgba(126, 156, 190, 0.34)'); record('reset custom palette preserves selected theme');
+  await page.getByRole('button',{name:'Восстановить стандартную тему',exact:true}).first().click();
+  await page.getByLabel('Модель звонка').selectOption('compact');
+  const identity=await page.locator('#fixture-media-sentinel').getAttribute('data-instance');
+  for(const [width,height] of [[1440,900],[1024,768],[800,700]]) {
+   await page.setViewportSize({width,height}); await theme('Своя').click();
+   assert.equal(await page.locator('#fixture-media-sentinel').getAttribute('data-instance'),identity);
+   assert(await page.locator('[data-call-dock]:not([hidden])').isVisible());
+   assert(await page.locator('#zvonok-settings-content').evaluate(e=>e.scrollWidth<=e.clientWidth));
+   await page.screenshot({path:`${out}/appearance-${width}.png`});
+  } record('responsive production shell with compact dock: identity stable, no overflow');
+  await page.emulateMedia({reducedMotion:'reduce'}); await theme('Тёмная').focus(); await page.keyboard.press('Enter'); assert.equal((await ui()).theme,'dark'); record('keyboard theme selection and reduced motion');
+  await page.evaluate(()=>{localStorage.setItem('app-theme','deleted');localStorage.setItem('app-custom-theme','{');}); await page.reload(); assert.equal((await ui()).theme,'dark'); record('corrupted JSON and removed theme do not block startup');
+  await page.evaluate(()=>{localStorage.setItem('app-theme','custom');localStorage.setItem('app-custom-theme',JSON.stringify({accent:'#abcdef',border:'invalid'}));}); await page.reload();
+  assert.equal((await ui()).customTheme.accent,'#abcdef'); assert.equal((await ui()).customTheme.border,'rgba(126, 156, 190, 0.34)'); record('incomplete stored palette restores valid keys and safe defaults');
+  assert.deepEqual(errors,[]);
+ } finally { fs.writeFileSync(out+'/results.json',JSON.stringify({results,errors,startup:'Real AuthInitializator and localStorage in AppLayout fixture; authenticated network bootstrap is bypassed',realMedia:'NOT RUN'},null,2)); await browser.close(); }
+})().catch(e=>{console.error(e);process.exitCode=1;});

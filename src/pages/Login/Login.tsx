@@ -5,16 +5,18 @@ import AuthHeadling from "../../components/AuthHeadling/AuthHeadling";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, type FormEvent } from "react";
 import { AxiosError } from "axios";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../store/store";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store/store";
 import type { ErrorApiResponse } from "../../api/interfaces/ErrorApiResponse";
 import { getMyUser, loginUser } from "../../store/slices/user.slice";
 
 interface LoginLocationState {
 	from?: string;
+	sessionRequired?: boolean;
 }
 
 export default function Login() {
+	const logoutNotice = useSelector((state: RootState) => state.user.logoutNotice);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const navigate = useNavigate();
@@ -66,6 +68,7 @@ export default function Login() {
 	return (
 		<div className={styles["login-wrapper"]}>
 			<div className={styles["login"]}>
+				{logoutNotice && <p role="status">{logoutNotice}</p>}
 				<div className={styles["login-header"]}>
 					<AuthHeadling type="login">С возвращением!</AuthHeadling>
 					<p className={styles["subtitle"]}>
@@ -82,6 +85,7 @@ export default function Login() {
 						</div>
 					</div>
 				)}
+				{!error && (location.state as LoginLocationState | null)?.sessionRequired && <p role="status">Чтобы продолжить, войдите в аккаунт. Несохранённый текст черновика доступен после входа в тот же аккаунт.</p>}
 
 				<form className={styles["form"]} onSubmit={submit}>
 					<div className={styles["field"]}>

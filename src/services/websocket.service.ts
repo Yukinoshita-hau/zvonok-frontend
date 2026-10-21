@@ -6,16 +6,14 @@ const CONFIGURED_WS_URL = import.meta.env.VITE_WS_URL;
 export const WS_CONNECT_PATH = resolveWebSocketConnectPath();
 
 export const createWebSocketClient = (token: string) => {
-	const brokerURL = `${WS_CONNECT_PATH}?token=${encodeURIComponent(token)}`;
-
 	const client = new Client({
-		brokerURL,
 		reconnectDelay: 5000,
 		heartbeatIncoming: 4000,
 		heartbeatOutgoing: 4000,
 		// STOMP debug includes CONNECT headers; never log the JWT.
 		debug: () => {}
 	})
+	configureWebSocketToken(client, token);
 
 	console.info("WebSocket endpoint:", WS_CONNECT_PATH);
 
@@ -23,7 +21,10 @@ export const createWebSocketClient = (token: string) => {
 }
 
 export function configureWebSocketToken(client: Client, token: string) {
-	client.brokerURL = `${WS_CONNECT_PATH}?token=${encodeURIComponent(token)}`;
+	client.brokerURL = WS_CONNECT_PATH;
+	// Browser WebSocket cannot set Authorization on the HTTP upgrade.
+	client.webSocketFactory = () => new WebSocket(WS_CONNECT_PATH,
+		["v12.stomp", "v11.stomp", "v10.stomp", `zvonok.auth.${token}`]);
 	client.connectHeaders = { Authorization: `Bearer ${token}` };
 }
 

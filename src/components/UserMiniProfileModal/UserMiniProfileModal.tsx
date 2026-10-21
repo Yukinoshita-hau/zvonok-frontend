@@ -1,5 +1,7 @@
 import { MessageCircle, UserCheck, UserPlus, X } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useModalFocus } from '../../hooks/useModalFocus';
+import { SettingModal } from '../SettingModal/SettingModal';
 import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -21,8 +23,12 @@ export function UserMiniProfileModal({
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
 	const myUser = useSelector((state: RootState) => state.user.myUser);
+	const wsStatus = useSelector((state: RootState) => state.websocket.status);
+	const pendingRequestId = useSelector((state: RootState) => state.friend.incomingRequests.find(request => request.senderId === userId)?.requestId);
+	const [editing, setEditing] = useState(false);
+	const modalRef = useModalFocus(isOpen, onClose);
 	const isSelf = userId != null && userId === myUser?.id;
-	const { profile, status, error } = useUserMiniProfile(userId, isOpen && !isSelf);
+	const { profile, status, error, reload } = useUserMiniProfile(userId, isOpen && !isSelf);
 
 	const username = profile?.username ?? fallbackUser?.username ?? (isSelf ? myUser?.username : null);
 	const displayName =
@@ -34,18 +40,19 @@ export function UserMiniProfileModal({
 	const avatarUrl = profile?.avatarUrl ?? fallbackUser?.avatarUrl ?? (isSelf ? myUser?.avatarUrl : null);
 	const resolvedAvatarUrl = resolveMediaUrl(avatarUrl);
 	const friendshipStatus = profile?.friendshipStatus ?? (isSelf ? "SELF" : "NOT_FRIENDS");
-	const incomingRequestId = profile?.incomingRequestId ?? fallbackUser?.incomingRequestId ?? null;
-	const canRenderFallback = Boolean(username || displayName);
+	const incomingRequestId = profile?.incomingRequestId ?? fallbackUser?.incomingRequestId ?? pendingRequestId ?? null;
+	const canRenderFallback = Boolean(username || fallbackUser?.displayName || isSelf);
 
 	const statusText = useMemo(() => {
-		if (isSelf) return "Это вы";
+		if (isSelf) return wsStatus === 'connected' ? 'В сети · Это вы' : 'Нет связи с сервером · Это вы';
+		if (status === "loading") return "Загружаем статус…";
 		if (profile?.status === "ONLINE") return "В сети";
 		if (profile?.lastSeenAt) {
 			return `Был(а): ${formatDateTime(profile.lastSeenAt)}`;
 		}
 
 		return status === "failed" ? "Краткий профиль" : "Не в сети";
-	}, [isSelf, profile?.lastSeenAt, profile?.status, status]);
+	}, [isSelf, wsStatus, profile?.lastSeenAt, profile?.status, status]);
 
 	if (!isOpen || !userId) return null;
 
@@ -69,8 +76,8 @@ export function UserMiniProfileModal({
 	};
 
 	return createPortal(
-		<div className={styles.backdrop} onClick={onClose}>
-			<div className={styles.modal} onClick={(event) => event.stopPropagation()}>
+		<div className={styles.backdrop} onClick={event => {event.stopPropagation();onClose();}}>
+			<div ref={modalRef} role="dialog" aria-modal="true" aria-label="Профиль пользователя" tabIndex={-1} className={styles.modal} onClick={(event) => event.stopPropagation()}>
 				<button
 					type="button"
 					className={styles.closeButton}
@@ -87,7 +94,7 @@ export function UserMiniProfileModal({
 				{status === "failed" && !canRenderFallback && (
 					<div className={styles.state}>
 						{error ?? "Не удалось загрузить профиль"}
-						<span>Backend вернул ошибку mini-profile.</span>
+						<button onClick={() => void reload()}>Повторить</button>
 					</div>
 				)}
 
@@ -112,29 +119,26 @@ export function UserMiniProfileModal({
 						</div>
 
 						<div className={styles.statusRow}>
-							<span data-online={profile?.status === "ONLINE"} />
+							<span data-online={isSelf ? wsStatus === 'connected' : profile?.status === "ONLINE"} />
 							{statusText}
 						</div>
 
 						{status === "failed" && (
-							<p className={styles.about}>
-								Полный профиль сейчас недоступен: backend возвращает неуникальный результат.
-								Основные действия оставлены доступными.
-							</p>
+							<p className={styles.about} role="alert">Не удалось загрузить полный профиль. <button onClick={() => void reload()}>Повторить</button></p>
 						)}
 
-						{(profile?.bio || profile?.about) && (
-							<p className={styles.about}>{profile.bio ?? profile.about}</p>
+						{(isSelf ? myUser?.aboutMe : profile?.bio || profile?.about) && (
+							<p className={styles.about}>{isSelf ? myUser?.aboutMe : profile?.bio ?? profile?.about}</p>
 						)}
 
 						<div className={styles.actions}>
 							{friendshipStatus === "SELF" && (
-								<button type="button" className={styles.secondaryButton} disabled>
-									Это вы
+								<button type="button" className={styles.secondaryButton} onClick={() => setEditing(true)}>
+									Редактировать профиль
 								</button>
 							)}
 
-							{friendshipStatus === "NOT_FRIENDS" && username && (
+							{profile && friendshipStatus === "NOT_FRIENDS" && username && (
 								<button
 									type="button"
 									className={styles.primaryButton}
@@ -178,6 +182,7 @@ export function UserMiniProfileModal({
 					</>
 				)}
 			</div>
+			<SettingModal isOpen={editing} onClose={() => { setEditing(false); onClose(); }} />
 		</div>,
 		document.body,
 	);

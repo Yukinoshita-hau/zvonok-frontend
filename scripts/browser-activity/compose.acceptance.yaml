@@ -1,0 +1,22 @@
+name: zvonok-activity-acceptance
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: activity_acceptance
+      POSTGRES_USER: activity_test
+      POSTGRES_PASSWORD: "${ACTIVITY_DB_PASSWORD:?Generate a local test password}"
+    ports: ["127.0.0.1:55432:5432"]
+    networks: [database-loopback]
+    volumes: [activity-db:/var/lib/postgresql/data]
+  voice:
+    image: livekit/livekit-server:v1.9.12
+    command: ["--config", "/config/livekit.yaml", "--node-ip", "127.0.0.1"]
+    volumes: ["../../artifacts/stages/work/browser-activity-20261021/voice.local.yaml:/config/livekit.yaml:ro"]
+    ports: ["127.0.0.1:48880:48880", "127.0.0.1:48881:48881", "127.0.0.1:48882:48882/udp"]
+    networks: [voice]
+networks:
+  database-loopback: {}
+  voice: {}
+volumes:
+  activity-db: {}

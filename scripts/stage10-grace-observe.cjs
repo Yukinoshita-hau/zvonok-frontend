@@ -11,5 +11,5 @@ if(!/^s10g[a-z0-9]+$/.test(username)||!/^\d+$/.test(callId)||!/^\d+$/.test(roomI
  const active=await fetch(base+`/rooms/${roomId}/active-call`,{headers});assert.equal(active.status,204);
  const restore=await fetch(base+'/calls/restore',{headers});assert.equal(restore.status,200);assert.equal((await restore.json()).callRestoreType,'NONE');
  const denied=await fetch(base+`/calls/${callId}/token`,{method:'POST',headers});assert.equal(denied.status,403);
- const result={status:'PASS',callId:Number(callId),roomId:Number(roomId),observedEndedAt:new Date().toISOString(),afterGraceRestore:'NONE',afterGraceTokenStatus:403};fs.writeFileSync('stage10-evidence/grace-continuation.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+ const result={status:'PASS',callId:Number(callId),roomId:Number(roomId),observedEndedAt:new Date().toISOString(),afterGraceRestore:'NONE',afterGraceTokenStatus:403};fs.writeFileSync('artifacts/stages/stage10-evidence/grace-continuation.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e.message);process.exitCode=1;});

@@ -1,14 +1,28 @@
-import { app, BrowserWindow, desktopCapturer, globalShortcut, ipcMain, Menu, Notification, session, shell, Tray } from "electron";
+import { app, BrowserWindow, desktopCapturer, dialog, globalShortcut, ipcMain, Menu, Notification, powerMonitor, session, shell, Tray, type IpcMainInvokeEvent } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { safeExternalUrl } from './desktopContracts.js';
+import { setupExternalDock } from './externalDock.js';
+import { readWindowState, trackWindowBounds, windowBounds, closeToTray, saveCloseToTray } from './windowState.js';
+import { createStartup } from './startup.js';
+import { setupUpdates } from './updates.js';
+import { showNativeNotification } from './notifications.js';
+import { readDesktopEnvironment, setupLocalDockerAssets } from './localDocker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const desktopEnvironment = app.isPackaged ? readDesktopEnvironment(path.join(__dirname, '..')) : null;
 
 const DEV_SERVER_URL = "http://localhost:3000";
 const ICONS_DIR = path.join(__dirname, "../assets/icons");
 const WINDOWS_APP_USER_MODEL_ID = app.isPackaged ? "info.zvonok.desktop" : process.execPath;
 const DESKTOP_WEB_ORIGIN = process.env.ZVONOK_DESKTOP_WEB_ORIGIN ?? "https://zvonok.info";
+const rendererUrl = app.isPackaged ? (desktopEnvironment?.environment === 'LOCAL_DOCKER' ? desktopEnvironment.rendererOrigin! + '/' : pathToFileURL(path.join(__dirname, '../dist/index.html')).href) : (process.env.VITE_DEV_SERVER_URL ?? DEV_SERVER_URL);
+if (!app.isPackaged) {
+	const devUrl = new URL(rendererUrl);
+	if (devUrl.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(devUrl.hostname)) throw new Error('Dev renderer must use loopback HTTP');
+	app.setPath('userData', process.env.ZVONOK_DESKTOP_PROFILE || path.join(app.getPath('appData'), 'Zvonok-development'));
+}
 
 if (process.platform === "win32") {
 	app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID);
@@ -17,14 +31,43 @@ if (process.platform === "win32") {
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
 let mainWindow: BrowserWindow | null = null;
+let startup: ReturnType<typeof createStartup> | undefined;
+let mainReady = false;
+let retryMainRenderer: (() => void) | undefined;
+let markRendererReady: (() => void) | undefined;
+let startupTimer: ReturnType<typeof setTimeout> | undefined;
+let startupRetries = 0;
 let tray: Tray | null = null;
 let isQuitting = false;
-let hasShownTrayHint = false;
 let selectedScreenShareSource: { sourceId: string; includeAudio: boolean } | null = null;
 const registeredHotkeys = new Map<string, string>();
+let externalDock: ReturnType<typeof setupExternalDock> | undefined;
+let updates: Awaited<ReturnType<typeof setupUpdates>> | undefined;
+let activity: { busy: boolean; at: number } | null = null;
+
+function validateOwner(event: IpcMainInvokeEvent) {
+	const frame = event.senderFrame;
+	if (!mainWindow || event.sender !== mainWindow.webContents || frame !== mainWindow.webContents.mainFrame || !frame) throw new Error('UNTRUSTED_SENDER');
+	const current = new URL(frame.url), expected = new URL(rendererUrl);
+	if (expected.protocol === 'file:' ? current.protocol !== 'file:' || current.pathname !== expected.pathname || current.search !== expected.search : current.origin !== expected.origin) throw new Error('UNTRUSTED_DOCUMENT');
+}
+function ownerHandle(channel: string, listener: (event: IpcMainInvokeEvent, ...args: any[]) => unknown) {
+	ipcMain.handle(channel, (event, ...args) => { validateOwner(event); return listener(event, ...args); });
+}
+async function requestQuit(relaunch = false) {
+	if ((activity?.busy || externalDock?.hasCall()) && mainWindow) {
+		const answer = await dialog.showMessageBox(mainWindow, { type: 'question', message: 'Звонок будет завершён. Выйти из Zvonok?', buttons: ['Отмена', 'Выйти'], defaultId: 0, cancelId: 0, noLink: true });
+		if (answer.response !== 1) return;
+	}
+	await updates?.prepareShutdown();
+	isQuitting = true;
+	if (relaunch) app.relaunch();
+	app.quit();
+}
 
 interface DesktopNotificationPayload {
 	title: string;
+	silent?: boolean;
 	body?: string;
 	roomId?: string | number;
 	userId?: string | number;
@@ -37,7 +80,9 @@ function getIconPath(preferIco = process.platform === "win32") {
 }
 
 function showMainWindow() {
-	if (!mainWindow) {
+	if (!app.isReady()) return;
+	if (startup && !mainReady) { startup.focus(); return; }
+	if (!mainWindow || mainWindow.isDestroyed()) {
 		createMainWindow();
 		return;
 	}
@@ -49,76 +94,93 @@ function showMainWindow() {
 	mainWindow.show();
 	mainWindow.focus();
 }
-
-function toggleMainWindow() {
-	if (!mainWindow || !mainWindow.isVisible()) {
-		showMainWindow();
-		return;
-	}
-
-	mainWindow.hide();
-}
-
-function showTrayHintOnce() {
-	if (hasShownTrayHint || !Notification.isSupported()) return;
-
-	hasShownTrayHint = true;
-	new Notification({
-		title: "Zvonok",
-		body: "Zvonok продолжает работать в фоне",
-		icon: getIconPath(false),
-	}).show();
+function mainWindowState() {
+	if (!mainWindow || mainWindow.isDestroyed()) return { focused: false, visible: false, minimized: false };
+	return { focused: mainWindow.isFocused(), visible: mainWindow.isVisible(), minimized: mainWindow.isMinimized() };
 }
 
 function createMainWindow() {
+	mainReady = false;
 	mainWindow = new BrowserWindow({
-		width: 1400,
-		height: 900,
-		minWidth: 1000,
-		minHeight: 700,
+		...windowBounds('main', { x: 40, y: 40, width: 1400, height: 900 }),
+		minWidth: 700,
+		minHeight: 500,
 		title: "Zvonok",
 		icon: getIconPath(),
 		backgroundColor: "#111827",
 		show: false,
 		autoHideMenuBar: true,
 		webPreferences: {
-			preload: path.join(__dirname, "preload.js"),
+			preload: path.join(__dirname, "preload.cjs"),
 			contextIsolation: true,
 			nodeIntegration: false,
-			sandbox: false,
+			sandbox: true,
+			devTools: !app.isPackaged,
 		},
 	});
+	trackWindowBounds(mainWindow, 'main');
+	const publishWindowState = () => {
+		if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) mainWindow.webContents.send('desktop:window-state', mainWindowState());
+	};
+	mainWindow.on('focus', publishWindowState).on('blur', publishWindowState).on('show', publishWindowState)
+		.on('hide', publishWindowState).on('minimize', publishWindowState).on('restore', publishWindowState);
+	mainWindow.webContents.on('will-navigate', event => event.preventDefault());
+	mainWindow.webContents.on('will-attach-webview', event => event.preventDefault());
+	mainWindow.webContents.on('did-start-navigation', (_event, _url, inPlace, isMainFrame) => {
+		if (isMainFrame && !inPlace) { activity = null; externalDock?.clear(); selectedScreenShareSource = null; }
+	});
+	mainWindow.webContents.on('render-process-gone', () => {
+		activity = null;
+		externalDock?.clear();
+		selectedScreenShareSource = null;
+		globalShortcut.unregisterAll(); registeredHotkeys.clear();
+		if (isQuitting || !mainWindow) return;
+		void dialog.showMessageBox(mainWindow, { type: 'error', message: 'Окно Zvonok завершило работу. Звонок прерван. Восстановить приложение?', buttons: ['Восстановить', 'Позже'], defaultId: 0, cancelId: 1 }).then(result => {
+			if (result.response === 0 && mainWindow && !mainWindow.isDestroyed()) { mainWindow.reload(); showMainWindow(); }
+		});
+	});
+	mainWindow.on('unresponsive', () => externalDock?.clear());
 
-	mainWindow.once("ready-to-show", () => {
+	let readyToShow = false;
+	let rendererLoaded = false;
+	const reveal = () => {
+		if (!readyToShow || !rendererLoaded || mainReady || isQuitting) return;
+		mainReady = true;
+		clearTimeout(startupTimer);
 		mainWindow?.show();
+		mainWindow?.focus();
+		startup?.close(); startup = undefined;
 
 		if (!app.isPackaged) {
 			mainWindow?.webContents.openDevTools({ mode: "detach" });
 		}
-	});
+	};
+	mainWindow.once("ready-to-show", () => { readyToShow = true; reveal(); });
 
 	mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-		void shell.openExternal(url);
+		if (safeExternalUrl(url)) void shell.openExternal(url).catch(() => {});
 		return { action: "deny" };
 	});
 
-	if (app.isPackaged) {
-		void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
-	} else {
-		void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL ?? DEV_SERVER_URL);
-		mainWindow.webContents.openDevTools({ mode: "detach" });
-	}
+	retryMainRenderer = () => {
+		rendererLoaded = false;
+		void mainWindow?.loadURL(rendererUrl).catch(() => { if (!rendererLoaded) startup?.error(); });
+	};
+	markRendererReady = () => { rendererLoaded = true; reveal(); };
+	retryMainRenderer();
 
 	mainWindow.on("close", (event) => {
 		if (isQuitting) return;
 
 		event.preventDefault();
-		mainWindow?.hide();
-		showTrayHintOnce();
+		if (closeToTray()) mainWindow?.hide();
+		else void requestQuit();
 	});
 
 	mainWindow.on("closed", () => {
 		mainWindow = null;
+		activity = null;
+		externalDock?.clear();
 	});
 }
 
@@ -133,41 +195,55 @@ function createTray() {
 			click: showMainWindow,
 		},
 		{
-			label: "Статус: Online",
-			enabled: false,
+			label: "Панель текущего звонка",
+			click: () => { if (externalDock?.hasCall()) externalDock.open(); else showMainWindow(); },
 		},
 		{
-			label: "Настройки",
-			enabled: false,
+			label: 'Проверить обновления',
+			click: () => {
+				void updates?.check().then(() => {
+					const status = updates?.get().status;
+					const message = status === 'disabled' ? 'Автообновление ещё не настроено для этой сборки.' : status === 'error' ? 'Проверка обновлений не удалась. Повторите позже.' : status === 'ready' ? 'Обновление готово. Откройте Настройки → Приложение для перезапуска.' : 'Проверка завершена. Установлена актуальная версия.';
+					void dialog.showMessageBox({ type: 'info', message, noLink: true });
+				});
+			},
 		},
 		{ type: "separator" },
 		{
 			label: "Перезапустить",
 			click: () => {
-				isQuitting = true;
-				app.relaunch();
-				app.quit();
+				void requestQuit(true);
 			},
 		},
 		{
 			label: "Выход",
 			click: () => {
-				isQuitting = true;
-				app.quit();
+				void requestQuit();
 			},
 		},
 	]));
 
 	tray.on("click", showMainWindow);
-	tray.on("double-click", toggleMainWindow);
+	tray.on("double-click", showMainWindow);
 }
 
 function setupNotifications() {
-	ipcMain.handle("notifications:show", (_event, payload: DesktopNotificationPayload) => {
-		if (!Notification.isSupported() || !payload?.title) return;
+	const calls = new Map<number, Notification>();
+	ownerHandle('notifications:dismiss-call', (_event, callId) => {
+		if (!Number.isSafeInteger(callId) || callId <= 0) throw new Error('INVALID_CALL_ID');
+		calls.get(callId)?.close(); calls.delete(callId);
+	});
+	ownerHandle("notifications:show", (_event, payload: DesktopNotificationPayload) => {
+		if (!payload || typeof payload.title !== 'string' || payload.title.length > 200 || (payload.body !== undefined && (typeof payload.body !== 'string' || payload.body.length > 4000))) throw new Error('INVALID_NOTIFICATION');
+		if (!Notification.isSupported()) throw new Error('NOTIFICATIONS_UNAVAILABLE');
+		if (!payload.title) return;
+		const callId = payload.type === 'call' ? Number(payload.callId) : undefined;
+		if (callId !== undefined && (!Number.isSafeInteger(callId) || callId <= 0)) throw new Error('INVALID_CALL_ID');
+		if (callId && calls.has(callId)) return;
 
 		const notification = new Notification({
 			title: payload.title,
+			silent: payload.silent === true,
 			body: payload.body,
 			icon: getIconPath(false),
 		});
@@ -176,13 +252,19 @@ function setupNotifications() {
 			showMainWindow();
 			mainWindow?.webContents.send("notifications:clicked", payload);
 		});
+		if (callId) {
+			calls.set(callId, notification);
+			notification.once('close', () => { if (calls.get(callId) === notification) calls.delete(callId); });
+			notification.once('failed', () => { calls.delete(callId); });
+		}
 
-		notification.show();
+		return showNativeNotification(notification).catch(error => { if (callId) calls.delete(callId); throw error; });
 	});
 }
 
 function setupGlobalHotkeys() {
-	ipcMain.handle("hotkeys:register", (_event, action: string, accelerator: string) => {
+	ownerHandle("hotkeys:register", (_event, action: string, accelerator: string) => {
+		if (!['microphone', 'camera', 'screenShare'].includes(action) || typeof accelerator !== 'string' || accelerator.length > 100) throw new Error('INVALID_HOTKEY');
 		unregisterHotkey(action);
 
 		if (!accelerator) return false;
@@ -204,7 +286,8 @@ function setupGlobalHotkeys() {
 		return true;
 	});
 
-	ipcMain.handle("hotkeys:unregister", (_event, action: string) => {
+	ownerHandle("hotkeys:unregister", (_event, action: string) => {
+		if (!['microphone', 'camera', 'screenShare'].includes(action)) throw new Error('INVALID_HOTKEY');
 		unregisterHotkey(action);
 	});
 }
@@ -221,6 +304,8 @@ function setupDesktopWebSocketHeaders() {
 	session.defaultSession.webRequest.onBeforeSendHeaders(
 		{ urls: ["ws://*/*", "wss://*/*"] },
 		(details, callback) => {
+			// A delayed handshake from a destroyed document must not replace its new SFU owner.
+			if (!mainWindow || details.webContentsId !== mainWindow.webContents.id || !details.frame || details.frame !== mainWindow.webContents.mainFrame) { callback({ cancel: true }); return; }
 			const nextHeaders = { ...details.requestHeaders };
 			const currentOrigin = getHeader(nextHeaders, "Origin");
 
@@ -262,7 +347,7 @@ function getDesktopWebSocketOrigin(url: string) {
 }
 
 function setupDisplayMediaRequestHandler() {
-	ipcMain.handle("screen-share:get-sources", async () => {
+	ownerHandle("screen-share:get-sources", async () => {
 		const sources = await desktopCapturer.getSources({
 			types: ["screen", "window"],
 			thumbnailSize: { width: 320, height: 180 },
@@ -278,15 +363,17 @@ function setupDisplayMediaRequestHandler() {
 		}));
 	});
 
-	ipcMain.handle("screen-share:set-selected-source", (_event, sourceId: string, includeAudio = false) => {
+	ownerHandle("screen-share:set-selected-source", (_event, sourceId: string, includeAudio = false) => {
+		if (typeof sourceId !== 'string' || !/^(screen|window):[\w:.-]{1,150}$/.test(sourceId) || typeof includeAudio !== 'boolean') throw new Error('INVALID_SOURCE');
 		selectedScreenShareSource = { sourceId, includeAudio };
 	});
 
-	ipcMain.handle("screen-share:clear-selected-source", () => {
+	ownerHandle("screen-share:clear-selected-source", () => {
 		selectedScreenShareSource = null;
 	});
 
-	session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
+	session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+		if (!mainWindow || request.frame !== mainWindow.webContents.mainFrame) { callback({}); return; }
 		const selectedSource = selectedScreenShareSource;
 		if (!selectedSource) {
 			callback({});
@@ -324,13 +411,53 @@ if (!gotSingleInstanceLock) {
 } else {
 	app.on("second-instance", showMainWindow);
 
-	void app.whenReady().then(() => {
+	void app.whenReady().then(async () => {
+		if (desktopEnvironment?.environment === 'LOCAL_DOCKER') setupLocalDockerAssets(path.join(__dirname, '..'), desktopEnvironment);
+		startup = createStartup(() => {
+			if (++startupRetries > 2) { app.quit(); return; }
+			retryMainRenderer?.();
+			clearTimeout(startupTimer);
+			startupTimer = setTimeout(() => startup?.error(), 20000);
+		}, () => { if (!mainReady && !isQuitting) app.quit(); });
+		startup.prerequisites();
+		await readWindowState();
+		ownerHandle('desktop:window-state:get', mainWindowState);
+		ownerHandle('desktop:renderer-ready', () => markRendererReady?.());
+		ownerHandle('desktop:preferences:get', () => ({ closeToTray: closeToTray(), electron: process.versions.electron, version: app.getVersion(), platform: process.platform, notifications: Notification.isSupported() }));
+		ownerHandle('desktop:preferences:set-close-to-tray', async (_event, value) => {
+			if (typeof value !== 'boolean') throw new Error('INVALID_PREFERENCE');
+			await saveCloseToTray(value);
+			return closeToTray();
+		});
+		externalDock = setupExternalDock(() => mainWindow, validateOwner, showMainWindow);
+		ownerHandle('desktop:activity', (_event, busy) => {
+			if (typeof busy !== 'boolean') throw new Error('INVALID_ACTIVITY');
+			activity = { busy, at: Date.now() };
+		});
+		updates = await setupUpdates(() => mainWindow, validateOwner, () => !!activity && !activity.busy && Date.now() - activity.at < 15000 && !externalDock?.hasCall(), state => startup?.update(state), () => gotSingleInstanceLock && !isQuitting && !mainWindow && !activity && !externalDock?.hasCall());
+		const allowedPermissions = new Set(['media', 'display-capture', 'speaker-selection', 'fullscreen', 'notifications']);
+		session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
+			callback(contents === mainWindow?.webContents && details.isMainFrame === true && allowedPermissions.has(permission));
+		});
+		session.defaultSession.setPermissionCheckHandler((contents, permission, _origin, details) => contents === mainWindow?.webContents && details.isMainFrame && allowedPermissions.has(permission));
 		setupNotifications();
 		setupGlobalHotkeys();
 		setupDesktopWebSocketHeaders();
 		setupDisplayMediaRequestHandler();
+		if (await updates.prepareStartup(() => startup?.preparing())) {
+			await new Promise<void>(resolve => { startupTimer = setTimeout(resolve, 2500); });
+			if (isQuitting) return;
+			updates.installationTimedOut();
+		}
+		if (isQuitting) return;
+		startup?.opening();
 		createMainWindow();
+		startupTimer = setTimeout(() => startup?.error(), 20000);
+		void updates.check();
 		createTray();
+		const resume = () => mainWindow?.webContents.send('desktop:resume');
+		powerMonitor.on('resume', resume);
+		powerMonitor.on('unlock-screen', resume);
 
 		app.on("activate", () => {
 			if (BrowserWindow.getAllWindows().length === 0) {
@@ -342,5 +469,6 @@ if (!gotSingleInstanceLock) {
 
 app.on("before-quit", () => {
 	isQuitting = true;
+	clearTimeout(startupTimer); startup?.close();
 	globalShortcut.unregisterAll();
 });

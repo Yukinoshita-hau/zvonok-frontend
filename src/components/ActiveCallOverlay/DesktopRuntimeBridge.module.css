@@ -1,0 +1,13 @@
+.notice { position:fixed; right:20px; bottom:24px; z-index:1300; width:min(340px,calc(100vw - 32px)); padding:16px; border:1px solid var(--border); border-radius:var(--radius-md); color:var(--text-primary); background:var(--bg-secondary); box-shadow:var(--shadow-dialog); animation:appear 180ms ease-out; }
+.notice strong { display:block; font-size:14px; line-height:1.4; }
+.duringCall { bottom:88px; }
+.version { display:block; margin-top:4px; color:var(--text-muted); font-size:12px; }
+.notice p { font-size:13px; line-height:1.5; margin:10px 0; color:var(--text-secondary); }
+.actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.actions button { font:inherit; font-size:13px; min-height:34px; padding:6px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-primary); background:var(--bg-tertiary); cursor:pointer; transition:background 180ms; }
+.actions .primary { color:var(--accent); background:var(--bg-active); }
+.actions button:hover:enabled { background:var(--bg-hover); }
+.actions button:disabled { opacity:.5; cursor:not-allowed; }
+.actions button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+@keyframes appear { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+@media(prefers-reduced-motion:reduce) { .notice { animation:none; } .actions button { transition:none; } }

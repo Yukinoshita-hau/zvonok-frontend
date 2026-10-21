@@ -23,7 +23,7 @@ export function UserProfilePopover({
 	return (
 		<div
 			className={styles["popover"]}
-			style={{ top: y, left: x }}
+			style={{ top: Math.max(12, Math.min(y, window.innerHeight - 300)), left: Math.max(12, Math.min(x, window.innerWidth - 344)) }}
 			onClick={(event) => event.stopPropagation()}
 		>
 			<UserProfileCard

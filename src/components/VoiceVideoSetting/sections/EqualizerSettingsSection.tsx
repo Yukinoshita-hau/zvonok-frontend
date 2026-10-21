@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { deviceActions } from "../../../store/slices/device.slice";
 import type { AppDispatch } from "../../../store/store";
 import type { ZvonokAudioGraphConfig } from "../../../livekit/audio/ZvonokAudioGraphConfig";
@@ -7,13 +7,16 @@ import styles from "../VoiceVideoSetting.module.css";
 interface EqualizerSettingsSectionProps {
 	dispatch: AppDispatch;
 	voiceProcessingConfig: ZvonokAudioGraphConfig;
+	initiallyOpen?: boolean;
 }
 
 export function EqualizerSettingsSection({
 	dispatch,
 	voiceProcessingConfig,
+	initiallyOpen = false,
 }: EqualizerSettingsSectionProps) {
-	const [open, setOpen] = useState(false);
+	const [open, setOpen] = useState(initiallyOpen);
+	useEffect(() => { if (initiallyOpen) setOpen(true); }, [initiallyOpen]);
 
 	return (
 		<section className={styles["settings-card"]}>
@@ -27,6 +30,7 @@ export function EqualizerSettingsSection({
 
 				<button
 					type="button"
+					aria-expanded={open}
 					className={styles["btn-secondary-neutral"]}
 					onClick={() => setOpen((prev) => !prev)}
 				>
@@ -51,6 +55,7 @@ export function EqualizerSettingsSection({
 						<label className={styles["toggle-row"]}>
 							<input
 								type="checkbox"
+								aria-label="High-pass filter"
 								checked={voiceProcessingConfig.highPass.enabled}
 								onChange={(e) =>
 									dispatch(
@@ -75,6 +80,7 @@ export function EqualizerSettingsSection({
 							type="range"
 							min={60}
 							max={160}
+							aria-label="High-pass filter frequency"
 							value={voiceProcessingConfig.highPass.frequency}
 							disabled={!voiceProcessingConfig.highPass.enabled}
 							onChange={(e) =>
@@ -93,6 +99,7 @@ export function EqualizerSettingsSection({
 						<label className={styles["toggle-row"]}>
 							<input
 								type="checkbox"
+								aria-label="Presence boost"
 								checked={voiceProcessingConfig.presence.enabled}
 								onChange={(e) =>
 									dispatch(
@@ -118,6 +125,7 @@ export function EqualizerSettingsSection({
 							min={0}
 							max={6}
 							step={0.5}
+							aria-label="Presence boost gain"
 							value={voiceProcessingConfig.presence.gain}
 							disabled={!voiceProcessingConfig.presence.enabled}
 							onChange={(e) =>
@@ -136,6 +144,7 @@ export function EqualizerSettingsSection({
 						<label className={styles["toggle-row"]}>
 							<input
 								type="checkbox"
+								aria-label="Compressor"
 								checked={voiceProcessingConfig.compressor.enabled}
 								onChange={(e) =>
 									dispatch(
@@ -161,6 +170,7 @@ export function EqualizerSettingsSection({
 							min={2}
 							max={12}
 							step={1}
+							aria-label="Compressor ratio"
 							value={voiceProcessingConfig.compressor.ratio}
 							disabled={!voiceProcessingConfig.compressor.enabled}
 							onChange={(e) =>
@@ -179,6 +189,7 @@ export function EqualizerSettingsSection({
 						<label className={styles["toggle-row"]}>
 							<input
 								type="checkbox"
+								aria-label="Limiter"
 								checked={voiceProcessingConfig.limiter.enabled}
 								onChange={(e) =>
 									dispatch(
@@ -204,6 +215,7 @@ export function EqualizerSettingsSection({
 							min={-20}
 							max={-2}
 							step={1}
+							aria-label="Limiter threshold"
 							value={voiceProcessingConfig.limiter.threshold}
 							disabled={!voiceProcessingConfig.limiter.enabled}
 							onChange={(e) =>

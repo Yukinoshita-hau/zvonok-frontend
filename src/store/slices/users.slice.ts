@@ -1,5 +1,6 @@
 import type { UserProfileUpdate } from "../../api/interfaces/UserProfileUpdatedEvent";
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, isAnyOf, type PayloadAction } from "@reduxjs/toolkit";
+import { updateUser, uploadAvatar } from './user.slice';
 import type { UserSummary } from "../../entities/UserMini";
 
 export interface UsersState {
@@ -57,6 +58,10 @@ const usersSlice = createSlice({
 			return initialState;
 		},
 	},
+	extraReducers: builder => builder.addMatcher(isAnyOf(updateUser.fulfilled, uploadAvatar.fulfilled), (state, {payload}) => {
+		const previous = state.byId[payload.id];
+		if (previous) state.byId[payload.id] = {...previous, username:payload.username, displayName:payload.displayName, avatarUrl:payload.avatarUrl};
+	}),
 })
 
 export default usersSlice.reducer;

@@ -1,4 +1,6 @@
 import { X } from "lucide-react";
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../store/store';
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ScreenShareManualQuality } from "../../utils/callQuality";
@@ -16,6 +18,7 @@ import {
 } from "./screenSharePickerService";
 import { ScreenShareQualitySelector } from "./ScreenShareQualitySelector";
 import { ScreenShareSourceCard } from "./ScreenShareSourceCard";
+import { useModalFocus } from "../../hooks/useModalFocus";
 import styles from "./ScreenSharePicker.module.css";
 
 interface ScreenSharePickerModalProps {
@@ -31,11 +34,13 @@ const SOURCE_TABS: Array<{ type: ScreenShareSourceType; label: string }> = [
 ];
 
 export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSharePickerModalProps) {
+	const {screenShareQuality, connectionTestResult} = useSelector((s: RootState) => s.device);
+	const dialogRef = useModalFocus<HTMLElement>(isOpen, onClose);
 	const [sources, setSources] = useState<ScreenShareSource[]>([]);
 	const [status, setStatus] = useState<"idle" | "loading" | "failed">("idle");
 	const [activeType, setActiveType] = useState<ScreenShareSourceType>("screen");
 	const [selectedSource, setSelectedSource] = useState<ScreenShareSource | null>(null);
-	const [quality, setQuality] = useState<ScreenShareManualQuality>(getDefaultScreenShareQuality());
+	const [quality, setQuality] = useState<ScreenShareManualQuality>(() => getDefaultScreenShareQuality(screenShareQuality, connectionTestResult.recommendation));
 	const [includeSystemAudio, setIncludeSystemAudio] = useState(false);
 
 	const isDesktop = isZvonokDesktop();
@@ -47,6 +52,7 @@ export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSha
 
 	useEffect(() => {
 		if (!isOpen) return;
+		setQuality(getDefaultScreenShareQuality(screenShareQuality, connectionTestResult.recommendation));
 
 		let isMounted = true;
 		setStatus("loading");
@@ -84,7 +90,7 @@ export function ScreenSharePickerModal({ isOpen, onClose, onConfirm }: ScreenSha
 
 	const modal = (
 		<div className={styles["modal-backdrop"]} onMouseDown={onClose}>
-			<section className={styles["modal"]} onMouseDown={(event) => event.stopPropagation()}>
+			<section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Демонстрация экрана" className={styles["modal"]} onMouseDown={(event) => event.stopPropagation()}>
 				<header className={styles["modal-header"]}>
 					<div>
 						<h2>Демонстрация экрана</h2>

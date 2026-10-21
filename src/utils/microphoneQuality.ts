@@ -225,14 +225,13 @@ export function getMicrophoneCaptureOptions(params: {
 				? params.selectedMicrophoneId
 				: undefined,
 
-		autoGainControl: false,
+		autoGainControl: params.isAutoGainControlEnabled,
 
-		echoCancellation:
-			params.isEchoCancellationEnabled && preset.echoCancellation,
+		echoCancellation: params.isEchoCancellationEnabled,
 
 		noiseSuppression: shouldUseRnnoise
 			? false
-			: params.isNoiseSuppressionEnabled && preset.noiseSuppression,
+			: params.isNoiseSuppressionEnabled,
 
 		voiceIsolation: shouldUseRnnoise
 			? false

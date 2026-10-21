@@ -1,0 +1,16 @@
+.overlay { position: fixed; inset: 0; z-index: 2000; background: var(--overlay-backdrop); display: flex; padding: 16px; }
+.dialog { width: 100%; min-width: 0; min-height: 0; background: var(--bg-primary, #313338); color: var(--text-primary, #f2f3f5); display: flex; flex-direction: column; border: 1px solid var(--border); padding: 12px; gap: 10px; }
+.header,.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.header > div { flex: 1; min-width: 100px; overflow-wrap: anywhere; }
+.header small { display: block; color: var(--text-secondary, #b5bac1); }
+.dialog button,.dialog input { color: inherit; background: var(--bg-input, #383a40); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; }
+.dialog button:focus-visible,.dialog input:focus-visible { outline: 2px solid var(--accent); }
+.content { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; overflow: auto; }
+.imageStage { flex: 1; min-height: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; touch-action: none; cursor: grab; }
+.imageStage img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; }
+.pdfScroll { flex: 1; min-height: 0; overflow: auto; background: var(--bg-tertiary); padding: 12px; }
+.pdfPage { position: relative; margin: 0 auto; background: white; }
+.pdfPage canvas { display: block; }
+.card { display: flex; flex-direction: column; gap: 4px; text-align: left; max-width: 100%; overflow-wrap: anywhere; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-input, #383a40); color: inherit; }
+@media(max-height: 650px) { .overlay { padding: 4px; } .dialog { padding: 8px; gap: 6px; } }
+

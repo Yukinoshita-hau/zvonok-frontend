@@ -1,31 +1,22 @@
 .inbox-header-button {
-	border: none;
-	outline: none;
+	border: 0;
 	cursor: pointer;
-	display: flex;
-	flex: 1;
+	display: inline-flex;
 	justify-content: center;
 	align-items: center;
-	border-radius: 10px;
-	background-color: transparent;
+	border-radius: var(--radius-sm);
+	background: transparent;
 	color: var(--text-secondary);
 	font-weight: 500;
-	font-size: 15px;
-	transition: background-color 0.15s ease, color 0.15s ease;
+	font-size: 14px;
+	padding: 4px 8px;
+	white-space: nowrap;
 }
-
 .inbox-header-button:hover {
-	background-color: var(--bg-hover);
+	background: var(--bg-hover);
 	color: var(--text-primary);
 }
-
 .inbox-header-button_active {
-	background: var(--accent-muted);
-	color: var(--accent);
-	font-weight: 600;
-}
-
-.inbox-header-button_active:hover {
-	background-color: var(--accent-muted);
-	color: var(--accent-hover);
+	background: var(--bg-active);
+	color: var(--text-primary);
 }

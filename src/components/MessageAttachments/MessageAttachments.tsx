@@ -1,27 +1,44 @@
 import { parseWaveform } from "../../utils/parseWaveform";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { ImageOff, Mic, Pause, Play } from "lucide-react";
+import { FileArchive, FileText, ImageOff, Mic, Pause, Play } from "lucide-react";
 import { messageAttachmentsApi } from "../../api/messageAttachmentsApi";
 import type { MessageAttachment } from "../../api/interfaces/MessageAttachmentDtos";
 import { resolveAttachmentUrl } from "../../utils/messageAttachmentMediaUrl";
+import { StreamingAttachment } from "./StreamingAttachment";
+import { attachmentMedia } from "./playback";
 import { MediaLightbox } from "./MediaLightbox";
 import styles from "./MessageAttachments.module.css";
+import viewerStyles from './AttachmentViewer.module.css';
+const AttachmentViewer = lazy(() => import('./AttachmentViewer'));
 
 interface MessageAttachmentsProps {
 	attachments?: MessageAttachment[] | null;
+	author?: string;
+	date?: string;
 }
 
-export function MessageAttachments({ attachments }: MessageAttachmentsProps) {
-	const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
+export function MessageAttachments({ attachments, author, date }: MessageAttachmentsProps) {
+	const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+	const [lightboxImage, setLightboxImage] = useState<{
+		src: string;
+		alt: string;
+	} | null>(null);
 	const safeAttachments = attachments ?? [];
+	const viewerAttachments = safeAttachments;
 
 	if (safeAttachments.length === 0) return null;
 
 	return (
 		<>
 			<div className={styles["message-attachments"]}>
-				{safeAttachments.map((attachment) => (
+				{safeAttachments.map((attachment) => viewerIndex !== null || attachment.type === 'FILE' || (attachment.type === 'IMAGE' && import.meta.env.VITE_PRIVATE_MEDIA_STREAMING === 'true') ? (
+					<button key={attachment.id} className={viewerStyles.card} onClick={() => setViewerIndex(viewerAttachments.indexOf(attachment))}>
+						{attachment.contentType === 'application/zip' ? <FileArchive size={22} aria-hidden="true" /> : <FileText size={22} aria-hidden="true" />}
+						<span>{attachment.originalFileName || 'Вложение'}</span>
+						<small>{attachment.contentType || 'Файл'} · {Math.ceil((attachment.sizeBytes || 0) / 1024)} КиБ · Открыть</small>
+					</button>
+				) : (
 					<MessageAttachmentItem
 						key={attachment.id}
 						attachment={attachment}
@@ -29,6 +46,7 @@ export function MessageAttachments({ attachments }: MessageAttachmentsProps) {
 					/>
 				))}
 			</div>
+			{viewerIndex !== null && <Suspense fallback={<p role="status">Загрузка просмотрщика…</p>}><AttachmentViewer attachments={viewerAttachments} initial={viewerIndex} author={author} date={date} onClose={() => setViewerIndex(null)} /></Suspense>}
 
 			{lightboxImage && (
 				<MediaLightbox
@@ -46,14 +64,48 @@ interface MessageAttachmentItemProps {
 	onOpenImage: (src: string, alt: string) => void;
 }
 
-function MessageAttachmentItem({ attachment, onOpenImage }: MessageAttachmentItemProps) {
+function MessageAttachmentItem(props: MessageAttachmentItemProps) {
+ const type = props.attachment.type;
+ if (import.meta.env.VITE_PRIVATE_MEDIA_STREAMING === 'true' &&
+     (type === 'VIDEO' || type === 'VIDEO_NOTE' || type === 'AUDIO')) {
+   return <StreamingAttachment {...props} />;
+ }
+ return <LegacyAttachmentItem {...props} />;
+}
+
+function LegacyAttachmentItem({
+	attachment,
+	onOpenImage,
+}: MessageAttachmentItemProps) {
+	const itemRef = useRef<HTMLDivElement>(null);
+	const [visible, setVisible] = useState(false);
+	const [requested, setRequested] = useState(false);
+	const needsRequest =
+		attachment.type === "VIDEO" || attachment.type === "VIDEO_NOTE";
+	useEffect(() => {
+		const element = itemRef.current;
+		if (!element) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((entry) => entry.isIntersecting)) {
+					setVisible(true);
+					observer.disconnect();
+				}
+			},
+			{ rootMargin: "200px" },
+		);
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, []);
 	const [objectUrl, setObjectUrl] = useState<string>("");
 	const [isError, setIsError] = useState(false);
 	const [mediaError, setMediaError] = useState(false);
-	const sourceUrl = resolveAttachmentUrl(attachment.downloadUrl ?? attachment.url);
+	const sourceUrl = resolveAttachmentUrl(
+		attachment.downloadUrl ?? attachment.url,
+	);
 
 	useEffect(() => {
-		if (!sourceUrl) return;
+		if (!sourceUrl || !visible || (needsRequest && !requested)) return;
 
 		let cancelled = false;
 		let nextObjectUrl = "";
@@ -68,7 +120,8 @@ function MessageAttachmentItem({ attachment, onOpenImage }: MessageAttachmentIte
 					return;
 				}
 
-				const blob = await messageAttachmentsApi.downloadAttachmentBlob(sourceUrl);
+				const blob =
+					await messageAttachmentsApi.downloadAttachmentBlob(sourceUrl);
 				if (cancelled) return;
 
 				nextObjectUrl = URL.createObjectURL(blob);
@@ -84,7 +137,7 @@ function MessageAttachmentItem({ attachment, onOpenImage }: MessageAttachmentIte
 			cancelled = true;
 			if (nextObjectUrl) URL.revokeObjectURL(nextObjectUrl);
 		};
-	}, [sourceUrl]);
+	}, [sourceUrl, visible, needsRequest, requested]);
 
 	if (!sourceUrl || isError) {
 		return (
@@ -97,45 +150,98 @@ function MessageAttachmentItem({ attachment, onOpenImage }: MessageAttachmentIte
 
 	if (!objectUrl) {
 		return (
-			<div className={styles["attachment-loading"]}>
+			<div ref={itemRef} className={styles["attachment-loading"]} role="status">
+				{needsRequest && !requested ? (
+					<button
+						className={styles["load-media"]}
+						onClick={() => setRequested(true)}
+					>
+						<Play size={18} /> Загрузить видео ·{" "}
+						{Math.ceil(attachment.sizeBytes / 1024)} КБ
+					</button>
+				) : (
+					<span>Загрузка…</span>
+				)}
 				<span>{attachment.originalFileName}</span>
 			</div>
 		);
 	}
 
+	const fileLink = (
+		<a
+			className={styles["file-attachment"]}
+			href={objectUrl}
+			download={attachment.originalFileName}
+		>
+			<span title={attachment.originalFileName}>
+				{attachment.originalFileName}
+			</span>
+			<small>
+				{attachment.contentType} · {Math.ceil(attachment.sizeBytes / 1024)} КБ ·
+				Скачать
+			</small>
+		</a>
+	);
 	if (attachment.type === "IMAGE") {
 		return (
-			<button
-				type="button"
-				className={styles["image-attachment"]}
-				onClick={() => onOpenImage(objectUrl, attachment.originalFileName)}
-			>
-				<img src={objectUrl} alt={attachment.originalFileName} loading="lazy" />
-			</button>
+			<>
+				<button
+					type="button"
+					className={styles["image-attachment"]}
+					onClick={() => onOpenImage(objectUrl, attachment.originalFileName)}
+				>
+					<img
+						src={objectUrl}
+						alt={attachment.originalFileName}
+						loading="lazy"
+						width={attachment.width ?? undefined}
+						height={attachment.height ?? undefined}
+					/>
+				</button>
+				{fileLink}
+			</>
 		);
 	}
 
 	if (attachment.type === "AUDIO") {
-		return <VoiceMessagePlayer attachment={attachment} src={objectUrl} />;
+		return (
+			<>
+				<VoiceMessagePlayer attachment={attachment} src={objectUrl} />
+				{fileLink}
+			</>
+		);
 	}
 
 	if (attachment.type === "VIDEO_NOTE") {
 		return (
-			<VideoNotePlayer
-				attachment={attachment}
-				src={objectUrl}
-				isError={mediaError}
-				onError={() => setMediaError(true)}
-			/>
+			<>
+				<VideoNotePlayer
+					attachment={attachment}
+					src={objectUrl}
+					isError={mediaError}
+					onError={() => setMediaError(true)}
+				/>
+				{fileLink}
+			</>
 		);
 	}
 
 	return (
 		<div className={styles["video-attachment"]}>
-			<video src={objectUrl} controls preload="metadata" />
-			<span>{attachment.originalFileName}</span>
+			<LegacyVideo src={objectUrl} />
+			{fileLink}
 		</div>
 	);
+}
+
+function LegacyVideo({ src }: { src: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    return attachmentMedia.register(video);
+  }, [src]);
+  return <video ref={ref} src={src} controls preload="metadata" onPlay={event => attachmentMedia.activate(event.currentTarget)} />;
 }
 
 interface MediaPlayerProps {
@@ -149,36 +255,15 @@ function VoiceMessagePlayer({ attachment, src }: MediaPlayerProps) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [currentTime, setCurrentTime] = useState(0);
 	const [duration, setDuration] = useState(fallbackDuration);
-	const [waveformBars, setWaveformBars] = useState<number[]>(
-		normalizeWaveformBars(attachment.waveform) ?? DEFAULT_VOICE_WAVEFORM_BARS,
-	);
+	const waveformBars = normalizeWaveformBars(attachment.waveform) ?? DEFAULT_VOICE_WAVEFORM_BARS;
 	const progress = getProgressPercent(currentTime, duration);
 	const rangeStyle = { "--progress": `${progress}%` } as CSSProperties;
 
-	useEffect(() => {
-		const existingWaveform = normalizeWaveformBars(attachment.waveform);
-		if (existingWaveform) {
-			setWaveformBars(existingWaveform);
-			return;
-		}
-
-		let cancelled = false;
-
-		const buildWaveform = async () => {
-			try {
-				const bars = await createWaveformBars(src, VOICE_WAVEFORM_BAR_COUNT);
-				if (!cancelled) setWaveformBars(bars);
-			} catch {
-				if (!cancelled) setWaveformBars(DEFAULT_VOICE_WAVEFORM_BARS);
-			}
-		};
-
-		void buildWaveform();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [attachment.waveform, src]);
+ useEffect(() => {
+   const audio = audioRef.current;
+   if (!audio) return;
+   return attachmentMedia.register(audio);
+ }, [src]);
 
 	const togglePlayback = async () => {
 		const audio = audioRef.current;
@@ -213,7 +298,9 @@ function VoiceMessagePlayer({ attachment, src }: MediaPlayerProps) {
 				type="button"
 				className={styles["voice-play-button"]}
 				onClick={togglePlayback}
-				aria-label={isPlaying ? "Поставить голосовое на паузу" : "Воспроизвести голосовое"}
+				aria-label={
+					isPlaying ? "Поставить голосовое на паузу" : "Воспроизвести голосовое"
+				}
 				title={isPlaying ? "Пауза" : "Воспроизвести"}
 			>
 				{isPlaying ? <Pause size={18} /> : <Play size={18} />}
@@ -275,9 +362,11 @@ function VoiceMessagePlayer({ attachment, src }: MediaPlayerProps) {
 					const nextDuration = event.currentTarget.duration;
 					if (Number.isFinite(nextDuration)) setDuration(nextDuration);
 				}}
-				onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+				onTimeUpdate={(event) =>
+					setCurrentTime(event.currentTarget.currentTime)
+				}
 				onPause={() => setIsPlaying(false)}
-				onPlay={() => setIsPlaying(true)}
+				onPlay={(event) => { attachmentMedia.activate(event.currentTarget); setIsPlaying(true); }}
 				onEnded={() => {
 					setIsPlaying(false);
 					setCurrentTime(0);
@@ -292,8 +381,18 @@ interface VideoNotePlayerProps extends MediaPlayerProps {
 	onError: () => void;
 }
 
-function VideoNotePlayer({ attachment, src, isError, onError }: VideoNotePlayerProps) {
+function VideoNotePlayer({
+	attachment,
+	src,
+	isError,
+	onError,
+}: VideoNotePlayerProps) {
 	const videoRef = useRef<HTMLVideoElement | null>(null);
+ useEffect(() => {
+   const video = videoRef.current;
+   if (!video) return;
+   return attachmentMedia.register(video);
+ }, [src]);
 	const fallbackDuration = getAttachmentDurationSeconds(attachment);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [currentTime, setCurrentTime] = useState(0);
@@ -345,7 +444,11 @@ function VideoNotePlayer({ attachment, src, isError, onError }: VideoNotePlayerP
 				type="button"
 				className={styles["video-note-stage"]}
 				onClick={togglePlayback}
-				aria-label={isPlaying ? "Поставить видео-кружок на паузу" : "Воспроизвести видео-кружок"}
+				aria-label={
+					isPlaying
+						? "Поставить видео-кружок на паузу"
+						: "Воспроизвести видео-кружок"
+				}
 				title={isPlaying ? "Пауза" : "Воспроизвести"}
 			>
 				<video
@@ -359,9 +462,11 @@ function VideoNotePlayer({ attachment, src, isError, onError }: VideoNotePlayerP
 						const nextDuration = event.currentTarget.duration;
 						if (Number.isFinite(nextDuration)) setDuration(nextDuration);
 					}}
-					onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+					onTimeUpdate={(event) =>
+						setCurrentTime(event.currentTarget.currentTime)
+					}
 					onPause={() => setIsPlaying(false)}
-					onPlay={() => setIsPlaying(true)}
+					onPlay={(event) => { attachmentMedia.activate(event.currentTarget); setIsPlaying(true); }}
 					onEnded={() => {
 						setIsPlaying(false);
 						setCurrentTime(0);
@@ -393,52 +498,24 @@ function VideoNotePlayer({ attachment, src, isError, onError }: VideoNotePlayerP
 }
 
 const DEFAULT_VOICE_WAVEFORM_BARS = [
-	8, 12, 16, 10, 20, 14, 9, 18, 15, 24, 13, 17, 22, 10, 14, 20, 12, 23, 16,
-	8, 18, 13, 21, 11, 16, 24, 14, 18, 9, 20, 15, 10, 17, 13, 21, 11, 15, 19,
-	12, 22, 16, 10,
+	8, 12, 16, 10, 20, 14, 9, 18, 15, 24, 13, 17, 22, 10, 14, 20, 12, 23, 16, 8,
+	18, 13, 21, 11, 16, 24, 14, 18, 9, 20, 15, 10, 17, 13, 21, 11, 15, 19, 12, 22,
+	16, 10,
 ];
 const VOICE_WAVEFORM_BAR_COUNT = 42;
-
-async function createWaveformBars(src: string, barCount: number) {
-	const response = await fetch(src);
-	const audioData = await response.arrayBuffer();
-	const AudioContextClass =
-		window.AudioContext ??
-		(window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-	if (!AudioContextClass) return DEFAULT_VOICE_WAVEFORM_BARS;
-
-	const audioContext = new AudioContextClass();
-
-	try {
-		const audioBuffer = await audioContext.decodeAudioData(audioData);
-		const channelData = audioBuffer.getChannelData(0);
-		const samplesPerBar = Math.max(1, Math.floor(channelData.length / barCount));
-		const peaks = Array.from({ length: barCount }, (_, index) => {
-			const start = index * samplesPerBar;
-			const end = Math.min(start + samplesPerBar, channelData.length);
-			let sum = 0;
-
-			for (let sampleIndex = start; sampleIndex < end; sampleIndex += 1) {
-				sum += channelData[sampleIndex] ** 2;
-			}
-
-			return Math.sqrt(sum / Math.max(1, end - start));
-		});
-		const maxPeak = Math.max(...peaks, 0.01);
-
-		return peaks.map((peak) => Math.round(6 + (peak / maxPeak) * 18));
-	} finally {
-		void audioContext.close();
-	}
-}
 
 function normalizeWaveformBars(serialized?: string | null) {
 	const waveform = parseWaveform(serialized);
 	if (!waveform || waveform.length === 0) return null;
 
 	const resampledBars = resampleValues(waveform, VOICE_WAVEFORM_BAR_COUNT);
-	const maxPeak = Math.max(...resampledBars.map((value) => Math.abs(value)), 0.01);
-	return resampledBars.map((value) => Math.round(6 + (Math.abs(value) / maxPeak) * 18));
+	const maxPeak = Math.max(
+		...resampledBars.map((value) => Math.abs(value)),
+		0.01,
+	);
+	return resampledBars.map((value) =>
+		Math.round(6 + (Math.abs(value) / maxPeak) * 18),
+	);
 }
 
 function resampleValues(values: number[], targetLength: number) {

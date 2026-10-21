@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { Room, RoomEvent, DisconnectReason } from "livekit-client";
-import reducer, { callActions, getCallToken, restoreCallSession } from "../src/store/slices/call.slice";
+import reducer, { callActions, getCallToken, restoreCallSession, takeCallHere } from "../src/store/slices/call.slice";
+import { mediaHeaders } from "../src/api/mediaClient";
+import { callApi } from "../src/api/callApi";
 import { bindCallRoomLifecycle } from "../src/components/ActiveCallOverlay/callRoomLifecycle";
 import activeReducer, { activeCallActions, getActiveCall } from "../src/store/slices/activeCall.slice";
 
@@ -13,6 +15,89 @@ const restored = (state = reducer(undefined, { type: "init" }), id = 9) => {
 };
 
 describe("call state reconciliation and response identity", () => {
+	it("keeps the reserved client ID when retrying a failed transfer", async () => {
+		const state = { ...restored(), participantToken: null, mediaOwnership: "PASSIVE" as const };
+		const clientId = mediaHeaders["X-Media-Client-Id"];
+		const request = vi.spyOn(callApi, "getCallToken").mockRejectedValue(new Error("offline"));
+		try {
+			await takeCallHere(9)(vi.fn(), () => ({ call: state }) as any, undefined);
+			expect(mediaHeaders["X-Media-Client-Id"]).toBe(clientId);
+		} finally { request.mockRestore(); }
+	});
+	it("does not let a passive restore interrupt a transfer", () => {
+		let state = { ...restored(), participantToken: null };
+		state = reducer(state, takeCallHere.pending("transfer", 9));
+		state = reducer(state, restoreCallSession.pending("background", undefined));
+		state = reducer(state, restoreCallSession.fulfilled({ ...active(), mediaOwnership: "PASSIVE", participantToken: null }, "background", undefined));
+		expect(state.mediaOwnership).toBe("TRANSFERRING");
+	});
+	it("ends a timed out transfer and ignores its late token", () => {
+		let state = { ...restored(), participantToken: null };
+		state = reducer(state, takeCallHere.pending("transfer", 9));
+		state = reducer(state, callActions.mediaTransferTimedOut(9));
+		state = reducer(state, takeCallHere.fulfilled({ callId: 9, mediaOwnership: "OWNED", participantToken: "late", serverUrl: "ws://media" }, "transfer", 9));
+		expect(state).toMatchObject({ mediaOwnership: "PASSIVE", participantToken: null, tokenRequestId: null });
+		expect(state.error).toContain("другом клиенте");
+	});
+	it("an explicit rejoin waits for cleanup of its previous media owner", () => {
+		let state = reducer(undefined, callActions.prepareJoinedCall({ callId: 9, chatRoomId: 1, roomType: "GROUP", livekitRoomName: "call-9", callerUsername: "alice", hostUsername: "alice" }));
+		state = reducer(state, getCallToken.pending("rejoin", 9));
+		state = reducer(state, getCallToken.fulfilled({ callId: 9, participantToken: null, serverUrl: null, mediaOwnership: "PASSIVE" }, "rejoin", 9));
+		expect(state).toMatchObject({ callId: 9, mediaOwnership: "TRANSFERRING", participantToken: null });
+	});
+	it("passive restore retains the call without mounting media", () => {
+		let state = reducer(undefined, restoreCallSession.pending("passive", undefined));
+		state = reducer(state, restoreCallSession.fulfilled({ ...active(), participantToken: null, serverUrl: null, mediaOwnership: "PASSIVE" }, "passive", undefined));
+		expect(state).toMatchObject({ callId: 9, status: "in_call", mediaOwnership: "PASSIVE", participantToken: null, mediaIntent: false });
+	});
+	it("handoff fences a late token and keeps the CallSession available", () => {
+		let state = restored();
+		state = reducer(state, getCallToken.pending("late-token", 9));
+		const generation = state.mediaGeneration;
+		state = reducer(state, callActions.mediaOwnershipLost({ callId: 9, generation }));
+		state = reducer(state, getCallToken.fulfilled({ callId: 9, participantToken: "stale", serverUrl: "ws://media" }, "late-token", 9));
+		expect(state).toMatchObject({ callId: 9, mediaOwnership: "PASSIVE", participantToken: null, mediaGeneration: generation + 1 });
+		expect(state.closedCallIds).not.toContain(9);
+	});
+	it("caller accepts without reload and keeps its existing media ownership", () => {
+		let state = reducer(undefined, callActions.startOutgoing({ chatRoomId: 1 }));
+		state = reducer(state, callActions.applyCallEvent({ type: "CALL_STARTED", callId: 501, chatRoomId: 1, roomType: "PRIVATE", liveKitRoomName: "dm-1-call-501" }));
+		state = reducer(state, getCallToken.pending("caller-token", 501));
+		state = reducer(state, getCallToken.fulfilled({ callId: 501, participantToken: "media", serverUrl: "ws://localhost:7880" } as any, "caller-token", 501));
+		const generation = state.mediaGeneration;
+		for (const type of ["CALL_ACCEPTED", "CALL_ACCEPT", "CALL_ACCEPTED"] as const) {
+			state = reducer(state, callActions.applyCallEvent({ type, callId: 501, chatRoomId: 1, callStatus: "ACTIVE" }));
+			expect(state).toMatchObject({ status: "in_call", callId: 501, participantToken: "media", mediaGeneration: generation });
+		}
+	});
+	it("accept before the start token response keeps the token request and room", () => {
+		let state = reducer(undefined, callActions.startOutgoing({ chatRoomId: 1 }));
+		state = reducer(state, callActions.applyCallEvent({ type: "CALL_STARTED", callId: 502, chatRoomId: 1, liveKitRoomName: "dm-1-call-502" }));
+		state = reducer(state, getCallToken.pending("pending-start", 502));
+		state = reducer(state, callActions.applyCallEvent({ type: "CALL_ACCEPTED", callId: 502, chatRoomId: 1, callStatus: "ACTIVE" }));
+		expect(state.tokenRequestId).toBe("pending-start");
+		state = reducer(state, getCallToken.fulfilled({ callId: 502, participantToken: "media", serverUrl: "ws://localhost:7880" } as any, "pending-start", 502));
+		expect(state).toMatchObject({ status: "in_call", callId: 502, livekitRoomName: "dm-1-call-502", participantToken: "media" });
+	});
+	it("accept invalidates a stale reconnect NONE response", () => {
+		let state = restored();
+		state = reducer(state, restoreCallSession.pending("reconnect-before-accept", undefined));
+		state = reducer(state, callActions.applyCallEvent({ type: "CALL_ACCEPTED", callId: 9 }));
+		state = reducer(state, restoreCallSession.fulfilled({ callRestoreType: "NONE" } as any, "reconnect-before-accept", undefined));
+		expect(state).toMatchObject({ status: "in_call", callId: 9, participantToken: "media" });
+	});
+	it("duplicate identity clears local media ownership through the terminal callback", () => {
+		const room = new Room();
+		let state = restored();
+		const generation = state.mediaGeneration;
+		const unbind = bindCallRoomLifecycle(room, vi.fn(), () => {
+			state = reducer(state, callActions.mediaSessionEnded({ roomName: "call-9", generation }));
+		});
+		room.emit(RoomEvent.Disconnected, DisconnectReason.DUPLICATE_IDENTITY);
+		expect(state).toMatchObject({ status: "ended", callId: null, participantToken: null });
+		expect(state.closedCallIds).toContain(9);
+		unbind();
+	});
 	it("expired group invitation closes incoming UI without affecting an active media call", () => {
 		let incoming = reducer(undefined, callActions.applyCallEvent({ type: "CALL_INVITE", callId: 9 } as any));
 		incoming = reducer(incoming, callActions.incomingInvitationExpired(9));

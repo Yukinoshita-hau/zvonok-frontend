@@ -1,0 +1,11 @@
+.card { width: min(440px, 100%); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-tertiary); }
+.surface { position: relative; width: 100%; background: #17181b; display: grid; align-items: center; }
+.surface > [role="status"] { position: absolute; inset: 12px; pointer-events: none; }
+.surface video { width: 100%; max-height: 75vh; object-fit: contain; }
+.surface audio { width: 100%; }
+.placeholder { width: 100%; height: 100%; min-height: 100px; color: var(--text-primary); background: transparent; border: 0; cursor: pointer; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; font-size: 12px; }
+.actions span { flex: 1 1 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actions button { color: var(--text-primary); background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; cursor: pointer; }
+.expanded { position: fixed; inset: 5vh 5vw; z-index: 1600; background: var(--bg-tertiary); padding: 12px; overflow: auto; border-radius: 8px; box-shadow: 0 0 0 100vmax #000b; }
+.expanded .surface { max-height: 78vh; }

@@ -16,5 +16,5 @@
 		"outDir": "../electron-dist",
 		"sourceMap": true
 	},
-	"include": ["*.ts"]
+	"include": ["*.ts", "*.cts"]
 }

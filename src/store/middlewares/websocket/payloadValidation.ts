@@ -62,7 +62,7 @@ function isAttachment(value: unknown): value is MessageAttachment {
 	return (
 		isRecord(value) &&
 		id(value.id) &&
-		oneOf(value.type, ["IMAGE", "VIDEO", "AUDIO", "VIDEO_NOTE"]) &&
+		oneOf(value.type, ["IMAGE", "VIDEO", "AUDIO", "VIDEO_NOTE", "FILE"]) &&
 		typeof value.originalFileName === "string" &&
 		typeof value.contentType === "string" &&
 		typeof value.sizeBytes === "number" &&

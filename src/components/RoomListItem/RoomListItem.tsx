@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import styles from "./RoomListItem.module.css";
 import type { RoomListItemProps } from "./RoomListItem.props";
 import { useSelector } from "react-redux";
@@ -9,6 +9,9 @@ import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 export function RoomListItem({ room }: RoomListItemProps) {
 	const navigate = useNavigate();
+	const location = useLocation();
+	const [params] = useSearchParams();
+	const selected = location.pathname === "/dm" && params.get("roomId") === String(room.id);
 
 	const myUser = useSelector((s: RootState) => s.user.myUser);
 	const usersById = useSelector((s: RootState) => s.users.byId);
@@ -45,6 +48,8 @@ export function RoomListItem({ room }: RoomListItemProps) {
 	return (
 		<button
 			className={styles["item"]}
+			aria-current={selected ? "page" : undefined}
+			data-unread={room.unreadCount > 0}
 			onClick={() => navigate(`/dm?roomId=${room.id}`)}
 		>
 			<div className={styles["avatar-wrapper"]}>
@@ -86,7 +91,7 @@ export function RoomListItem({ room }: RoomListItemProps) {
 				</div>
 
 				<div className={styles["message-preview"]}>
-					{room.lastMessageContent || "No messages yet..."}
+					{room.lastMessageContent || (isPrivateRoom ? "Личная переписка" : `${room.memberIds.length} участников`)}
 				</div>
 			</div>
 		</button>

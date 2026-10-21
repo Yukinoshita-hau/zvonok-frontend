@@ -11,4 +11,4 @@ for(const line of raw.split('\n')){
  const stats=value.stats||{};
  events.push({utc:line.split('\t')[0],event:line.slice(0,offset).split('\t').at(-1)?.trim(),callId:Number(room[1]),participant:aliases.get(value.participant),track:value.trackID,direction:value.direction,state:value.state,mime:value.mime,stats:{startTime:stats.startTime,endTime:stats.endTime,packetsSeenPrimary:stats.packetsSeenPrimary,bytes:stats.bytes,packetsLost:stats.packetsLost,rtt:stats.rtt,jitter:stats.jitter}});
 }
-fs.writeFileSync('stage10-2-evidence/sfu-'+Date.now()+'.json',JSON.stringify(events,null,2));console.log('Sanitized SFU events',events.length);
+fs.writeFileSync('artifacts/stages/stage10-2-evidence/sfu-'+Date.now()+'.json',JSON.stringify(events,null,2));console.log('Sanitized SFU events',events.length);

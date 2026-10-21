@@ -6,5 +6,5 @@ export interface GroupRoomModalProps {
 	isOpen: boolean; 
 	friends: Friend[];
 	onClose: () => void;
-	onCreate: (body: CreateGroupBody) => void;
+	onCreate: (body: CreateGroupBody) => Promise<void>;
 }

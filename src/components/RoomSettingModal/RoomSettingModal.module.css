@@ -332,3 +332,17 @@
 .modal[data-state="close"] {
 	animation: scaleOut 0.18s ease forwards;
 }
+
+/* Shared Stage 4 dialog surfaces. */
+.backdrop { background:var(--overlay-backdrop); backdrop-filter:none; }
+.modal { max-height:calc(100dvh - 40px); border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); box-shadow:var(--shadow-dialog); color:var(--text-primary); }
+.modal button { border-radius:var(--radius-sm); }
+.modal button:disabled { opacity:.5; }
+.modal input { border-radius:var(--radius-sm); }
+.header { position:relative; min-height:140px; height:auto; gap:10px; padding:18px; }
+.avatar { width:48px; height:48px; background:var(--bg-input); color:var(--text-primary); }
+.close-button { position:absolute; right:8px; top:8px; width:28px; height:28px; border:0; background:transparent; color:var(--text-secondary); font-size:22px; }
+.section-card { border-radius:var(--radius-sm); box-shadow:none; background:var(--bg-primary); }
+.section-tabs { backdrop-filter:none; background:var(--bg-secondary); border-radius:var(--radius-sm); }
+.confirm-backdrop { background:var(--overlay-backdrop); backdrop-filter:none; }
+.confirm-modal { max-height:calc(100dvh - 32px); overflow:auto; background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-md); color:var(--text-primary); }

@@ -21,6 +21,7 @@ export function useSelectedAttachments() {
 		const nextErrors: AttachmentValidationError[] = [];
 		const nextAttachments: SelectedMessageAttachment[] = [];
 		const currentAttachments = attachmentsRef.current;
+        let totalBytes = currentAttachments.reduce((sum, attachment) => sum + attachment.file.size, 0);
 		const freeSlots = Math.max(0, MAX_ATTACHMENT_FILES - currentAttachments.length);
 
 		if (fileArray.length > freeSlots) {
@@ -31,7 +32,7 @@ export function useSelectedAttachments() {
 		}
 
 		for (const file of fileArray.slice(0, freeSlots)) {
-			const validationError = validateAttachmentFile(file);
+			const validationError = validateAttachmentFile(file, totalBytes);
 			if (validationError) {
 				nextErrors.push(validationError);
 				continue;
@@ -39,12 +40,13 @@ export function useSelectedAttachments() {
 
 			const type = getAttachmentType(file);
 			if (!type) continue;
+            totalBytes += file.size;
 
 			nextAttachments.push({
 				id: createAttachmentId(file),
 				file,
 				type,
-				previewUrl: URL.createObjectURL(file),
+				previewUrl: type === 'IMAGE' || type === 'VIDEO' ? URL.createObjectURL(file) : '',
 			});
 		}
 

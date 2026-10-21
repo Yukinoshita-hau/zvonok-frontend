@@ -11,7 +11,10 @@ import { UserMiniProfileModal } from "../UserMiniProfileModal/UserMiniProfileMod
 import styles from "./FriendRequestsList.module.css";
 import type { FriendRequestsListProps } from "./FriendRequestsList.props";
 
-export function FriendRequestsList({ requestsList, mode }: FriendRequestsListProps) {
+export function FriendRequestsList({
+	requestsList,
+	mode,
+}: FriendRequestsListProps) {
 	const dispatch = useDispatch<AppDispatch>();
 	const [profileUser, setProfileUser] = useState<{
 		id: number;
@@ -42,12 +45,6 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 	return (
 		<>
 			<div className={styles["request-list"]}>
-				{requestsList.length === 0 && (
-					<div className={styles.empty}>
-						{mode === "incoming" ? "Входящих заявок нет" : "Исходящих заявок нет"}
-					</div>
-				)}
-
 				{requestsList.map((request) => {
 					const user = getRequestUser(request);
 					const avatarUrl = resolveMediaUrl(user.avatarUrl);
@@ -58,10 +55,22 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 							key={request.requestId}
 							role="button"
 							tabIndex={0}
-							onClick={() => setProfileUser({
-								...user,
-								incomingRequestId: mode === "incoming" ? request.requestId : null,
-							})}
+							onKeyDown={(event) => {
+								if (
+									event.target === event.currentTarget &&
+									(event.key === "Enter" || event.key === " ")
+								) {
+									event.preventDefault();
+									event.currentTarget.click();
+								}
+							}}
+							onClick={() =>
+								setProfileUser({
+									...user,
+									incomingRequestId:
+										mode === "incoming" ? request.requestId : null,
+								})
+							}
 						>
 							<div className={styles.info}>
 								<div
@@ -76,7 +85,9 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 								</div>
 								<div className={styles.meta}>
 									<div className={styles.username}>{user.displayName}</div>
-									<div className={styles.date}>{formatDate(request.createdAt)}</div>
+									<div className={styles.date}>
+										{formatDate(request.createdAt)}
+									</div>
 								</div>
 							</div>
 
@@ -87,7 +98,11 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 											className={cn(styles.btn, styles["btn-accept"])}
 											onClick={(event) => {
 												event.stopPropagation();
-												dispatch(friendActions.acceptFriendRequest({ requestId: request.requestId }));
+												dispatch(
+													friendActions.acceptFriendRequest({
+														requestId: request.requestId,
+													}),
+												);
 											}}
 										>
 											Принять
@@ -96,7 +111,11 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 											className={cn(styles.btn, styles["btn-cancel"])}
 											onClick={(event) => {
 												event.stopPropagation();
-												dispatch(friendActions.rejectFriendRequest({ requestId: request.requestId }));
+												dispatch(
+													friendActions.rejectFriendRequest({
+														requestId: request.requestId,
+													}),
+												);
 											}}
 										>
 											Отклонить
@@ -107,7 +126,11 @@ export function FriendRequestsList({ requestsList, mode }: FriendRequestsListPro
 										className={cn(styles.btn, styles["btn-cancel"])}
 										onClick={(event) => {
 											event.stopPropagation();
-											dispatch(friendActions.cancelFriendRequest({ requestId: request.requestId }));
+											dispatch(
+												friendActions.cancelFriendRequest({
+													requestId: request.requestId,
+												}),
+											);
 										}}
 									>
 										Отменить

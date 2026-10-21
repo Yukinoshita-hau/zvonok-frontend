@@ -24,6 +24,7 @@ export function ScreenShareSettingsSection({
 }: ScreenShareSettingsSectionProps) {
 	return (
 		<section className={styles["settings-card"]}>
+			<p>Значение задаёт качество по умолчанию при следующем открытии выбора экрана. Текущая демонстрация не перезапускается. Auto использует рекомендацию проверки соединения или Medium; непрерывная адаптация не подключена.</p>
 			<div className={styles["section-header"]}>
 				<div>
 					<h3 className={styles["section-title"]}>Демонстрация экрана</h3>

@@ -327,3 +327,7 @@
 		flex-direction: column-reverse;
 	}
 }
+.backdrop { background: var(--overlay-backdrop); backdrop-filter: none; }
+.modal { max-height: calc(100dvh - 40px); overflow-y: auto; border-radius: var(--radius-lg); background: var(--bg-secondary); border-color: var(--border); box-shadow: var(--shadow-dialog); padding: 20px; }
+.hero-icon { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--accent); color: var(--text-on-accent); box-shadow: none; }
+.hero { grid-template-columns: 44px minmax(0, 1fr); }

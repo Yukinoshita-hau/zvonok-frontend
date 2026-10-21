@@ -1,0 +1,9 @@
+**
+!package.json
+!package-lock.json
+!index.html
+!vite.config.ts
+!tsconfig*.json
+!src/**
+!public/**
+!deployment/frontend.Caddyfile

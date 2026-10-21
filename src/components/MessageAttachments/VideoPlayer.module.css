@@ -1,0 +1,4 @@
+.player :global(.media-time-current-value),
+.player :global(.media-time-separator) { display: inline; }
+.player :global(.media-cast-button),
+.player :global(.media-airplay-button) { display: none; }

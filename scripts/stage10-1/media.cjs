@@ -19,7 +19,7 @@ await r.run('compatible server DM connect, camera, authorization and real JWT ex
  const outsider=await c.request(z,`/calls/${call.callId}/token`,'POST');assert.ok([403,404].includes(outsider.status()));
  return {callId:call.callId,expiredOldJwt:401,pcsPreserved:pcs,connections:a.wsPaths,rtcConsoleErrors:a.console.filter(x=>/rtc|WebSocket/.test(x)),receiverStats:await c.stats(x),outsider:outsider.status()};
 });
-await r.run('missed CALL_ENDED with live browser and STOMP recovery releases media',async()=>{
+await r.run('missed CALL_ENDED with live browser and STOMP recovery artifacts/stages/releases media',async()=>{
  const start=await x.page.evaluate(()=>window.__frames.length);await x.page.evaluate(()=>window.__sockets.filter(s=>s.readyState===1&&s.url.includes(':18080/')).forEach(s=>s.close()));
  await a.page.getByTitle('Завершить звонок',{exact:true}).click();await c.until(async()=>!(await c.state(x)).call.id,15000);await c.ready(x);
  assert.equal(await openPcs(a),0);assert.equal(await openPcs(x),0);const missed=await x.page.evaluate(start=>window.__frames.slice(start).every(f=>!f.includes('CALL_ENDED')),start);assert.ok(missed);

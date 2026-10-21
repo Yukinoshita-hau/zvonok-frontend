@@ -7,3 +7,17 @@ README.md
 .env
 .env.local
 npm-debug.log
+release-stage5b*
+media-stage5b-evidence
+release-stage5c*
+media-stage5c-evidence
+dist-stage5c-*
+
+main-media-update
+# Local build and test artifacts are not inputs to the web build.
+work/
+release/
+*-evidence/
+*.log
+/artifacts/
+artifacts/stages/

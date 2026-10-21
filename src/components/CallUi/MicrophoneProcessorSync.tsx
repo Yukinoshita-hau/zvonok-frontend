@@ -1,7 +1,8 @@
 import { useRoomContext } from "@livekit/components-react";
 import { LocalAudioTrack, Track } from "livekit-client";
 import { useEffect, useRef } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { deviceActions } from '../../store/slices/device.slice';
 import type { RootState } from "../../store/store";
 import { ZvonokLiveKitAudioProcessor } from "../../livekit/audio/ZvonokLiveKitAudioProcessor";
 import type { ZvonokAudioGraphConfig } from "../../livekit/audio/ZvonokAudioGraphConfig";
@@ -9,6 +10,7 @@ import { mediaDiagnostic } from "./MediaDiagnostics";
 
 export function MicrophoneProcessorSync() {
 	const room = useRoomContext();
+	const dispatch = useDispatch();
 
 	const processedTrackRef = useRef<LocalAudioTrack | null>(null);
 	const processorRef = useRef<ZvonokLiveKitAudioProcessor | null>(null);
@@ -81,6 +83,7 @@ export function MicrophoneProcessorSync() {
 					processorRef.current = processor;
 				}
 			} catch (error) {
+				dispatch(deviceActions.setMediaError('Не удалось применить обработку голоса. Проверьте настройки и микрофон.'));
 				console.log("[audio-processor] failed to apply processor", error);
 			} finally {
 				syncing = false;

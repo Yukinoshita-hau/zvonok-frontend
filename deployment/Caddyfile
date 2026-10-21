@@ -1,0 +1,51 @@
+{
+    admin off
+    log default {
+        format filter {
+            wrap json
+            fields {
+                request>headers delete
+                request>uri query {
+                    delete access_token
+                    delete token
+                    delete X-Amz-Credential
+                    delete X-Amz-Signature
+                    delete X-Amz-Security-Token
+                }
+            }
+        }
+    }
+}
+:2016 {
+    respond /health 200
+}
+{$APP_SITE} {
+    header Cross-Origin-Opener-Policy same-origin
+    header Cross-Origin-Embedder-Policy require-corp
+    request_body {
+        max_size 57671680
+    }
+    @private path /api/actuator* /api/swagger-ui* /api/v3/api-docs*
+    respond @private 404
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+    handle {
+        reverse_proxy frontend:3000
+    }
+}
+{$S3_SITE} {
+    # Presigned host, path and query pass unchanged. Never use handle_path here.
+    @objects path /zvonok-data/*
+    handle @objects {
+        @read method GET HEAD OPTIONS
+        route {
+            reverse_proxy @read rustfs:9000
+            respond 405
+        }
+    }
+    respond 404
+}
+{$LIVEKIT_SITE} {
+    reverse_proxy livekit:7880
+}

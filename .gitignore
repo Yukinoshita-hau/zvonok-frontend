@@ -38,4 +38,41 @@ build/
 
 # AI
 AGENTS.md
+!AGENTS.md
 docs
+
+# Generated Stage 5A fixtures (recreate with scripts/media-stage5a-fixtures.ps1).
+/media-stage5a-evidence/*.mp4
+/media-stage5a-evidence/*.webm
+/media-stage5a-evidence/*.mp3
+
+# Generated Stage 5B test documents and packaged runtimes.
+/media-stage5b-evidence/fixtures/
+/release-stage5b*/
+/release-stage5c*/
+/media-stage5c-evidence/rollback/
+/dist-stage5c-*/
+
+/main-media-update/
+/artifacts/stages/main-backend-inspect.jar
+
+# Isolated Electron profiles and generated local packages contain browser data/binaries.
+/work/electron-native/**/profile/
+/work/electron-native/package/
+/work/electron-native/update-staging/*/cache/
+/work/electron-native/update-staging/**/cache/
+
+# E6 isolated acceptance credentials, browser profiles and packaged binaries.
+/artifacts/stages/electron-e6/**/*.local
+/artifacts/stages/electron-e6/*.local.yaml
+./artifacts/stages/electron-e6/**/profile*/
+/artifacts/stages/electron-e6/package/
+./artifacts/stages/electron-e6/vite-cache/
+artifacts
+./artifacts
+electron
+electron-dist
+benchmarks
+./electron
+./electron-dist
+./benchmarks

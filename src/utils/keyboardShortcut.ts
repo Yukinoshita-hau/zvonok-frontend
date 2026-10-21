@@ -12,20 +12,16 @@ export function normalizeKeyboardShortcut(
 	value: Partial<KeyboardShortcutPreference> | undefined,
 	fallback: KeyboardShortcutPreference
 ): KeyboardShortcutPreference {
-	if (!value?.code || typeof value.code !== "string") return fallback;
-	return {
-		code: value.code,
-		key: typeof value.key === "string" ? value.key : "",
-		ctrlKey: Boolean(value.ctrlKey),
-		altKey: Boolean(value.altKey),
-		shiftKey: Boolean(value.shiftKey),
-		metaKey: Boolean(value.metaKey),
-		label: typeof value.label === "string" && value.label.trim() ? value.label : fallback.label,
-	};
+	if (!value?.code || typeof value.code !== "string" || !/^(Key[A-Z]|Digit[0-9]|Numpad\w+|F([1-9]|1[0-9]|2[0-4])|Space|Arrow(Up|Down|Left|Right)|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Minus|Equal|BracketLeft|BracketRight|Backslash|Semicolon|Quote|Comma|Period|Slash|Backquote)$/.test(value.code)) return fallback;
+	if (['ctrlKey', 'altKey', 'shiftKey', 'metaKey'].some(key => typeof value[key as keyof KeyboardShortcutPreference] !== 'boolean')) return fallback;
+	return createShortcutPreference({...value, key: typeof value.key === 'string' ? value.key : ''} as KeyboardEvent) ?? fallback;
 }
 
 export function createShortcutPreference(event: KeyboardEvent): KeyboardShortcutPreference | null {
 	if (isModifierKey(event.key)) return null;
+	if (['Escape', 'Tab', 'Enter'].includes(event.code)) return null;
+	if (event.metaKey || (event.altKey && event.code === 'F4') ||
+		(event.ctrlKey && !event.altKey && ['KeyW', 'KeyR', 'KeyT', 'KeyN', 'KeyL'].includes(event.code))) return null;
 
 	const keyLabel = getShortcutKeyLabel(event);
 	if (!keyLabel) return null;
@@ -50,7 +46,7 @@ export function createShortcutPreference(event: KeyboardEvent): KeyboardShortcut
 }
 
 export function isKeyboardShortcutEvent(
-	event: KeyboardEvent,
+	event: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>,
 	hotkey: KeyboardShortcutPreference
 ) {
 	return (

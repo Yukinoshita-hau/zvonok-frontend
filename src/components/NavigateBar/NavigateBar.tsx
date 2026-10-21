@@ -1,82 +1,56 @@
-import { useNavigate } from "react-router-dom";
-import styles from "./NavigateBar.module.css";
-import { NavigateBarButton } from "../NavigateBarButton/NavigateBarButton";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { Bell, MessageCircle } from "lucide-react";
 import type { AppDispatch, RootState } from "../../store/store";
-import { notificationAction } from "../../store/slices/notification.slice";
-import { useState } from "react";
-import { SettingModal } from "../SettingModal/SettingModal";
 import { callActions } from "../../store/slices/call.slice";
-import { StringToColor } from "../../utils/stringHelpers";
-import { SettingsIcon } from "lucide-react";
+import { NavigateBarButton } from "../NavigateBarButton/NavigateBarButton";
 import { ConferenceLauncher } from "../ConferenceLauncher/ConferenceLauncher";
-import { resolveMediaUrl } from "../../utils/mediaUrl";
-
-const messageNavIconUrl = `${import.meta.env.BASE_URL}message-nav-icon.png`;
-const notifyIconUrl = `${import.meta.env.BASE_URL}notify-icon.png`;
+import styles from "./NavigateBar.module.css";
 
 export function NavigateBar() {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const dispatch = useDispatch<AppDispatch>();
-	const friend = useSelector((s: RootState) => s.friend);
-	const { notifications } = useSelector((s: RootState) => s.notification);
-	const username = useSelector((s: RootState) => s.user.myUser?.username);
-	const displayName = useSelector((s: RootState) => s.user.myUser?.displayName);
-	const avatarUrl = useSelector((s: RootState) => s.user.myUser?.avatarUrl);
-	const [isSettingModalOpen, setIsSettingModalOpen] = useState<boolean>(false);
-
-	const requestsCount = friend.incomingRequests.length + friend.outgoingRequests.length;
-	const unreadNotification = notifications.filter(n => n.read === false).length;
-	const avatarBg = StringToColor(username ?? "");
-	const resolvedAvatarUrl = resolveMediaUrl(avatarUrl);
-
-	const goToDM = () => {
-		dispatch(callActions.setCallFocusMode(false))
-		navigate("/");
-	}
-
-	const notificationHandle = () => {
-		dispatch(notificationAction.markAllIsRead());
-		navigate("/notifications")
-	}
-
-	return <div className={styles["navigate-bar"]}>
-		<div className={styles["top"]}>
-			<NavigateBarButton onClick={goToDM}>
-				<img src={messageNavIconUrl} />
-				{requestsCount > 0 && (
-					<span className={styles["messages-badge"]}></span>
-				)}
+	const requests = useSelector(
+		(s: RootState) =>
+			s.friend.incomingRequests.length + s.friend.outgoingRequests.length,
+	);
+	const unread = useSelector(
+		(s: RootState) =>
+			s.notification.notifications.filter((n) => !n.read).length,
+	);
+	const notificationsActive = location.pathname === "/notifications";
+	return (
+		<nav className={styles["navigate-bar"]} aria-label="Разделы Zvonok">
+			<NavigateBarButton
+				title="Личные сообщения"
+				aria-label="Личные сообщения"
+				aria-current={!notificationsActive ? "page" : undefined}
+				onClick={() => {
+					dispatch(callActions.setCallFocusMode(false));
+					navigate("/");
+				}}
+			>
+				<MessageCircle size={25} />
+				<span className={styles.brand}>z</span>
+				{requests > 0 && <span className={styles.badge}>{requests}</span>}
 			</NavigateBarButton>
-		</div>
-
-		<div className={styles["divider"]} />
-
-		<div className={styles["middle"]} />
-
-		<div className={styles["bottom"]}>
-			<NavigateBarButton onClick={notificationHandle}>
-				<img src={notifyIconUrl} />
-
-				{unreadNotification > 0 && (
-					<span className={styles["messages-badge"]}/>
-				)}
+			<div className={styles.divider} />
+			<NavigateBarButton
+				title="Уведомления"
+				aria-label="Уведомления"
+				aria-current={notificationsActive ? "page" : undefined}
+				onClick={() => {
+					navigate("/notifications");
+				}}
+			>
+				<Bell size={23} />
+				{unread > 0 && <span className={styles.badge}>{unread}</span>}
 			</NavigateBarButton>
-
 			<ConferenceLauncher />
-
-			<NavigateBarButton onClick={() => setIsSettingModalOpen(true)}>
-				<SettingsIcon color="white" size={28} />
-			</NavigateBarButton>
-
-			<div className={styles["user"]} onClick={() => null} style={!resolvedAvatarUrl ? { backgroundColor: avatarBg } : undefined}>
-				{!!resolvedAvatarUrl ? (
-					<img src={resolvedAvatarUrl} alt="avatar" />
-				) : (
-					<div>{(displayName?.[0] || "U").toUpperCase()}</div>
-				)}
+			<div className={styles.wordmark} aria-hidden="true">
+				Z
 			</div>
-		</div>
-		{<SettingModal isOpen={isSettingModalOpen} onClose={() => setIsSettingModalOpen(false)} />}
-	</div >
+		</nav>
+	);
 }

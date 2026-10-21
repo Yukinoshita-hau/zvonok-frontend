@@ -22,5 +22,5 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
  const token=await a.page.request.post(`http://127.0.0.1:18080/api/calls/${call.callId}/token`,{headers:{Authorization:`Bearer ${a.token}`}});assert.equal(token.status(),403);
  Object.assign(result,{status:'PASS',callId:call.callId,roomId:group.id,afterGraceTokenStatus:token.status()});console.log('PASS after grace cleanup, restore NONE, token 403');
  }catch(e){result.status='FAIL';result.error=e.message;process.exitCode=1;console.error(e.message);}
- finally{fs.writeFileSync('stage10-evidence/grace-results.json',JSON.stringify(result,null,2));await browser.close();}
+ finally{fs.writeFileSync('artifacts/stages/stage10-evidence/grace-results.json',JSON.stringify(result,null,2));await browser.close();}
 })();

@@ -5,7 +5,7 @@ import type { RoomMemberProfilePopoverProps } from "./RoomMemberProfilePopover.p
 import styles from "./RoomMemberProfilePopover.module.css";
 
 const CARD_WIDTH = 320;
-const CARD_HEIGHT = 260;
+const CARD_HEIGHT = 300;
 const VIEWPORT_GAP = 12;
 
 export function RoomMemberProfilePopover({ member, anchorRect }: RoomMemberProfilePopoverProps) {

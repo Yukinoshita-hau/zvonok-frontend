@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useRoomContext } from "@livekit/components-react";
 import { LocalAudioTrack, Track, type LocalTrack } from "livekit-client";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { deviceActions } from '../../store/slices/device.slice';
 import type { RootState } from "../../store/store";
 import { getMicrophonePublishOptions } from "../../utils/microphoneQuality";
 import { useMicrophoneCaptureOptions } from "./useMicrophoneCaptureOptions";
@@ -10,13 +11,15 @@ import { useCallMicrophoneOwner } from "./CallMicrophoneProvider";
 
 export function MicrophoneSettingsSync() {
 	const room = useRoomContext();
+	const dispatch = useDispatch();
 	const microphoneOwner = useCallMicrophoneOwner();
 	const captureOptions = useMicrophoneCaptureOptions();
 	const quality = useSelector((s: RootState) => s.device.micQualitySetting);
 	const publishOptions = useMemo(() => getMicrophonePublishOptions(quality), [quality]);
-	type Options = { capture: typeof captureOptions; publish: typeof publishOptions; key: string };
+	type Options = { capture: typeof captureOptions; publish: typeof publishOptions; key: string; processingKey: string };
 	const requestRef = useRef<((options: Options) => void) | null>(null);
 	const key = JSON.stringify({ captureOptions, publishOptions });
+	const processingKey = JSON.stringify({ captureOptions: {...captureOptions, deviceId: undefined}, publishOptions });
 
 	useEffect(() => {
 		mediaDiagnostic("react.microphoneSettings.mount");
@@ -24,6 +27,7 @@ export function MicrophoneSettingsSync() {
 		let running = false;
 		let pending: Options | null = null;
 		let applied = "";
+		let appliedProcessing = '';
 		const inFlightTracks = new Set<LocalAudioTrack>();
 		const stoppedTracks = new WeakSet<LocalTrack>();
 		const stopTrack = (track: LocalTrack) => {
@@ -39,8 +43,16 @@ export function MicrophoneSettingsSync() {
 					const next = pending;
 					pending = null;
 					if (next.key === applied) continue;
+					const current = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
+					// Room already confirmed a device-only switch; retain its track and processor.
+					if (next.processingKey === appliedProcessing && current instanceof LocalAudioTrack &&
+						(!next.capture.deviceId || current.mediaStreamTrack.getSettings().deviceId === next.capture.deviceId)) {
+						applied = next.key;
+						continue;
+					}
 					if (!room.localParticipant.isMicrophoneEnabled) {
 						applied = next.key;
+						appliedProcessing = next.processingKey;
 						continue;
 					}
 					const old = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
@@ -85,8 +97,10 @@ export function MicrophoneSettingsSync() {
 						return;
 					}
 					applied = next.key;
+					appliedProcessing = next.processingKey;
 				}
 			} catch (error) {
+				dispatch(deviceActions.setMediaError('Не удалось применить настройки микрофона. Проверьте микрофон перед продолжением звонка.'));
 				console.error("Failed to republish microphone", error);
 			} finally {
 				running = false;
@@ -109,7 +123,7 @@ export function MicrophoneSettingsSync() {
 
 	useEffect(() => {
 		microphoneOwner.updateOptions(captureOptions, publishOptions);
-		requestRef.current?.({ capture: captureOptions, publish: publishOptions, key });
+		requestRef.current?.({ capture: captureOptions, publish: publishOptions, key, processingKey });
 	}, [room, captureOptions, microphoneOwner, publishOptions, key]);
 	return null;
 }

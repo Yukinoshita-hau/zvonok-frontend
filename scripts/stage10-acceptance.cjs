@@ -3,7 +3,7 @@ const { chromium } = require(process.env.STAGE10_PLAYWRIGHT || 'C:/Users/Пол�
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
 const BASE='http://127.0.0.1:13000', API='http://127.0.0.1:18080/api';
-const out='stage10-evidence'; fs.mkdirSync(out,{recursive:true});
+const out='artifacts/stages/stage10-evidence'; fs.mkdirSync(out,{recursive:true});
  const results=[], errors=[];
 const participants=[];
 const record=(scenario,details={})=>{results.push({scenario,status:'PASS',...details}); console.log('PASS',scenario);};
@@ -89,7 +89,7 @@ if(require.main===module)(async()=>{
  const before=await stats(a),pcCount=await a.page.evaluate(()=>window.__pcs.length);await a.page.evaluate(()=>window.__sockets.filter(s=>s.readyState===1&&s.url.includes(':18080/')).forEach(s=>s.close()));
  await until(async()=>a.page.evaluate(()=>window.__sockets.filter(s=>s.readyState===1&&s.url.includes(':18080/')).length>0),15000);
  const after=await stats(a);assert.equal(await a.page.evaluate(()=>window.__pcs.length),pcCount);assert.ok(after.some(pc=>pc.inbound.some(r=>r.kind==='audio'&&r.bytesReceived>Math.max(0,...before.flatMap(x=>x.inbound.filter(r=>r.kind==='audio').map(r=>r.bytesReceived))))));record(current);
- current='end call and tracks release';await a.page.getByTitle('Завершить звонок',{exact:true}).click();
+ current='end call and tracks artifacts/stages/release';await a.page.getByTitle('Завершить звонок',{exact:true}).click();
  await until(async()=> (await stats(a)).every(pc=>pc.connectionState==='closed'));await until(async()=> (await stats(b)).every(pc=>pc.connectionState==='closed'));
  for(const u of [a,b])await u.page.waitForFunction(()=>window.__mediaTracks.every(t=>t.readyState==='ended'));
  const resources=await Promise.all([a,b].map(u=>u.page.evaluate(()=>({tracks:window.__mediaTracks.map(t=>({kind:t.kind,state:t.readyState})),contexts:window.__audioContexts.map(c=>c.state)}))));

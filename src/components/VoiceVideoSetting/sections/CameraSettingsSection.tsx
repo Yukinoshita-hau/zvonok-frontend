@@ -1,4 +1,6 @@
-import { deviceActions } from "../../../store/slices/device.slice";
+import { deviceActions, selectMediaDevice } from "../../../store/slices/device.slice";
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../store/store';
 import type { AppDispatch } from "../../../store/store";
 import type { CallQualitySetting } from "../../../utils/callQuality";
 import CameraView from "../CameraPreview/CameraView";
@@ -10,6 +12,7 @@ interface CameraSettingsSectionProps {
 	cameras: MediaDeviceInfo[];
 	cameraQuality: CallQualitySetting;
 	cameraTestEnable: boolean;
+	testDisabled?: boolean;
 	onCameraTestToggle: () => void;
 }
 
@@ -19,13 +22,16 @@ export function CameraSettingsSection({
 	cameras,
 	cameraQuality,
 	cameraTestEnable,
+	testDisabled,
 	onCameraTestToggle,
 }: CameraSettingsSectionProps) {
+	const pending = useSelector((s: RootState) => s.device.deviceSwitchPending);
 	return (
+		<div className={styles['media-grid']}>
 		<section className={styles["settings-card"]}>
 			<div className={styles["section-header"]}>
 				<div>
-					<h3 className={styles["section-title"]}>Видео</h3>
+					<h3 className={styles["section-title"]}>Источник видео</h3>
 					<p className={styles["section-subtitle"]}>
 						Камера, предпросмотр и качество видеопотока.
 					</p>
@@ -36,11 +42,15 @@ export function CameraSettingsSection({
 				<label className={styles["label"]}>Камера</label>
 
 				<select
+					title={cameras.find(device=>device.deviceId===selectedCameraId)?.label || 'Системная камера'}
+					aria-label="Камера"
 					className={styles["input"]}
 					value={selectedCameraId}
-					onChange={(e) => dispatch(deviceActions.setCamera(e.target.value))}
+					disabled={pending}
+					onChange={(e) => void dispatch(selectMediaDevice({kind: 'videoinput', id: e.target.value}))}
 				>
-					<option value="default">Default</option>
+					<option value="default">Системная камера</option>
+					{selectedCameraId !== 'default' && !cameras.some(d => d.deviceId === selectedCameraId) && <option value={selectedCameraId}>Выбранная камера (недоступна или нет разрешения)</option>}
 					{cameras.map((camera, index) => (
 						<option key={camera.deviceId} value={camera.deviceId}>
 							{getDeviceLabel(camera, index, "Camera")}
@@ -49,12 +59,16 @@ export function CameraSettingsSection({
 				</select>
 			</div>
 
+		</section>
+		<section className={`${styles['settings-card']} ${styles['preview-panel']}`}>
+			<h3 className={styles['section-title']}>Предпросмотр камеры</h3>
 			<div className={styles["form-group"]}>
-				<label className={styles["label"]}>Предпросмотр камеры</label>
 
 				{cameraTestEnable && <CameraView />}
+				{!cameraTestEnable && <div className={styles['preview-idle']}>Камера выключена. Начните проверку, чтобы увидеть изображение.</div>}
 
 				<button
+					disabled={testDisabled}
 					className={
 						cameraTestEnable ? styles["btn-secondary"] : styles["btn-primary"]
 					}
@@ -63,11 +77,14 @@ export function CameraSettingsSection({
 					{cameraTestEnable ? "Закончить проверку" : "Проверить камеру"}
 				</button>
 			</div>
-
+		</section>
+		<section className={styles['settings-card']}>
 			<div className={styles["form-group"]}>
 				<label className={styles["label"]}>Качество камеры</label>
+				<p>Применяется при следующем включении камеры. Auto использует рекомендацию проверки соединения; непрерывная адаптация не подключена.</p>
 
 				<select
+					aria-label="Качество камеры"
 					className={styles["input"]}
 					value={cameraQuality}
 					onChange={(e) =>
@@ -83,6 +100,7 @@ export function CameraSettingsSection({
 				</select>
 			</div>
 		</section>
+		</div>
 	);
 }
 

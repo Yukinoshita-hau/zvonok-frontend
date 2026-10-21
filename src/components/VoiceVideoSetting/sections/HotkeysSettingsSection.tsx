@@ -6,6 +6,8 @@ import {
 	type KeyboardShortcutPreference,
 } from "../../../utils/keyboardShortcut";
 import styles from "../VoiceVideoSetting.module.css";
+import { useSelector } from 'react-redux';
+import { isKeyboardShortcutEvent } from '../../../utils/keyboardShortcut';
 
 interface HotkeysSettingsSectionProps {
 	dispatch: AppDispatch;
@@ -20,8 +22,13 @@ export function HotkeysSettingsSection({
 	toggleCameraHotkey,
 	toggleScreenShareHotkey,
 }: HotkeysSettingsSectionProps) {
+	const error = useSelector((s: RootState) => s.device.hotkeyError);
+	const keys = [muteMicrophoneHotkey, toggleCameraHotkey, toggleScreenShareHotkey];
 	return (
 		<section className={styles["settings-card"]}>
+			{error && <p role="alert">{error}</p>}
+			<p>В браузере — только при фокусе приложения во время звонка. Глобальная регистрация доступна через существующий Electron bridge; отказ ОС показывается как ошибка. Push-to-talk отсутствует.</p>
+			<p>Фиксированные команды: Enter — отправить сообщение; Shift+Enter — новая строка; Escape — закрыть диалог или выйти из Cinema. Навигация — Tab / Shift+Tab и Enter.</p>
 			<div className={styles["section-header"]}>
 				<div>
 					<h3 className={styles["section-title"]}>Горячие клавиши</h3>
@@ -36,6 +43,7 @@ export function HotkeysSettingsSection({
 					label="Микрофон"
 					description="Включить или выключить микрофон."
 					value={muteMicrophoneHotkey}
+					conflicts={keys.filter(key => key !== muteMicrophoneHotkey)}
 					onChange={(value) => dispatch(deviceActions.setMuteMicrophoneHotkey(value))}
 					onReset={() => dispatch(deviceActions.resetMuteMicrophoneHotkey())}
 				/>
@@ -44,6 +52,7 @@ export function HotkeysSettingsSection({
 					label="Камера"
 					description="Включить или выключить камеру."
 					value={toggleCameraHotkey}
+					conflicts={keys.filter(key => key !== toggleCameraHotkey)}
 					onChange={(value) => dispatch(deviceActions.setToggleCameraHotkey(value))}
 					onReset={() => dispatch(deviceActions.resetToggleCameraHotkey())}
 				/>
@@ -52,6 +61,7 @@ export function HotkeysSettingsSection({
 					label="Демонстрация экрана"
 					description="Остановить демонстрацию или открыть выбор экрана."
 					value={toggleScreenShareHotkey}
+					conflicts={keys.filter(key => key !== toggleScreenShareHotkey)}
 					onChange={(value) => dispatch(deviceActions.setToggleScreenShareHotkey(value))}
 					onReset={() => dispatch(deviceActions.resetToggleScreenShareHotkey())}
 				/>
@@ -68,6 +78,7 @@ interface HotkeyRowProps {
 	label: string;
 	description: string;
 	value: KeyboardShortcutPreference;
+	conflicts: KeyboardShortcutPreference[];
 	onChange: (value: KeyboardShortcutPreference) => void;
 	onReset: () => void;
 }
@@ -76,6 +87,7 @@ function HotkeyRow({
 	label,
 	description,
 	value,
+	conflicts,
 	onChange,
 	onReset,
 }: HotkeyRowProps) {
@@ -91,6 +103,7 @@ function HotkeyRow({
 
 	const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
 		if (!isCapturing) return;
+		if (event.key === 'Tab') { setIsCapturing(false); return; }
 		event.preventDefault();
 		event.stopPropagation();
 
@@ -102,7 +115,11 @@ function HotkeyRow({
 
 		const nextHotkey = createShortcutPreference(event.nativeEvent);
 		if (!nextHotkey) {
-			setError("Нажмите обычную клавишу или сочетание клавиш.");
+			setError("Эта комбинация зарезервирована. Выберите другую клавишу или сочетание.");
+			return;
+		}
+		if (conflicts.some(key => isKeyboardShortcutEvent(nextHotkey, key))) {
+			setError('Комбинация уже назначена другой команде.');
 			return;
 		}
 
@@ -121,6 +138,8 @@ function HotkeyRow({
 			<div className={styles["hotkey-row"]}>
 				<input
 					ref={inputRef}
+					aria-label={`Горячая клавиша: ${label}`}
+					data-hotkey-capturing={isCapturing}
 					className={styles["input"]}
 					readOnly
 					value={isCapturing ? "Нажмите клавишу..." : value.label}
@@ -147,7 +166,7 @@ function HotkeyRow({
 				</button>
 			</div>
 
-			{error && <span className={styles["error-inline"]}>{error}</span>}
+			{error && <span role="alert" className={styles["error-inline"]}>{error}</span>}
 		</div>
 	);
 }

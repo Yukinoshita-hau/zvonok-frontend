@@ -1,6 +1,6 @@
 import type { TrackReference } from "@livekit/components-react";
 import type { Participant } from "livekit-client";
-import type { MouseEvent } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 
 export interface CallParticipantTileProps {
 	participant: Participant;
@@ -8,6 +8,10 @@ export interface CallParticipantTileProps {
 	avatarUrl?: string | null;
 	displayName?: string;
 	className: string;
+	style?: CSSProperties;
+	cardId?: string;
+	onVideoDimensions?: (width: number, height: number) => void;
+	onAspectRatio?: (id: string, ratio: number) => void;
 	/** Карточка отображает трансляцию экрана (отдельная плитка). */
 	isScreenShareCard?: boolean;
 	/** Карточка в данный момент выбрана как главный фокус. */

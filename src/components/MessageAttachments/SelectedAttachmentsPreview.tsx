@@ -7,6 +7,7 @@ interface SelectedAttachmentsPreviewProps {
 	errors: AttachmentValidationError[];
 	onRemove: (id: string) => void;
 	onClearError?: () => void;
+	disabled?: boolean;
 }
 
 function formatFileSize(bytes: number): string {
@@ -19,6 +20,7 @@ export function SelectedAttachmentsPreview({
 	errors,
 	onRemove,
 	onClearError,
+	disabled = false,
 }: SelectedAttachmentsPreviewProps) {
 	if (attachments.length === 0 && errors.length === 0) return null;
 
@@ -45,7 +47,7 @@ export function SelectedAttachmentsPreview({
 						<div key={attachment.id} className={styles["selected-card"]}>
 							{attachment.type === "IMAGE" ? (
 								<img src={attachment.previewUrl} alt={attachment.file.name} />
-							) : (
+							) : attachment.type === "FILE" || attachment.type === "AUDIO" ? <div className={styles["video-preview"]}>{attachment.type === 'FILE' ? 'Файл' : 'Аудиофайл'}</div> : (
 								<div className={styles["video-preview"]}>
 									<video src={attachment.previewUrl} muted preload="metadata" />
 									<FileVideo size={20} />
@@ -53,12 +55,13 @@ export function SelectedAttachmentsPreview({
 							)}
 							<div className={styles["selected-meta"]}>
 								<span>{attachment.file.name}</span>
-								<small>{formatFileSize(attachment.file.size)}</small>
+								<small>{formatFileSize(attachment.file.size)} · {attachment.file.type || attachment.type}</small>
 							</div>
 							<button
 								type="button"
 								className={styles["remove-selected"]}
 								onClick={() => onRemove(attachment.id)}
+								disabled={disabled}
 								aria-label="Удалить вложение"
 							>
 								<X size={14} />

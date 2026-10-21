@@ -1,4 +1,4 @@
-const fs=require('node:fs'),path=require('node:path'),OUT='stage10-2-evidence';
+const fs=require('node:fs'),path=require('node:path'),OUT='artifacts/stages/stage10-2-evidence';
 const files=fs.readdirSync(OUT),serverFile=files.filter(v=>/^sfu-\d+\.json$/.test(v)).sort().at(-1),server=serverFile?JSON.parse(fs.readFileSync(path.join(OUT,serverFile),'utf8')):[];
 const hmrFile=path.join(OUT,'hmr-times.json'),hmr=fs.existsSync(hmrFile)?JSON.parse(fs.readFileSync(hmrFile,'utf8')).map(value=>Date.parse(value)):[];
 const totals=(peers,type,key)=>(peers||[]).filter(p=>p.connection==='connected').flatMap(p=>p.rtp).filter(v=>v.kind==='audio'&&v.type===type).reduce((sum,v)=>sum+(v[key]||0),0);

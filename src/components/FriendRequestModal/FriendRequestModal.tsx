@@ -1,6 +1,7 @@
 import cn from "classnames";
 import { Search, Send, UserPlus, X } from "lucide-react";
 import { useState } from "react";
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { useModalAnimation } from "../../hooks/useModalAnimation";
 import styles from "./FriendRequestModal.module.css";
 import type { FriendRequestModalProps } from "./FriendRequestModal.props";
@@ -12,6 +13,7 @@ export function FriendRequestModal({
 }: FriendRequestModalProps) {
 	const [username, setUsername] = useState("");
 	const isVisible = useModalAnimation(isOpen);
+	const modalRef = useModalFocus(isVisible, onClose);
 	const normalizedUsername = username.trim();
 
 	if (!isVisible) return null;
@@ -31,6 +33,7 @@ export function FriendRequestModal({
 		>
 			<div
 				className={styles.modal}
+				ref={modalRef} role="dialog" aria-modal="true" aria-label="Добавить друга" tabIndex={-1}
 				data-state={isOpen ? "open" : "close"}
 				onClick={(event) => event.stopPropagation()}
 			>
@@ -70,7 +73,6 @@ export function FriendRequestModal({
 									handleSubmit();
 								}
 							}}
-							autoFocus
 						/>
 					</div>
 					<p className={styles.hint}>

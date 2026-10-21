@@ -1,0 +1,108 @@
+.appearance {
+  color: #edf1f6;
+  background: #20242b;
+  padding: 12px;
+  border-radius: 8px;
+  color-scheme: dark;
+}
+.appearance.appearance button,
+.appearance.appearance input {
+  color: #edf1f6;
+  background: #2c323c;
+  border: 1px solid #778391;
+  border-radius: 5px;
+  padding: 7px;
+  font: inherit;
+}
+.appearance.appearance button:hover {
+  background: #3b4656;
+}
+.appearance.appearance button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.appearance.appearance :focus-visible {
+  outline: 3px solid #92c9ff;
+  outline-offset: 2px;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 8px;
+}
+.cards button {
+  display: grid;
+  gap: 5px;
+  text-align: left;
+}
+.cards button[aria-pressed="true"] {
+  border: 2px solid #92c9ff;
+}
+.preview {
+  display: flex;
+  height: 62px;
+  border-radius:5px;
+  overflow:hidden;
+  position:relative;
+}
+.preview i {
+  flex: 1;
+}
+.preview i:first-child { flex:0 0 20%; }
+.preview i:nth-child(3),.preview i:last-child { position:absolute; height:5px; border-radius:3px; left:30%; width:55%; top:15px; }
+.preview i:last-child { width:35%; top:28px; }
+.cards { grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:10px; }
+.cards button { padding:9px; min-width:0; }
+.appearance { padding:0; background:transparent; }
+.appearance fieldset { border-radius:9px; padding:12px 16px; }
+.appearance small {
+  display: block;
+  color: #c3cbd7;
+  overflow-wrap: anywhere;
+}
+.appearance fieldset {
+  min-width: 0;
+  border: 1px solid #778391;
+  margin: 12px 0;
+}
+.colorRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #566171;
+}
+.colorRow label {
+  flex: 1 1 160px;
+}
+.colorRow input:not([type="color"]) {
+  width: 230px;
+  max-width: 100%;
+}
+.colorRow input[type="color"] {
+  width: 44px;
+  height: 36px;
+  padding: 2px;
+}
+.swatch {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #c3cbd7;
+}
+.recovery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.recovery p {
+  flex-basis: 100%;
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .appearance * {
+    transition: none;
+    animation: none;
+  }
+}

@@ -6,6 +6,7 @@ import { createConference, joinConference } from "../../store/slices/call.slice"
 import { toastActions } from "../../store/slices/toast.slice";
 import type { AppDispatch, RootState } from "../../store/store";
 import { NavigateBarButton } from "../NavigateBarButton/NavigateBarButton";
+import { useModalFocus } from "../../hooks/useModalFocus";
 import styles from "./ConferenceLauncher.module.css";
 
 type ConferenceTab = "create" | "join";
@@ -22,6 +23,9 @@ export function ConferenceLauncher() {
 	const [isCreating, setIsCreating] = useState(false);
 	const [activeTab, setActiveTab] = useState<ConferenceTab>("create");
 	const [joinCode, setJoinCode] = useState("");
+
+	const closeModal = () => { if (!isCreating) setIsOpen(false); };
+	const dialogRef = useModalFocus<HTMLElement>(isOpen, closeModal);
 
 	const shareUrl = useMemo(() => {
 		if (conferenceJoinUrl) return conferenceJoinUrl;
@@ -103,8 +107,10 @@ export function ConferenceLauncher() {
 			</NavigateBarButton>
 
 			{isOpen && (
-				<div className={styles["backdrop"]} onMouseDown={() => setIsOpen(false)}>
+				<div className={styles["backdrop"]} onMouseDown={closeModal}>
 					<section
+						ref={dialogRef}
+						tabIndex={-1}
 						className={styles["modal"]}
 						role="dialog"
 						aria-modal="true"
@@ -114,7 +120,8 @@ export function ConferenceLauncher() {
 						<button
 							type="button"
 							className={styles["close"]}
-							onClick={() => setIsOpen(false)}
+							onClick={closeModal}
+							disabled={isCreating}
 							aria-label="Закрыть"
 							title="Закрыть"
 						>
@@ -206,7 +213,8 @@ export function ConferenceLauncher() {
 									<button
 										type="button"
 										className={styles["secondary"]}
-										onClick={() => setIsOpen(false)}
+										onClick={closeModal}
+							disabled={isCreating}
 									>
 										Готово
 									</button>
@@ -257,7 +265,8 @@ export function ConferenceLauncher() {
 									<button
 										type="button"
 										className={styles["secondary"]}
-										onClick={() => setIsOpen(false)}
+										onClick={closeModal}
+							disabled={isCreating}
 									>
 										Отмена
 									</button>

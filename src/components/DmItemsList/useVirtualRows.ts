@@ -19,8 +19,9 @@ export function useVirtualRows<T extends { key: string; type: string }>(
   container: RefObject<HTMLDivElement | null>,
   followBottom: boolean,
   pinnedKey?: string,
+  minimumRows = 500,
 ) {
-  const enabled = items.length >= 500;
+  const enabled = items.length >= minimumRows;
   const heights = useRef(new Map<string, number>());
   const elements = useRef(new Map<string, HTMLElement>());
   const observer = useRef<ResizeObserver | null>(null);
@@ -62,8 +63,7 @@ export function useVirtualRows<T extends { key: string; type: string }>(
           key,
           element.offsetHeight +
             parseFloat(style.marginTop || "0") +
-            parseFloat(style.marginBottom || "0") +
-            10,
+            parseFloat(style.marginBottom || "0"),
         );
       });
       previous.current = layoutRows(layout.keys, heights.current, (index) =>

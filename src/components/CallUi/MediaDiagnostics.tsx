@@ -33,6 +33,8 @@ export function MediaDiagnostics({ callId, generation }: { callId: number | null
       identity: alias(p.identity), local: p.isLocal, microphoneEnabled: p.isMicrophoneEnabled,
       publications: [...p.trackPublications.values()].map(publication => ({
         sid: publication.trackSid, source: publication.source, muted: publication.isMuted,
+        streamState: publication.track?.streamState,
+        elements: publication.track?.attachedElements.map(element => ({ readyState: element.readyState, currentTime: element.currentTime, visible: element.getClientRects().length > 0, width: element instanceof HTMLVideoElement ? element.videoWidth : undefined, height: element instanceof HTMLVideoElement ? element.videoHeight : undefined })),
         subscribed: "isSubscribed" in publication ? publication.isSubscribed : undefined,
         track: publication.track ? {
           kind: publication.track.kind, muted: publication.track.isMuted,
@@ -43,7 +45,7 @@ export function MediaDiagnostics({ callId, generation }: { callId: number | null
         } : null,
       })),
     });
-    const snapshot = () => ({ callId, generation, connection: room.state,
+    const snapshot = () => ({ timestamp: Date.now(), callId, generation, connection: room.state,
       participants: [participant(room.localParticipant), ...[...room.remoteParticipants.values()].map(participant)] });
     const session = { callId, generation };
     sink.session = session;
@@ -54,7 +56,7 @@ export function MediaDiagnostics({ callId, generation }: { callId: number | null
       RoomEvent.Reconnected, RoomEvent.SignalReconnecting, RoomEvent.ConnectionStateChanged,
       RoomEvent.LocalTrackPublished, RoomEvent.LocalTrackUnpublished, RoomEvent.TrackPublished,
       RoomEvent.TrackUnpublished, RoomEvent.TrackSubscribed, RoomEvent.TrackUnsubscribed,
-      RoomEvent.TrackSubscriptionFailed, RoomEvent.TrackMuted, RoomEvent.TrackUnmuted,
+      RoomEvent.TrackStreamStateChanged, RoomEvent.TrackSubscriptionFailed, RoomEvent.TrackMuted, RoomEvent.TrackUnmuted,
       RoomEvent.ParticipantConnected, RoomEvent.ParticipantDisconnected, RoomEvent.ConnectionQualityChanged,
       RoomEvent.AudioPlaybackStatusChanged];
     const handlers = events.map(event => { const handler = () => {

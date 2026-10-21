@@ -1,0 +1,79 @@
+html,
+body,
+#root {
+  height: 100%;
+}
+#root {
+  display: flex;
+  flex-direction: column;
+}
+.fixture-tools {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px;
+  color: var(--text-primary);
+  font: 12px/1.5 sans-serif;
+}
+.fixture-tools input {
+  margin-right: 6px;
+}
+.fixture-tools select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.fixture-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.fixture-size {
+  position: relative;
+}
+.fixture-size > [class*="layout"] {
+  height: 100%;
+}
+.fixture-size [class*="InboxLayout"][class*="layout"],
+.fixture-size [class*="InboxLayout"][class*="sidebar"] {
+  height: 100%;
+}
+.fixture-chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  color: var(--text-primary);
+  padding: 16px;
+  font: 14px/1.5 sans-serif;
+}
+.fixture-chat header {
+  min-height: 48px;
+  border-bottom: 1px solid var(--border);
+}
+.fixture-chat textarea {
+  display: block;
+  width: 100%;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 8px;
+}
+.fixture-chat button {
+  padding: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+#fixture-media-sentinel {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  pointer-events: none;
+  z-index: 3;
+  color: var(--text-secondary);
+  font: 10px sans-serif;
+}
+body {
+  margin: 0;
+  background: var(--bg-tertiary);
+}

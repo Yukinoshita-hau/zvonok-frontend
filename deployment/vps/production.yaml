@@ -1,0 +1,16 @@
+services:
+  frontend:
+    build:
+      args:
+        VITE_API_URL: ${API_URL:?Required}
+        VITE_WS_URL: ${WS_PUBLIC_URL:?Required}
+        VITE_LIVEKIT_URL: ${LIVEKIT_PUBLIC_URL:?Required}
+  caddy:
+    environment:
+      API_SITE: ${API_SITE:?Required}
+      ACME_EMAIL: ${ACME_EMAIL:?Required}
+    volumes:
+      - ./vps/Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "80:80"
+      - "443:443"

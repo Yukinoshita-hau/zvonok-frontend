@@ -5,7 +5,9 @@ import type { ActiveCallResponse } from "./ActiveCallResponse";
 import type { AcceptCallDto, DeclineCallDto, EndCallDto, JoinCallDto, LeaveCallDto } from "./CallDtos";
 
 export interface CallApiInterface {
-	getCallToken: (callId: number) => Promise<AxiosResponse<CallTokenDto>>;
+	getCallToken: (callId: number, transfer?: boolean) => Promise<AxiosResponse<CallTokenDto>>;
+	renewMedia: (callId: number, clientId?: string) => Promise<AxiosResponse<string>>;
+	releaseMedia: (callId: number, clientId?: string) => Promise<AxiosResponse<unknown>>;
 	restoreCallSession: () => Promise<AxiosResponse<RestoreCallSessionResponse>>;
 	getActiveCallByRoomId: (roomId: number) => Promise<AxiosResponse<ActiveCallResponse | null>>;
 	joinCall: (dto: JoinCallDto) => Promise<AxiosResponse<ActiveCallResponse>>;

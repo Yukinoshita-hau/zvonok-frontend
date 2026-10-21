@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "../store";
 import { callApi } from "../../api/callApi";
 import type { BaseCallEvent } from "../interfaces/callEvents.interface";
 import { type CallRoomType, type callStatus } from "../interfaces/call.types";
@@ -8,7 +9,25 @@ import { parseBackendDateMs } from "../../utils/timeHelpers";
 
 export type CallPresentationMode = "expanded" | "minimized" | "hidden";
 
+export interface ContentPresentationState {
+ sourceManual: boolean;
+ primaryKey: string | null;
+ secondaryKey: string | null;
+ split: boolean;
+ arrangement: "auto" | "side" | "stacked";
+ ratio: number;
+ stripHidden: boolean;
+}
+
 export interface CallState {
+ followSpeaker: boolean;
+ pinnedParticipant: string | null;
+ content: ContentPresentationState;
+	layoutIntent: "auto" | "voice" | "grid" | "focus" | "screen";
+	presentationIntent: "automatic" | "manual";
+	presentationInitialized: boolean;
+	mediaIntent: boolean;
+	mediaOwnership: "OWNED" | "PASSIVE" | "TRANSFERRING" | null;
 	restoreRequestId: string | null;
 	tokenRequestId: string | null;
 	mediaState: "connected" | "connecting" | "reconnecting" | "disconnected";
@@ -42,6 +61,14 @@ export interface CallState {
 }
 
 export const initialState: CallState = {
+ followSpeaker: false,
+ pinnedParticipant: null,
+ content: { sourceManual: false, primaryKey: null, secondaryKey: null, split: false, arrangement: "auto", ratio: 50, stripHidden: false },
+	layoutIntent: "auto",
+	presentationIntent: "automatic",
+	presentationInitialized: false,
+	mediaIntent: false,
+	mediaOwnership: null,
 	restoreRequestId: null,
 	tokenRequestId: null,
 	mediaState: "connected",
@@ -75,14 +102,14 @@ export const initialState: CallState = {
 };
 
 const keepUi = (state: CallState) => ({
-	selectedScreenTrackSid: state.selectedScreenTrackSid,
+	selectedScreenTrackSid: null,
 	presentationMode: state.presentationMode,
 	isCallFocusMode: state.isCallFocusMode,
 	isTheaterMode: state.isTheaterMode,
 });
 
 const resetCallState = (state: CallState, status: callStatus = "idle") => {
-	const ui = keepUi(state);
+	const ui = { ...keepUi(state), presentationMode: "expanded" as const, isCallFocusMode: false, isTheaterMode: false };
 	const closedCallIds = [...state.closedCallIds];
 	if (status === "ended" && state.callId && !closedCallIds.includes(state.callId)) closedCallIds.push(state.callId);
 	Object.assign(state, initialState, ui, { status, mediaGeneration: state.mediaGeneration + 1, closedCallIds: closedCallIds.slice(-100) })
@@ -99,7 +126,18 @@ export const getCallToken = createAsyncThunk("call/getCallToken", async (callId:
 	} catch (e: any) {
 		return thunkAPI.rejectWithValue(e?.message ?? "Failed to get livekit token");
 	}
-});
+}, { condition: (callId, { getState }) => {
+	const call = (getState() as RootState).call;
+	return call.callId === callId && !call.tokenRequestId && call.mediaOwnership !== "PASSIVE" && call.mediaOwnership !== "TRANSFERRING";
+} });
+
+export const takeCallHere = createAsyncThunk("call/takeCallHere", async (callId: number) => {
+	return (await callApi.getCallToken(callId, true)).data;
+}, { condition: (callId, { getState }) => {
+	const call = (getState() as RootState).call;
+	if (call.callId !== callId || call.participantToken || call.tokenRequestId) return false;
+	return true;
+} });
 
 export const restoreCallSession = createAsyncThunk(
 	"call/restoreCallSession",
@@ -161,6 +199,8 @@ const applyConferenceConnection = (
 	data: ConferenceCreateResponse | ConferenceJoinResponse,
 	isHost: boolean
 ) => {
+	state.followSpeaker = false;
+	state.pinnedParticipant = null;
 	state.status = "in_call";
 	state.direction = null;
 	state.callId = null;
@@ -188,8 +228,26 @@ export const callSlice = createSlice({
 	name: "call",
 	initialState,
 	reducers: {
+		requestMedia: (state) => { state.mediaIntent = true; },
+		mediaTransferTimedOut: (state, action: PayloadAction<number>) => {
+			if (state.callId !== action.payload || state.mediaOwnership !== "TRANSFERRING") return;
+			state.mediaOwnership = "PASSIVE";
+			state.mediaIntent = false;
+			state.tokenRequestId = null;
+			state.error = "Не удалось освободить звонок на другом клиенте. Закройте звонок там и попробуйте снова. После аварийного закрытия клиента защитное ожидание сервера может занять несколько минут.";
+		},
+		mediaOwnershipLost: (state, action: PayloadAction<{ callId: number; generation: number }>) => {
+			if (state.callId !== action.payload.callId || state.mediaGeneration !== action.payload.generation) return;
+			state.mediaOwnership = "PASSIVE";
+			state.mediaIntent = false;
+			state.participantToken = null;
+			state.tokenRequestId = null;
+			state.restoreRequestId = null;
+			state.mediaGeneration++;
+		},
 		startOutgoing: (state, action: PayloadAction<{ chatRoomId: number }>) => {
 			resetCallState(state);
+			state.mediaIntent = true;
 			state.status = "outgoing_ringing";
 			state.direction = "outgoing";
 			state.chatRoomId = action.payload.chatRoomId;
@@ -257,6 +315,7 @@ export const callSlice = createSlice({
 		},
 		prepareJoinedCall: (state, action: PayloadAction<{ callId: number; chatRoomId: number; roomType: CallRoomType; livekitRoomName: string; callerUsername: string; hostUsername: string }>) => {
 			resetCallState(state);
+			state.mediaIntent = true;
 			state.closedCallIds = state.closedCallIds.filter(id => id !== action.payload.callId);
 			state.status = "connecting";
 			state.direction = null;
@@ -289,10 +348,36 @@ export const callSlice = createSlice({
 		endCall: (state) => {
 			resetCallState(state, "ended");
 		},
+        setFollowSpeaker: (state, action: PayloadAction<boolean>) => {
+            state.followSpeaker = action.payload;
+            if (action.payload) state.pinnedParticipant = null;
+        },
+        setPinnedParticipant: (state, action: PayloadAction<string | null>) => {
+            state.pinnedParticipant = action.payload;
+        },
+        setContentPresentation: (state, action: PayloadAction<Partial<ContentPresentationState>>) => {
+            Object.assign(state.content, action.payload);
+            state.content.ratio = Number.isFinite(state.content.ratio) ? Math.max(30, Math.min(70, state.content.ratio)) : 50;
+            if (state.content.primaryKey === state.content.secondaryKey) state.content.secondaryKey = null;
+        },
 		setSelectedScreenTrackSid: (state, action: PayloadAction<string | null>) => {
 			state.selectedScreenTrackSid = action.payload;
 		},
-		setPresentationMode: (state, action: PayloadAction<CallPresentationMode>) => {
+		initializePresentation: (state, action: PayloadAction<{ hasVideo: boolean }>) => {
+            if (state.presentationInitialized || state.mediaState !== "connected" || state.status !== "in_call") return;
+            state.presentationInitialized = true;
+            if (state.presentationIntent === "manual") return;
+            if (state.chatRoomId && !state.conferenceCode && !action.payload.hasVideo) {
+                state.presentationMode = "minimized";
+                state.layoutIntent = "voice";
+            }
+        },
+        setLayoutIntent: (state, action: PayloadAction<CallState["layoutIntent"]>) => {
+            state.layoutIntent = action.payload;
+            state.presentationIntent = "manual";
+        },
+        setPresentationMode: (state, action: PayloadAction<CallPresentationMode>) => {
+            state.presentationIntent = "manual";
 			state.presentationMode = action.payload;
 			if (action.payload !== "expanded") {
 				state.isCallFocusMode = false;
@@ -328,6 +413,9 @@ export const callSlice = createSlice({
 			.addCase(getCallToken.fulfilled, (state, action) => {
 				if (state.tokenRequestId !== action.meta.requestId || state.callId !== action.meta.arg) return;
 				state.tokenRequestId = null;
+				state.mediaOwnership = action.payload.mediaOwnership === "PASSIVE" && state.mediaIntent
+					? "TRANSFERRING" : action.payload.mediaOwnership ?? "OWNED";
+				state.mediaIntent = state.mediaOwnership === "OWNED";
 				state.serverUrl = action.payload.serverUrl;
 				state.participantToken = action.payload.participantToken;
 				state.callId = action.payload.callId;
@@ -358,6 +446,7 @@ export const callSlice = createSlice({
 				state.restoreRequestId = null;
 				const data = action.payload;
 				if (data.callId && state.closedCallIds.includes(data.callId)) return;
+				if (data.callId === state.callId && data.mediaOwnership === "PASSIVE" && state.mediaOwnership === "TRANSFERRING") return;
 
 				if (state.conferenceCode) {
 					return;
@@ -373,6 +462,9 @@ export const callSlice = createSlice({
 				}
 
 				if (data.callRestoreType === "ACTIVE_CALL") {
+                    if (data.callId !== state.callId) { state.followSpeaker = false; state.pinnedParticipant = null; state.content = { ...initialState.content }; state.layoutIntent = "auto"; state.presentationIntent = "automatic"; state.presentationInitialized = false; }
+					state.mediaOwnership = data.mediaOwnership ?? "OWNED";
+					state.mediaIntent = state.mediaOwnership === "OWNED";
 					state.mediaState = "connecting";
 					state.status = "in_call";
 					state.direction = null;
@@ -389,7 +481,7 @@ export const callSlice = createSlice({
 						?? parseCallStartedAtMs(data.activatedAt)
 						?? Date.now();
 					state.error = null;
-					state.presentationMode = "expanded";
+					if (!state.presentationInitialized) state.presentationMode = "expanded";
 				}
 
 				if (data.callRestoreType === "INCOMING_CALL") {
@@ -441,6 +533,29 @@ export const callSlice = createSlice({
 			})
 			.addCase(endConference.rejected, (state, action) => {
 				state.error = typeof action.payload === "string" ? action.payload : "Не удалось завершить конференцию";
+			})
+			.addCase(takeCallHere.pending, (state, action) => {
+				if (state.callId !== action.meta.arg || state.participantToken) return;
+				state.mediaOwnership = "TRANSFERRING";
+				state.mediaIntent = true;
+				state.tokenRequestId = action.meta.requestId;
+				state.error = null;
+			})
+			.addCase(takeCallHere.fulfilled, (state, action) => {
+				if (state.callId !== action.meta.arg || state.tokenRequestId !== action.meta.requestId) return;
+				state.tokenRequestId = null;
+				if (action.payload.mediaOwnership === "PASSIVE") return;
+				state.mediaOwnership = "OWNED";
+				state.serverUrl = action.payload.serverUrl;
+				state.participantToken = action.payload.participantToken;
+				state.status = "in_call";
+			})
+			.addCase(takeCallHere.rejected, (state, action) => {
+				if (state.tokenRequestId !== action.meta.requestId) return;
+				state.tokenRequestId = null;
+				state.mediaOwnership = "PASSIVE";
+				state.mediaIntent = false;
+				state.error = "Не удалось перенести звонок. Попробуйте ещё раз.";
 			});
 	},
 });

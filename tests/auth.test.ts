@@ -24,6 +24,26 @@ beforeEach(async () => {
 });
 
 describe("HTTP refresh", () => {
+	it('missing refresh cookie follows the existing backend 400 contract and terminates the session', async () => {
+		const error = new AxiosError('Missing cookie', 'ERR_BAD_REQUEST', undefined, undefined, response({}, { message: 'Refresh token not transferred' }, 400));
+		authTransport.defaults.adapter = async () => { throw error; };
+		await expect(session.refresh()).rejects.toBe(error);
+		expect(state.user.accessToken).toBeNull();
+		await expect(session.refresh()).rejects.toThrow('logged out');
+	});
+	it('403 is a permissions failure and does not rotate or clear credentials', async () => {
+		state.user.expiresAt = Date.now() + 600000;
+		const refresh = vi.fn(); authTransport.defaults.adapter = refresh;
+		api.defaults.adapter = async config => { throw new AxiosError('Forbidden', 'ERR_BAD_REQUEST', config, undefined, response(config, {}, 403)); };
+		await expect(api.get('/protected')).rejects.toThrow('Forbidden');
+		expect(refresh).not.toHaveBeenCalled(); expect(state.user.accessToken).toBe('old');
+	});
+	it('an unrelated refresh 400 preserves the session rather than treating it as a missing cookie', async () => {
+		const error = new AxiosError('Bad request', 'ERR_BAD_REQUEST', undefined, undefined, response({}, { message: 'Different problem' }, 400));
+		authTransport.defaults.adapter = async () => { throw error; };
+		await expect(session.refresh()).rejects.toBe(error);
+		expect(state.user.accessToken).toBe('old');
+	});
 	it("ten concurrent requests share one refresh and all use the new access token", async () => {
 		const gate = deferred();
 		const refresh = vi.fn(async config => { await gate.promise; return response(config, jwt); });
@@ -36,6 +56,21 @@ describe("HTTP refresh", () => {
 		await Promise.all(pending);
 		expect(refresh).toHaveBeenCalledTimes(1);
 		expect(tokens).toEqual(Array(10).fill("Bearer new"));
+	});
+	it('parallel 401 responses share a rotation and retry each original request once', async () => {
+		state.user.expiresAt = Date.now() + 600000;
+		const gate = deferred();
+		const refresh = vi.fn(async config => { await gate.promise; return response(config, jwt); });
+		authTransport.defaults.adapter = refresh;
+		const request = vi.fn(async config => {
+			if (config.headers.Authorization === 'Bearer old') throw new AxiosError('Unauthorized', 'ERR_BAD_REQUEST', config, undefined, response(config, {}, 401));
+			return response(config, {});
+		});
+		api.defaults.adapter = request;
+		const pending = Array.from({ length: 10 }, () => api.get('/protected'));
+		await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1)); gate.resolve(null);
+		await Promise.all(pending);
+		expect(refresh).toHaveBeenCalledTimes(1); expect(request).toHaveBeenCalledTimes(20);
 	});
 	it("logout during refresh rejects every waiter and cannot restore the old session", async () => {
 		const gate = deferred();

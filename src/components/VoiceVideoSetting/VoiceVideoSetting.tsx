@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { DeviceInformation } from './DeviceInformation';
 import { useDispatch, useSelector } from "react-redux";
 import styles from "./VoiceVideoSetting.module.css";
 import { deviceActions } from "../../store/slices/device.slice";
 import type { AppDispatch, RootState } from "../../store/store";
 import { getMicrophoneCaptureOptions } from "../../utils/microphoneQuality";
-import { ZvonokAudioGraph } from "../../livekit/audio/GlobalAudioGraph";
+import type { ZvonokAudioGraph } from "../../livekit/audio/GlobalAudioGraph";
+import { AudioOutputSettings } from './AudioOutputSettings';
 
 import { CameraSettingsSection } from "./sections/CameraSettingsSection";
 import { MicrophoneSettingsSection } from "./sections/MicrophoneSettingsSection";
@@ -28,10 +30,15 @@ const VOICE_VIDEO_TABS: Array<{
 	{ id: "screen", label: "Экран", description: "Параметры трансляции" },
 ];
 
-export function VoiceVideoSetting() {
+export function VoiceVideoSetting({hotkeysOnly = false, section, advanced = false}: {hotkeysOnly?: boolean; section?: 'microphone' | 'camera' | 'screen' | 'processing' | 'output'; advanced?: boolean}) {
 	const dispatch = useDispatch<AppDispatch>();
+	const callStatus = useSelector((s:RootState) => s.call.status);
+	const callActive = callStatus === 'connecting' || callStatus === 'in_call';
+	const [mediaError, setMediaError] = useState('');
+	const {persistenceError, mediaError: applyError} = useSelector((s: RootState) => s.device);
 
 	const {
+		selectedAudioOutputId,
 		selectedCameraId,
 		selectedMicrophoneId,
 		micQualitySetting,
@@ -52,22 +59,16 @@ export function VoiceVideoSetting() {
 
 	const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
 	const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+	const [outputs, setOutputs] = useState<MediaDeviceInfo[]>([]);
 	const [, setMediaDevicesReady] = useState(false);
 
-	const [inputVolumePercent, setInputVolumePercent] = useState(
-		Math.round(voiceProcessingConfig.inputVolume * 100)
-	);
-
-	const [outputVolumePercent, setOutputVolumePercent] = useState(
-		Math.round(voiceProcessingConfig.outputVolume * 100)
-	);
-
 	const [cameraTestEnable, setCameraTestEnable] = useState(false);
-	const [volumeLevel, setVolumeLevel] = useState(0);
+	const meterRef = useRef<HTMLDivElement>(null);
+	const activityRef = useRef<HTMLDivElement>(null);
 	const [isListening, setIsListening] = useState(false);
 	const [showExperimentalScreenModes, setShowExperimentalScreenModes] =
 		useState(false);
-	const [activeTab, setActiveTab] = useState<VoiceVideoTab>("camera");
+	const [activeTab, setActiveTab] = useState<VoiceVideoTab>(hotkeysOnly ? 'hotkeys' : section && section !== 'output' ? section : 'microphone');
 
 	const streamRef = useRef<MediaStream | null>(null);
 	const audioGraphRef = useRef<ZvonokAudioGraph | null>(null);
@@ -75,27 +76,28 @@ export function VoiceVideoSetting() {
 	const animationRef = useRef<number | null>(null);
 
 	const effectiveRnnoiseEnabled = voiceProcessingConfig.rnnoise.enabled;
+	const thresholdRef = useRef(30);
+	thresholdRef.current = isAutoInputSensitivity ? 30 : voiceActivityThreshold;
 
 	useEffect(() => {
+		if (hotkeysOnly) return;
 		const getDevices = async () => {
 			try {
-				await navigator.mediaDevices.getUserMedia({
-					audio: true,
-					video: true,
-				});
-
 				const devices = await navigator.mediaDevices.enumerateDevices();
 
 				setCameras(devices.filter((device) => device.kind === "videoinput"));
-				setMicrophones(devices.filter((device) => device.kind === "audioinput"));
+				setMicrophones(devices.filter((device) => device.kind === "audioinput" && device.deviceId !== 'default'));
+				setOutputs(devices.filter(device => device.kind === 'audiooutput'));
 			} catch (error) {
-				console.log("No access to media devices", error);
+				setMediaError('Не удалось получить список устройств. Проверьте разрешения браузера.');
 			} finally {
 				setMediaDevicesReady(true);
 			}
 		};
 
 		void getDevices();
+		navigator.mediaDevices?.addEventListener('devicechange', getDevices);
+		return () => navigator.mediaDevices?.removeEventListener('devicechange', getDevices);
 	}, []);
 
 	const cleanupAudioPreview = async () => {
@@ -108,24 +110,30 @@ export function VoiceVideoSetting() {
 			audioPreviewRef.current.pause();
 			audioPreviewRef.current.srcObject = null;
 		}
-
-		if (audioGraphRef.current) {
-			await audioGraphRef.current.destroy();
-			audioGraphRef.current = null;
+		if (meterRef.current) {
+			meterRef.current.setAttribute('aria-valuenow','0');
+			(meterRef.current.firstElementChild as HTMLElement).style.width = '0%';
 		}
+		if (activityRef.current) activityRef.current.textContent = 'Активность голоса: ниже порога';
 
 		if (streamRef.current) {
 			streamRef.current.getTracks().forEach((track) => track.stop());
 			streamRef.current = null;
 		}
+		const graph = audioGraphRef.current;
+		audioGraphRef.current = null;
+		if (graph) await graph.destroy();
 	};
 
 	useEffect(() => {
 		let canceled = false;
+		if (!isListening || callActive || activeTab !== 'microphone') return;
 
 		const startAudioPreview = async () => {
 			try {
 				await cleanupAudioPreview();
+				if (canceled) return;
+				setMediaError('');
 
 				const micCaptureOptions = getMicrophoneCaptureOptions({
 					selectedMicrophoneId,
@@ -186,6 +194,8 @@ export function VoiceVideoSetting() {
 					throw new Error("Microphone audio track was not found");
 				}
 
+				const { ZvonokAudioGraph } = await import('../../livekit/audio/GlobalAudioGraph');
+				if (canceled) { stream.getTracks().forEach(track => track.stop()); return; }
 				const audioGraph = new ZvonokAudioGraph({
 					...voiceProcessingConfig,
 					stereoOutput: true,
@@ -208,9 +218,7 @@ export function VoiceVideoSetting() {
 					audioPreviewRef.current.muted = !isListening;
 
 					if (isListening) {
-						await audioPreviewRef.current.play().catch((error) => {
-							console.error("Audio preview autoplay failed", error);
-						});
+						await audioPreviewRef.current.play();
 					}
 				}
 
@@ -228,14 +236,24 @@ export function VoiceVideoSetting() {
 
 					const average = sum / dataArray.length;
 
-					setVolumeLevel(Math.min(100, (average / 128) * 100));
+					const level = Math.min(100, (average / 128) * 100);
+					const meter = meterRef.current;
+					if (meter) {
+						meter.setAttribute('aria-valuenow', String(Math.round(level)));
+						(meter.firstElementChild as HTMLElement).style.width = `${level}%`;
+					}
+					if (activityRef.current) activityRef.current.textContent = `Активность голоса: ${level >= thresholdRef.current ? 'голос обнаружен' : 'ниже порога'}`;
 
 					animationRef.current = requestAnimationFrame(checkVolume);
 				};
 
 				checkVolume();
 			} catch (error) {
-				console.log("Microphone preview error:", error);
+				if (!canceled) {
+					setMediaError(`Не удалось запустить проверку микрофона. Проверьте устройство и разрешения. ${String(error)}`);
+					setIsListening(false);
+					void cleanupAudioPreview();
+				}
 			}
 		};
 
@@ -246,12 +264,25 @@ export function VoiceVideoSetting() {
 			void cleanupAudioPreview();
 		};
 	}, [
+		isListening,
+		callActive,
+		activeTab,
+		effectiveRnnoiseEnabled,
 		selectedMicrophoneId,
 		micQualitySetting,
 		isNoiseSuppressionEnabled,
 		isEchoCancellationEnabled,
 		isAutoGainControlEnabled,
 	]);
+
+	useEffect(() => {
+		setCameraTestEnable(false);
+		setIsListening(false);
+		if (meterRef.current) {
+			meterRef.current.setAttribute('aria-valuenow','0');
+			(meterRef.current.firstElementChild as HTMLElement).style.width = '0%';
+		}
+	}, [activeTab, callActive]);
 
 	useEffect(() => {
 		const graph = audioGraphRef.current;
@@ -263,8 +294,8 @@ export function VoiceVideoSetting() {
 				...voiceProcessingConfig,
 				stereoOutput: true,
 			})
-			.catch((error) => {
-				console.log("[audio-processor] failed to update graph config", error);
+			.catch(() => {
+				setMediaError('Не удалось применить обработку к проверке микрофона.');
 			});
 	}, [voiceProcessingConfig]);
 
@@ -284,50 +315,31 @@ export function VoiceVideoSetting() {
 		}
 	}, [isListening]);
 
-	useEffect(() => {
-		setInputVolumePercent(Math.round(voiceProcessingConfig.inputVolume * 100));
-	}, [voiceProcessingConfig.inputVolume]);
-
-	useEffect(() => {
-		const timeoutId = window.setTimeout(() => {
-			dispatch(deviceActions.setVoiceInputVolume(inputVolumePercent / 100));
-		}, 150);
-
-		return () => {
-			window.clearTimeout(timeoutId);
-		};
-	}, [dispatch, inputVolumePercent]);
-
-	useEffect(() => {
-		setOutputVolumePercent(Math.round(voiceProcessingConfig.outputVolume * 100));
-	}, [voiceProcessingConfig.outputVolume]);
-
-	useEffect(() => {
-		const timeoutId = window.setTimeout(() => {
-			dispatch(deviceActions.setVoiceOutputVolume(outputVolumePercent / 100));
-		}, 150);
-
-		return () => {
-			window.clearTimeout(timeoutId);
-		};
-	}, [dispatch, outputVolumePercent]);
 
 	return (
 		<div className={styles["container"]}>
 			<div className={styles["content"]}>
-				<div className={styles["section-tabs"]}>
-					{VOICE_VIDEO_TABS.map((tab) => (
+				{persistenceError && <p role="alert">{persistenceError}</p>}
+				{applyError && <p role="alert">{applyError}</p>}
+				{mediaError && <p role="alert" className={styles['error-text']}>{mediaError}</p>}
+				{!hotkeysOnly && <p className={styles['help-text']}>{callActive ? 'Звонок активен. Отдельные тесты устройств отключены; настройки применяются существующей системой звонка.' : 'Проверка устройств запускается только кнопкой. Названия устройств могут появиться после выдачи разрешения.'}</p>}
+				{!hotkeysOnly && (section === 'output' ? <DeviceInformation devices={outputs} kind="audiooutput" selected={selectedAudioOutputId}/> : activeTab === 'microphone' ? <DeviceInformation devices={microphones} kind="audioinput" selected={selectedMicrophoneId}/> : activeTab === 'camera' ? <DeviceInformation devices={cameras} kind="videoinput" selected={selectedCameraId}/> : null)}
+				{!hotkeysOnly && !section && <AudioOutputSettings devices={outputs}/>}
+				{section === 'output' && <AudioOutputSettings devices={outputs}/>}
+				{!hotkeysOnly && !section && <div className={styles["section-tabs"]}>
+					{VOICE_VIDEO_TABS.filter(tab=>tab.id!=='hotkeys').map((tab) => (
 						<button
 							key={tab.id}
 							type="button"
 							data-active={activeTab === tab.id}
+							aria-pressed={activeTab === tab.id}
 							onClick={() => setActiveTab(tab.id)}
 						>
 							<strong>{tab.label}</strong>
 							<span>{tab.description}</span>
 						</button>
 					))}
-				</div>
+				</div>}
 
 				{activeTab === "camera" && (
 					<CameraSettingsSection
@@ -335,14 +347,15 @@ export function VoiceVideoSetting() {
 						selectedCameraId={selectedCameraId}
 						cameras={cameras}
 						cameraQuality={cameraQuality}
-						cameraTestEnable={cameraTestEnable}
+						cameraTestEnable={cameraTestEnable && !callActive}
+						testDisabled={callActive}
 						onCameraTestToggle={() =>
 							setCameraTestEnable((previous) => !previous)
 						}
 					/>
 				)}
 
-				{activeTab === "microphone" && (
+				{activeTab === "microphone" && section !== 'output' && (
 					<MicrophoneSettingsSection
 						dispatch={dispatch}
 						selectedMicrophoneId={selectedMicrophoneId}
@@ -351,10 +364,10 @@ export function VoiceVideoSetting() {
 						isNoiseSuppressionEnabled={isNoiseSuppressionEnabled}
 						isEchoCancellationEnabled={isEchoCancellationEnabled}
 						effectiveRnnoiseEnabled={effectiveRnnoiseEnabled}
-						volumeLevel={volumeLevel}
+						meterRef={meterRef}
+						activityRef={activityRef}
 						isListening={isListening}
-						isAutoInputSensitivity={isAutoInputSensitivity}
-						voiceActivityThreshold={voiceActivityThreshold}
+						testDisabled={callActive}
 						audioPreviewRef={audioPreviewRef}
 						onListeningToggle={() => setIsListening((previous) => !previous)}
 					/>
@@ -370,15 +383,15 @@ export function VoiceVideoSetting() {
 				)}
 
 				{activeTab === "processing" && (
-					<VoiceProcessingSection
+					<><VoiceProcessingSection
 						dispatch={dispatch}
 						voiceProcessingPreset={voiceProcessingPreset}
 						voiceProcessingConfig={voiceProcessingConfig}
-						inputVolumePercent={inputVolumePercent}
-						outputVolumePercent={outputVolumePercent}
-						onInputVolumePercentChange={setInputVolumePercent}
-						onOutputVolumePercentChange={setOutputVolumePercent}
-					/>
+						inputVolumePercent={Math.round(voiceProcessingConfig.inputVolume * 100)}
+						outputVolumePercent={Math.round(voiceProcessingConfig.outputVolume * 100)}
+						onInputVolumePercentChange={value => dispatch(deviceActions.setVoiceInputVolume(value / 100))}
+						onOutputVolumePercentChange={value => dispatch(deviceActions.setVoiceOutputVolume(value / 100))}
+					/><EqualizerSettingsSection initiallyOpen={advanced} dispatch={dispatch} voiceProcessingConfig={voiceProcessingConfig}/></>
 				)}
 
 				{activeTab === "equalizer" && (

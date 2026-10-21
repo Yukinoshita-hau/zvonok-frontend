@@ -1,0 +1,11 @@
+.browser-activity .live-surface { position:relative; flex:1; min-height:0; min-width:0; overflow:hidden; background:#111315; outline-offset:-3px; }
+.browser-activity .live-video { width:100%; height:100%; object-fit:contain; display:block; }
+.browser-activity .live-video.stale { visibility:hidden; }
+.browser-activity .media-cover { position:absolute; inset:0; display:grid; place-items:center; color:var(--text-secondary); background:var(--bg-secondary); }
+.browser-audio-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; }
+.browser-audio-controls audio { display:none; }
+.browser-audio-controls details { position:relative; }
+.browser-audio-controls summary { cursor:pointer; font-size:12px; min-height:32px; display:flex; align-items:center; border:1px solid var(--border); padding:0 10px; border-radius:var(--radius-sm,8px); }
+.browser-audio-controls input { position:absolute; z-index:12; left:0; top:100%; width:150px; background:var(--bg-tertiary); padding:12px; border:1px solid var(--border); border-radius:8px; accent-color:var(--accent); }
+.browser-media-status { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:12px; color:var(--text-secondary); }
+.browser-media-status button { font-size:12px; }

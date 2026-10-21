@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ScreenShareManualQuality } from "../../utils/callQuality";
 import { SCREEN_SHARE_PICKER_QUALITY_GROUPS } from "./screenSharePickerService";
 import styles from "./ScreenSharePicker.module.css";
@@ -15,6 +15,7 @@ export function ScreenShareQualitySelector({ value, onChange }: ScreenShareQuali
 		))?.group ?? "base";
 	}, [value]);
 	const [activeGroup, setActiveGroup] = useState(initialGroup);
+	useEffect(() => setActiveGroup(initialGroup), [initialGroup]);
 	const selectedGroup = SCREEN_SHARE_PICKER_QUALITY_GROUPS.find((group) => group.group === activeGroup) ?? SCREEN_SHARE_PICKER_QUALITY_GROUPS[0];
 
 	return (
