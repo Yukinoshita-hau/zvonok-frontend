@@ -1,5 +1,7 @@
 # Local Browser Activity acceptance
 
+`e2e.cjs --quality` runs a focused real two-client regression: quality 720p30 → 720p60 → 720p15 → 720p30, both clients' selected profile and new decoded video track, live browser audio tracks, and advancing voice RTP. It creates two test accounts and a separate call, then ends only that call. Set `BROWSER_TEST_BASE`, `BROWSER_TEST_API`, and `BROWSER_TEST_OUT` for an explicitly authorized remote environment. This mode skips local Docker fault injection/log export. It proves reconnection behavior; it records receiver FPS without claiming target-FPS performance acceptance.
+
 Use Java 21 and the existing Maven cache to package `C:/project/zvonok-backend` before running `start.ps1`. Do not package over a jar held open by an acceptance Java process; stop that process first with `stop.ps1`.
 
 `start.ps1` creates a separate `activity_acceptance` PostgreSQL database on loopback 55432, separate voice LiveKit on 48880/48881/48882 and a host Core process on 18080. It builds a pinned acceptance frontend on 3018, with `VITE_BROWSER_ACTIVITY=true`, using the existing components. It does not modify running Core Docker or its database/network. The Browser Worker retains its guard network, sandbox, private X11, no media secrets and restricted HTTPS proxy.

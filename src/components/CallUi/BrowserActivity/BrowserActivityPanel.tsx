@@ -77,7 +77,7 @@ export function BrowserActivityPanel({ browser, visible, compact = false }: { br
     {c?.result === 'lease_expired' && <small role="status">Время управления истекло. Управление вернулось создателю браузера.</small>}
     {c?.result === 'granted' && <small role="status">{canControl ? 'Управление передано вам.' : 'Управление передано другу.'}</small>}
     {browser.error && !errorDismissed && <div className={styles.error} role="alert"><span>{browser.error}</span><button aria-label="Скрыть сообщение" onClick={() => setErrorDismissed(true)}><X size={14} aria-hidden="true" /></button></div>}
-    {session?.status === 'active' && <div className={styles.videoHost} data-testid="browser-media-preview" hidden={!visible}><BrowserVideo key={`${session.sessionId}:${session.media?.epoch ?? ''}`} id={session.sessionId} targetFps={session.media?.fps ?? 15} connectMedia={browser.media} canControl={!!canControl && !compact && visible} input={action => input('input', action)} /></div>}
+    {session?.status === 'active' && <div className={styles.videoHost} data-testid="browser-media-preview" hidden={!visible}><BrowserVideo key={session.sessionId} id={session.sessionId} targetFps={session.media?.fps ?? 15} connectMedia={browser.media} canControl={!!canControl && !compact && visible} input={action => input('input', action)} /></div>}
     {activity?.joined && session?.status !== 'active' && <p role="status">{session?.status === 'creating' ? 'Запускаем браузер…' : 'Совместный браузер завершён. Голосовой звонок продолжается.'}</p>}
   </section>;
 }

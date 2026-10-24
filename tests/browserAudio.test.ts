@@ -32,7 +32,7 @@ it('shows muted playback while video is stale and resumes only a previously enab
     pause: vi.fn(() => { audio.paused = true; }),
     play: vi.fn(async () => { audio.paused = false; }),
   };
-  const track = { attach: vi.fn(), detach: vi.fn(), setVolume: vi.fn() } as unknown as RemoteAudioTrack;
+  let track = { attach: vi.fn(), detach: vi.fn(), setVolume: vi.fn() } as unknown as RemoteAudioTrack;
   function render(fresh: boolean) {
     h.index = 0;
     const tree = BrowserAudio({ track, fresh });
@@ -49,8 +49,10 @@ it('shows muted playback while video is stale and resumes only a previously enab
   render(false);
   expect(audio.paused).toBe(true);
   expect(render(false).props.children[1].props.children).toBe('Включить звук сайта');
+  track = { attach: vi.fn(), detach: vi.fn(), setVolume: vi.fn() } as unknown as RemoteAudioTrack;
   render(true);
   await Promise.resolve();
   expect(audio.play).toHaveBeenCalledTimes(2);
+  expect(track.attach).toHaveBeenCalledWith(audio);
   expect(render(true).props.children[1].props.children).toBe('Выключить звук сайта');
 });

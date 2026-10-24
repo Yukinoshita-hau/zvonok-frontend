@@ -91,6 +91,7 @@ async function freshDiagnostics(u) {
 async function fresh(u) {
   try { await u.page.waitForFunction(() => window.browserActivityMetrics?.fresh && window.browserActivityMetrics?.framesDecoded > 5, null, { timeout: 30000 }); }
   catch(error) {
+    if (process.argv.includes('--quality')) { await capture('quality-timeout'); throw error; }
     const diagnostics=[];
     for(const [index,user] of users.entries()) {
       const entry={failure:String(error),user:user.name};
@@ -439,6 +440,38 @@ async function audioCampaign(a,b,dm) {
     const sequence={createInvite:{at:Date.now(),owner:created,guest:await state(b)}};activityId=sequence.createInvite.owner.activityId;
     await b.page.getByRole('button', { name: 'Открыть совместный браузер', exact: true }).click({ timeout: 30000 });
     await fresh(a); await fresh(b);
+    if (process.argv.includes('--quality')) {
+      await a.page.getByRole('button', { name: 'Открыть совместный браузер', exact: true }).click();
+      for (const u of [a,b]) await u.page.getByRole('button',{name:'Включить звук сайта',exact:true}).click();
+      const sessionId = created.session.sessionId;
+      const measurements = [];
+      for (const profile of ['720p30', '720p60', '720p15', '720p30']) {
+        const voiceBefore = await Promise.all([a,b].map(voiceStats));
+        const before = await Promise.all([a,b].map(u => u.page.evaluate(() => window.browserActivityMetrics?.trackSid)));
+        const menu = a.page.locator('details').filter({ has: a.page.getByRole('combobox', { name: 'Качество видео', includeHidden: true }) });
+        if (!await menu.evaluate(e => e.open)) await menu.locator('summary').click();
+        await a.page.getByRole('combobox', { name: 'Качество видео' }).selectOption(profile);
+        await until(async () => (await state(a))?.session?.media?.profile === profile);
+        for (const [index,u] of [a,b].entries()) {
+          await until(async () => await u.page.getByRole('combobox', { name: 'Качество видео', includeHidden: true }).inputValue() === profile);
+          await u.page.waitForFunction(old => window.browserActivityMetrics?.fresh && window.browserActivityMetrics.framesDecoded > 5 && window.browserActivityMetrics.trackSid !== old, before[index], {timeout:45000});
+          assert.equal((await state(u)).session.sessionId, sessionId);
+          await stableVoice(u);
+        }
+        await sleep(3000);
+        for (const u of [a,b]) await u.page.waitForFunction(() => [...document.querySelectorAll('.browser-audio-controls audio')].some(audio => audio.srcObject?.getAudioTracks().some(track => track.readyState === 'live')), null, {timeout:15000});
+        for (const u of [a,b]) await u.page.getByRole('button',{name:'Выключить звук сайта',exact:true}).waitFor({timeout:15000});
+        const voiceAfter = await Promise.all([a,b].map(voiceStats));
+        for (let i=0;i<2;i++) assert(voiceAfter[i].reduce((total,s)=>total+s.bytes,0)>voiceBefore[i].reduce((total,s)=>total+s.bytes,0),'Voice RTP must advance across quality changes');
+        measurements.push({profile, receivers: await Promise.all([a,b].map(u => u.page.evaluate(() => window.browserActivityMetrics))), voiceBefore, voiceAfter, browserAudioTracksLive:true});
+        await capture(`quality-${measurements.length}-${profile}`);
+        record('Quality change reconnects both actual receivers', {profile});
+      }
+      await command(a,'close'); await until(async () => !(await state(a)));
+      await stableVoice(a); await stableVoice(b);
+      fs.writeFileSync(`${out}/results.json`,JSON.stringify({status:'PASS',scope:'QUALITY_RECONNECT_FUNCTIONAL_ONLY',rows,measurements,syntheticMicrophones:true,targetFpsAcceptance:'NOT_RUN'},null,2));
+      return;
+    }
     sequence.join={at:Date.now(),owner:await state(a),guest:await state(b)};
     sequence.publisher={service:docker('ps','--format','{{.Names}} {{.Status}}').split('\n').filter(line=>line.includes('-publisher-'))};
     sequence.receivers={a:await a.page.evaluate(()=>window.browserActivityMetrics??null),b:await b.page.evaluate(()=>window.browserActivityMetrics??null)};
@@ -579,7 +612,7 @@ async function audioCampaign(a,b,dm) {
   } finally {
     fs.writeFileSync(`${out}/network-failures.json`,JSON.stringify(networkFailures,null,2));
     if(fs.existsSync(`${out}/soak.json`) && !fs.existsSync(`${out}/media-acceptance.json`)) fs.writeFileSync(`${out}/media-acceptance.json`,JSON.stringify(evaluateMediaAcceptance(JSON.parse(fs.readFileSync(`${out}/soak.json`)),{requiredDurationMs:process.argv.includes('--soak')?600000:35000,profile:mediaProfile.name}),null,2));
-    for(const service of ['api','worker','worker-2','broker','broker-2','publisher','publisher-2','livekit','rtc-relay']) try { fs.writeFileSync(`${out}/${service}.log`,docker('logs','--since','20m',`zvonok-browser-session-${service}-1`)); } catch {}
+    if (!process.argv.includes('--quality')) for(const service of ['api','worker','worker-2','broker','broker-2','publisher','publisher-2','livekit','rtc-relay']) try { fs.writeFileSync(`${out}/${service}.log`,docker('logs','--since','20m',`zvonok-browser-session-${service}-1`)); } catch {}
     if (callId && users[0]) try { await http(users[0], '/calls/end', 'POST', { callId }); } catch {}
     await browser?.close(); await desktop?.close(); console.log('Evidence:', out);
   }

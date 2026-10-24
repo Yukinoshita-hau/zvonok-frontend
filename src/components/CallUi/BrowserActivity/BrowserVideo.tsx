@@ -14,6 +14,7 @@ export function BrowserVideo({ id, targetFps, connectMedia, input, canControl }:
 	const lastMove = useRef(0);
 	const [audioTrack, setAudioTrack] = useState<RemoteAudioTrack>();
 	useEffect(() => {
+		setAudioTrack(undefined); setFresh(false); setState('Подключение…');
 		let stopped = false, room: Room | undefined, track: RemoteVideoTrack | undefined, retry: ReturnType<typeof setTimeout> | undefined;
 		let retries = 0, lastFrame = 0, callback = 0, connecting = false, health = 'Подключено', publisher = '', roomConnectAttempts = 0, rtcReconnectEvents = 0;
 		const element = video.current!;
