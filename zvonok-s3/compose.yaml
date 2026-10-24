@@ -1,0 +1,66 @@
+name: zvonok-s3
+services:
+  rustfs:
+    image: rustfs/rustfs:1.0.3@sha256:9ca9559533b537d10482fe923288b676ad08f92a7069d9a17327fbae3cab688b
+    restart: unless-stopped
+    command: [/data]
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?Set RUSTFS_ACCESS_KEY in .env}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?Set RUSTFS_SECRET_KEY in .env}
+      RUSTFS_ADDRESS: ':9000'
+      RUSTFS_CONSOLE_ENABLE: 'false'
+      RUSTFS_REGION: us-east-1
+      RUSTFS_CORS_ALLOWED_ORIGINS: ${S3_CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - '${S3_BIND_IP:-127.0.0.1}:${S3_PORT:-19000}:9000'
+    volumes:
+      - objects:/data
+    networks:
+      zvonok:
+        aliases: [zvonok-s3]
+    healthcheck:
+      test: [CMD, curl, -fsS, http://127.0.0.1:9000/health/ready]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+  mc-alias:
+    image: minio/mc:latest
+    restart: 'no'
+    entrypoint: [mc]
+    command:
+      - alias
+      - set
+      - local
+      - http://zvonok-s3:9000
+      - ${RUSTFS_ACCESS_KEY:?Set RUSTFS_ACCESS_KEY in .env}
+      - ${RUSTFS_SECRET_KEY:?Set RUSTFS_SECRET_KEY in .env}
+    volumes: [mc-config:/root/.mc]
+    networks: [zvonok]
+    depends_on:
+      rustfs:
+        condition: service_healthy
+
+  bucket-init:
+    image: minio/mc:latest
+    restart: 'no'
+    entrypoint: [mc]
+    command: [mb, --ignore-existing, local/zvonok-data]
+    volumes: [mc-config:/root/.mc]
+    networks: [zvonok]
+    depends_on:
+      mc-alias:
+        condition: service_completed_successfully
+
+volumes:
+  objects:
+  mc-config:
+
+networks:
+  zvonok:
+    name: ${ZVONOK_DOCKER_NETWORK:-zvonok-net}
+    external: true

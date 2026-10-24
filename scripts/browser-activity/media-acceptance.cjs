@@ -1,8 +1,17 @@
-const SUSTAINED_MS = 600000, MIN_FPS = 14.5, MAX_SAMPLE_GAP_MS = 4000;
+const SUSTAINED_MS = 600000, MAX_SAMPLE_GAP_MS = 4000;
+const MEDIA_PROFILES = Object.freeze({
+  '720p15': { width: 1280, height: 720, fps: 15 },
+  '720p30': { width: 1280, height: 720, fps: 30 },
+  '720p60': { width: 1280, height: 720, fps: 60 },
+  '1080p30': { width: 1920, height: 1080, fps: 30 },
+  '1080p60': { width: 1920, height: 1080, fps: 60 },
+});
 const nonnegative = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 
-function evaluateMediaAcceptance(samples, { requiredDurationMs = SUSTAINED_MS } = {}) {
+function evaluateMediaAcceptance(samples, { requiredDurationMs = SUSTAINED_MS, profile = '720p15' } = {}) {
   if (!Number.isFinite(requiredDurationMs) || requiredDurationMs <= 0) throw Error('requiredDurationMs must be positive');
+  const target = MEDIA_PROFILES[profile];
+  if (!target) throw Error(`Unsupported media profile: ${profile}`);
   if (!Array.isArray(samples)) samples = [];
   const elapsed = samples.map(sample => sample?.elapsedMs);
   const samplingGaps = [];
@@ -38,7 +47,7 @@ function evaluateMediaAcceptance(samples, { requiredDurationMs = SUSTAINED_MS } 
         videoIssues.push({ index, reason: 'missing_video_sample' }); previousVideo = undefined; window = undefined; continue;
       }
       if (picture.fresh !== true) videoIssues.push({ index, reason: 'video_not_fresh' });
-      if (!nonnegative(picture.width) || picture.width < 1280) videoIssues.push({ index, reason: 'video_resolution_below_1280' });
+      if (picture.width !== target.width || picture.height !== target.height) videoIssues.push({ index, reason: 'video_resolution_mismatch', expected: `${target.width}x${target.height}`, actual: `${picture.width}x${picture.height}` });
       if (picture.publications !== 1) videoIssues.push({ index, reason: 'video_publication_count_not_one' });
       let reset = !previousVideo;
       if (previousVideo) {
@@ -66,7 +75,8 @@ function evaluateMediaAcceptance(samples, { requiredDurationMs = SUSTAINED_MS } 
     const measuredMs = measured.reduce((sum, value) => sum + value.durationMs, 0), frames = measured.reduce((sum, value) => sum + value.frames, 0);
     const fps = measuredMs > 0 ? frames * 1000 / measuredMs : null;
     audio[viewer] = { status: samples.length >= 2 && !audioIssues.length && !samplingGaps.length ? 'PASS' : 'FAIL', issues: audioIssues };
-    video[viewer] = { status: fps !== null && fps >= MIN_FPS && !videoIssues.length && !samplingGaps.length ? 'PASS' : 'FAIL', fps, minimumFps: MIN_FPS, measuredMs, windows: measured, issues: videoIssues };
+    const minimumFps = target.fps * 0.95;
+    video[viewer] = { status: fps !== null && fps >= minimumFps && !videoIssues.length && !samplingGaps.length ? 'PASS' : 'FAIL', fps, minimumFps, profile, measuredMs, windows: measured, issues: videoIssues };
   }
   const status = duration.status === 'PASS' && !samplingGaps.length && ['a', 'b'].every(viewer => audio[viewer].status === 'PASS' && video[viewer].status === 'PASS') ? 'PASS' : 'FAIL';
   return {
@@ -81,7 +91,7 @@ function evaluateMediaAcceptance(samples, { requiredDurationMs = SUSTAINED_MS } 
   };
 }
 
-module.exports = { evaluateMediaAcceptance };
+module.exports = { evaluateMediaAcceptance, MEDIA_PROFILES };
 
 if (require.main === module) {
   const assert = require('node:assert/strict');
@@ -89,8 +99,8 @@ if (require.main === module) {
     elapsedMs,
     a: { trackSid: 'audio-a', totalSamplesReceived: elapsedMs * 48, at: elapsedMs + 100 },
     b: { trackSid: 'audio-b', totalSamplesReceived: elapsedMs * 48, at: elapsedMs + 3000 },
-    videoA: { framesDecoded: elapsedMs * 15 / 1000, at: elapsedMs + 500, fresh: true, width: 1280, publications: 1 },
-    videoB: { framesDecoded: elapsedMs * 15 / 1000, at: elapsedMs + 9000, fresh: true, width: 1280, publications: 1 },
+    videoA: { framesDecoded: elapsedMs * 15 / 1000, at: elapsedMs + 500, fresh: true, width: 1280, height: 720, publications: 1 },
+    videoB: { framesDecoded: elapsedMs * 15 / 1000, at: elapsedMs + 9000, fresh: true, width: 1280, height: 720, publications: 1 },
   });
   const complete = Array.from({ length: 301 }, (_, index) => sample(index * 2000));
   assert.equal(evaluateMediaAcceptance(complete).sustainedStatus, 'PASS');
@@ -115,6 +125,23 @@ if (require.main === module) {
   assert.equal(evaluateMediaAcceptance(gap).status, 'FAIL');
   const malformed = structuredClone(complete); malformed[5].videoB.width = null; malformed[6].videoB.publications = 2;
   assert.equal(evaluateMediaAcceptance(malformed).video.b.status, 'FAIL');
+  const smooth30 = Array.from({ length: 301 }, (_, index) => {
+    const elapsedMs = index * 2000;
+    return { elapsedMs,
+      a: { trackSid: 'audio-a', totalSamplesReceived: elapsedMs * 48, at: elapsedMs + 100 },
+      b: { trackSid: 'audio-b', totalSamplesReceived: elapsedMs * 48, at: elapsedMs + 3000 },
+      videoA: { framesDecoded: elapsedMs * 30 / 1000, at: elapsedMs + 500, fresh: true, width: 1280, height: 720, publications: 1 },
+      videoB: { framesDecoded: elapsedMs * 30 / 1000, at: elapsedMs + 9000, fresh: true, width: 1280, height: 720, publications: 1 },
+    };
+  });
+  assert.equal(evaluateMediaAcceptance(smooth30, { profile: '720p30' }).status, 'PASS');
+  const smooth60 = structuredClone(smooth30).map(sample => ({ ...sample,
+    videoA: { ...sample.videoA, framesDecoded: sample.elapsedMs * 60 / 1000 },
+    videoB: { ...sample.videoB, framesDecoded: sample.elapsedMs * 60 / 1000 },
+  }));
+  assert.equal(evaluateMediaAcceptance(smooth60, { profile: '720p60' }).status, 'PASS');
+  assert.equal(evaluateMediaAcceptance(smooth30, { profile: '1080p30' }).video.a.issues[0].reason, 'video_resolution_mismatch');
+  assert.throws(() => evaluateMediaAcceptance(complete, { profile: '2160p60' }), /Unsupported media profile/);
   for (const values of [null, [], [null], [{ elapsedMs: 1, videoA: {} }]]) assert.equal(evaluateMediaAcceptance(values).status, 'FAIL');
   console.log('Media acceptance self-check: PASS');
 }

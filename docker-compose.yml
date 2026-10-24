@@ -8,6 +8,7 @@ services:
         VITE_WS_URL: ${VITE_WS_URL}
         VITE_LIVEKIT_URL: ${VITE_LIVEKIT_URL}
         VITE_PRIVATE_MEDIA_STREAMING: ${VITE_PRIVATE_MEDIA_STREAMING:-false}
+        VITE_BROWSER_ACTIVITY: ${VITE_BROWSER_ACTIVITY:-false}
     container_name: zvonok-frontend
     restart: unless-stopped
     ports:

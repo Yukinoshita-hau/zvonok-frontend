@@ -66,7 +66,7 @@ if (!(Select-String -Quiet -LiteralPath $taskConfigFile -SimpleMatch 'spring.dat
 if ($LASTEXITCODE) { throw 'Isolated dependencies failed' }
 Push-Location $taskBrowser
 try {
-  & docker --context desktop-linux compose -f compose.session.yaml -f compose.integration.yaml up -d --build api worker
+  & docker --context desktop-linux compose -f compose.session.yaml -f compose.integration.yaml up -d --build api worker publisher publisher-2 rtc-relay
   if ($LASTEXITCODE) { throw 'Browser integration failed' }
 } finally { Pop-Location }
 $taskJar = "$taskBackend/target/zvonok-0.0.1-SNAPSHOT.jar"

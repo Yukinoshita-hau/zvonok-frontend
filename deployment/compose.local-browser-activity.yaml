@@ -1,0 +1,19 @@
+# Local-only overlay for the isolated main Zvonok project.
+services:
+  backend:
+    environment:
+      SPRING_APPLICATION_JSON: '{"app.jwt.ExpirationMs":3600000,"app.jwt.refreshExpirationMs":1209600000,"security.allowedOrigins":"http://localhost:13000","s3.localEndpoint":"http://localhost:13000/api/s3/download","server.servlet.context-path":"/api","spring.jpa.properties.hibernate.globally_quoted_identifiers":true,"logging.level.org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration":"ERROR"}'
+      BROWSER_ACTIVITY_ENABLED: "true"
+      BROWSER_ACTIVITY_KEY: ${BROWSER_INTEGRATION_KEY:?Missing generated integration key}
+      BROWSER_ACTIVITY_URL: http://browser-api:3000/integration
+    networks: [private, browser-core]
+
+  frontend:
+    build:
+      args:
+        VITE_BROWSER_ACTIVITY: "true"
+
+networks:
+  browser-core:
+    external: true
+    name: zvonok-local-browser-core

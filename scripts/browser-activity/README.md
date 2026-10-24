@@ -19,10 +19,31 @@ The E2E registers unique real users through the actual Core HTTP API, creates fr
 
 Обычная frontend-сборка включает вход при `VITE_BROWSER_ACTIVITY=true`; Core требует `browser.activity.enabled=true` и отдельный `browser.activity.key` (43+ символа). По умолчанию функция выключена. В исходниках Core разрешены точные endpoints `http://127.0.0.1:48035/integration` и `http://browser-api:3000/integration`; container loopback не означает Windows host. Рабочий VPS media profile пока заблокирован локальной signaling/ICE topology. Обычный Zvonok3000 этим сценарием не обновляется. Подробности и gate обновления: `deployment/BROWSER-ACTIVITY.md`, `artifacts/stages/ZVONOK-BROWSER-PRODUCT-INTEGRATION-REPORT.md`.
 
-`e2e.cjs --audio --soak` запрашивает600000ms. `media-acceptance.cjs` отдельно оценивает длительность, FPS14.5 каждого viewer, непрерывность counters и разрешение; короткий functional PASS не означает sustained PASS. Самопроверка анализатора: `node scripts/browser-activity/media-acceptance.cjs`. Новые campaigns пока FAIL; физическое прослушивание и Electron не подтверждены.
+`e2e.cjs --audio --soak` запрашивает 600000 ms. `media-acceptance.cjs` проверяет длительность, непрерывность counters, точное разрешение и не менее 95% целевой частоты кадров каждого viewer для выбранного `BROWSER_MEDIA_PROFILE` (720p15 по умолчанию). Короткий functional PASS не означает sustained PASS. Самопроверка анализатора: `node scripts/browser-activity/media-acceptance.cjs`. Профили 720p30/60 и 1080p30/60 настроены, но их runtime acceptance требует доступного Docker Engine; физическое прослушивание также не подтверждено.
+
+Для `e2e.cjs --audio` перед `start.ps1` задайте `$env:BROWSER_FIXTURE='1'`: audio campaign нажимает кнопку на локальной controlled fixture, а значение по умолчанию `0` открывает обычный `example.com` без тестового звука.
+
+Idle TTL остаётся пять минут: heartbeat/status не продлевают его. Для измерения активной сессии `--audio --soak --active-input` раз в минуту делает реальное движение указателя через UI и проверяет обновление idle deadline при неизменном absolute TTL. Прогон без ввода остаётся отдельной проверкой idle expiration. Guest membership имеет десятиминутный lease: в integration режиме только свежая Core-authorized heartbeat с текущими epoch/generation продлевает ещё действующий lease в пределах absolute session TTL. Прямой guest token, истёкшие/отозванные права и stale generation продление не получают. Standalone DEV heartbeat не продлевает membership.
+
+Для последовательного сравнения на одном candidate: `--benchmark` измеряет video-only, `--benchmark --audio` — video+audio, по120 секунд после UI create/join/decode. Перед первым вариантом только в disposable Browser Compose задаётся `BROWSER_AUDIO=0`, перед вторым возвращается `1`; flag отключает Browser audio capture/publication, не voice. Quotas, video profile, authentication и TTL одинаковы. `BROWSER_TEST_PROJECT` выбирает существующий disposable Compose project для harness diagnostics/faults. Измеренные samples не означают автоматический PASS; сравнение текущих A/C без старой сопоставимой B не является полным A/B/C.
 
 `regression.cjs` runs presentation suites in sequence against Vite3019 with fresh outputs. `--settings` expects the existing Settings fixture config on3020. These are synthetic presentation tests, separate from real Core acceptance.
 
 `C:/project/zvonok-browser/session/slice4-regression.ps1` runs prior Browser suites sequentially. It temporarily returns the idle Browser session stack to its original local DEV mode, starts/stops the older standalone PoCs and restores the integration overlay in `finally`. Never run it while a Core Browser Activity or another Browser E2E campaign is active. It does not delete volumes or modify Core Docker.
 
 Before production: durable session allocation/registry; process and UID separation for Chromium versus Worker/control IPC; independently protected membership enforcement and bounded revocation SLA; authenticated encrypted non-loopback transport/key rotation; per-principal Core request limits and operational auditing; multi-replica failover acceptance; remote ICE and sustained resource/load acceptance. This implementation intentionally certifies only the local two-person vertical slice.
+
+### Identified A/V event diagnostic
+
+The audio campaign transmits each shared 16-bit event ID in both a CRC-8 protected 4-FSK audio code and a CRC-8 protected 12×6 visual code with three repetitions per bit. Each receiver decodes IDs from received PCM and decoded video independently; matching, missing IDs, duplicates, invalid codes, ambiguity, signed offsets, detector timestamps, confidence, uncertainty, coverage, and drift are written to `av.json` under `identifiedEventDiagnostic`. p95 is `INCONCLUSIVE` below 20 unique matched IDs. This diagnostic is separate from the legacy nearest-edge p95 and unchanged 150 ms gate. Neither is a calibrated physical speaker/display sync measurement.
+
+The visual event grid uses its own 240×120 canvas at source coordinates 1024,560. A magenta presence pilot distinguishes active events from the inactive black grid and source event ID 0; do not gate decoded IDs on average grid brightness because valid low-density IDs can have a dark average. The fixture and worker capture remain 1280×720; the reader crops intrinsic video pixels, independent of display `devicePixelRatio`.
+
+After `start.ps1` has brought up the isolated acceptance services, run this short runtime check (35 seconds, not the 600-second soak) from `C:/project/zvonok-frontend`:
+
+```powershell
+$env:BROWSER_TEST_OUT = 'artifacts/stages/browser-avsync-diagnostics-20261022/identified-events'
+node scripts/browser-activity/e2e.cjs --audio --av-only
+```
+
+Evidence is stored in `av.json`; it contains both methods separately for each receiver. Stop the isolated stack with `./scripts/browser-activity/stop.ps1` after the run.

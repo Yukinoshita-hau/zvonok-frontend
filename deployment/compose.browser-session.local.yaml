@@ -1,0 +1,168 @@
+# Local-only overlay for the isolated Browser Activity project.
+services:
+  client:
+    profiles: [standalone-debug]
+  guard:
+    image: zvonok-local-browser-guard:local
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: guard
+    entrypoint: [sh, /guard-local.sh]
+    volumes:
+      - guard-state:/guard
+      - type: bind
+        source: ${BROWSER_GUARD_SCRIPT:?Missing local Guard script}
+        target: /guard-local.sh
+        read_only: true
+    networks:
+      browser:
+        ipv4_address: 172.30.88.3
+    healthcheck:
+      test: [CMD-SHELL, 'test "$(cat /guard/ready)" = firewall-v1 && iptables -C OUTPUT -d 172.30.88.2 -p tcp --dport 3128 -j ACCEPT']
+      interval: 2s
+      timeout: 1s
+      retries: 15
+
+  proxy:
+    image: zvonok-local-browser-proxy:local
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: proxy
+    networks:
+      browser:
+        ipv4_address: 172.30.88.2
+
+  api:
+    image: zvonok-local-browser-api:local
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: api
+    networks:
+      control: {}
+      authnet: {}
+      browser-core:
+        aliases: [browser-api]
+    environment:
+      BROWSER_INTEGRATION_KEY: ${BROWSER_INTEGRATION_KEY:?Missing generated integration key}
+    depends_on:
+      worker:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+
+  worker:
+    image: zvonok-local-browser-worker:local
+    cpus: 8
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: worker
+    environment:
+      BROWSER_INTEGRATION: "1"
+      BROWSER_PROXY: http://172.30.88.2:3128
+      BROWSER_AUDIO_DIAGNOSTICS: "1"
+      BROWSER_AUDIO_PCM_RECORDING: "${BROWSER_AUDIO_PCM_RECORDING:-0}"
+    healthcheck:
+      test: [CMD-SHELL, "test -S /control/worker.sock"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 15s
+
+  worker-2:
+    image: zvonok-local-browser-worker:local
+    cpus: 8
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: worker
+    environment:
+      BROWSER_INTEGRATION: "1"
+      BROWSER_PROXY: http://172.30.88.2:3128
+      BROWSER_AUDIO_DIAGNOSTICS: "1"
+      BROWSER_AUDIO_PCM_RECORDING: "${BROWSER_AUDIO_PCM_RECORDING:-0}"
+
+  broker:
+    image: zvonok-local-browser-media:local
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: media
+    environment:
+      BROWSER_CORE_ORIGIN: http://localhost:13000
+    volumes:
+      - binding:/binding
+      - auth:/auth
+      - type: bind
+        source: ${BROWSER_LIVEKIT_CONFIG:?Missing generated LiveKit config}
+        target: /secrets/livekit.yaml
+        read_only: true
+
+  livekit:
+    volumes:
+      - type: bind
+        source: ${BROWSER_LIVEKIT_CONFIG:?Missing generated LiveKit config}
+        target: /config/livekit.yaml
+        read_only: true
+
+  broker-2:
+    image: zvonok-local-browser-media:local
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: media
+    environment:
+      BROWSER_CORE_ORIGIN: http://localhost:13000
+    volumes:
+      - type: bind
+        source: ${BROWSER_LIVEKIT_CONFIG:?Missing generated LiveKit config}
+        target: /secrets/livekit.yaml
+        read_only: true
+
+  publisher:
+    image: zvonok-local-browser-media:local
+    cpus: 4
+    environment:
+      BROWSER_AUDIO_DIAGNOSTICS: "1"
+      BROWSER_AUDIO_PCM_RECORDING: "${BROWSER_AUDIO_PCM_RECORDING:-0}"
+    healthcheck:
+      test: [CMD, node, -e, "const fs=require('fs');fs.accessSync('/auth/token.sock');require.resolve('@livekit/rtc-node');let ready=false;for(const p of fs.readdirSync('/proc'))if(/^\\d+$/.test(p)&&p!==String(process.pid)){try{if(fs.readFileSync('/proc/'+p+'/cmdline').toString().split('\\0').includes('publisher-supervisor.mjs'))ready=true}catch{}}if(!ready)process.exit(1)"]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+      start_period: 5s
+
+  publisher-2:
+    image: zvonok-local-browser-media:local
+    build:
+      context: .
+      dockerfile: ../zvonok-frontend/deployment/browser.Dockerfile
+      target: media
+    cpus: 4
+    environment:
+      BROWSER_AUDIO_DIAGNOSTICS: "1"
+      BROWSER_AUDIO_PCM_RECORDING: "${BROWSER_AUDIO_PCM_RECORDING:-0}"
+
+  rtc-relay:
+    image: zvonok-local-browser-media:local
+    healthcheck:
+      test: [CMD, node, -e, "const net=require('net'),http=require('http');const tcp=p=>new Promise((ok,no)=>{const s=net.connect(p,'127.0.0.1',()=>{s.destroy();ok()});s.on('error',no);s.setTimeout(1500,()=>{s.destroy();no(Error())})});http.get('http://127.0.0.1:7880/',r=>{r.resume();Promise.all([tcp(48034),tcp(47836)]).then(()=>process.exit(0),()=>process.exit(1))}).on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),2500)"]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+      start_period: 5s
+
+networks:
+  browser:
+    external: true
+    name: zvonok-local-browser-session_browser
+  browser-core:
+    external: true
+    name: zvonok-local-browser-core

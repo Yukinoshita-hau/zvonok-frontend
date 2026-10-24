@@ -1,5 +1,7 @@
 # Совместный браузер: подготовка развёртывания
 
+Обновление 24.10.2026: обычная локальная интеграция запускается через `zvonok-browser/compose.yaml`, без PS1 и дополнительных overlays. [Актуальная инструкция](../../zvonok-browser/docs/DOCKER-COMPOSE.md). Корневой backend Compose теперь сопоставляет `BROWSER_INTEGRATION_KEY` с `BROWSER_ACTIVITY_KEY`, корневой frontend Compose передаёт build arg `VITE_BROWSER_ACTIVITY`. Ниже сохранены прежние пути запуска и ограничения VPS; `deployment/compose.yaml` по-прежнему относится к отдельному deployment-профилю.
+
 Статус на 21.10.2026: **VPS BLOCKED**, обычный Zvonok на порту 3000 не обновлён. Эта инструкция описывает gate активации; готового production browser profile пока нет. Базовый messenger работает без Browser Service.
 
 ## Флаги и сборка
@@ -15,7 +17,7 @@
 | `BROWSER_CORE_ORIGIN` | Broker runtime, точный Origin UI; текущий код принимает только loopback HTTP | отсутствует |
 | `BROWSER_FIXTURE` | Worker runtime, acceptance fixture | `0` |
 
-`BROWSER_INTEGRATION_KEY` не подставляется в Core автоматически: используйте `BROWSER_ACTIVITY_KEY` или явное `${BROWSER_INTEGRATION_KEY}` в закрытом properties-файле. Core JWT secret запрещено передавать Browser Service.
+При запуске Java вне корневого backend Compose `BROWSER_INTEGRATION_KEY` не подставляется в Core автоматически: используйте `BROWSER_ACTIVITY_KEY` или явное `${BROWSER_INTEGRATION_KEY}` в закрытом properties-файле. Core JWT secret запрещено передавать Browser Service.
 
 Оба frontend Dockerfile принимают `--build-arg VITE_BROWSER_ACTIVITY=true`, default `false`. В существующем `deployment/compose.yaml` этот arg не подключён: штатный `deploy.ps1 build` сохраняет браузер выключенным. После прохождения gates отдельный проверенный overlay должен передать arg в `frontend.build.args`; сборка должна получить новый `DEPLOY_TAG`. Для Electron переменная должна быть задана **до** `npm run build:desktop-renderer`. Переключение backend runtime flag или localStorage не меняет готовый renderer.
 
@@ -48,3 +50,55 @@ Browser media Room остаётся независимой от voice Room. View
 ## Где доступно сейчас
 
 Проверки на `http://127.0.0.1:3018` относятся только к отдельному acceptance frontend. Его запускает `scripts/browser-activity/start.ps1`, отдельный Core работает на `18080`, Browser API на loopback `48035`. Это не обычное приложение на `3000` и не способ активации для конечного пользователя. Реальная текущая работоспособность зависит от последней E2E кампании и отражается в product integration report.
+
+## Ручной запуск с обычным локальным Zvonok
+
+Этот opt-in путь подключает Browser API к существующей Docker-сети Core `zvonok-net`; он не запускает acceptance Core и не использует DEV_TOKEN. Сначала обычный Zvonok должен уже работать, а Docker network `zvonok-net` существовать. Функция рассчитана на локальную проверку на одном компьютере: signaling URL Browser LiveKit пока loopback-only, поэтому удалённые устройства не подключатся.
+
+В PowerShell из `C:/project/zvonok-browser` создайте отдельный случайный ключ и сохраните в игнорируемый локальный env-файл:
+
+```powershell
+$key = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+@("BROWSER_INTEGRATION_KEY=$key", 'BROWSER_UI_ORIGIN=http://localhost:3000', 'ZVONOK_CORE_NETWORK=zvonok-net') | Set-Content -Encoding ascii .env.main.local
+```
+
+Из `C:/project/zvonok-browser` запустите только Browser сервисы и подключите API к существующей сети:
+
+```powershell
+docker --context desktop-linux compose --env-file .env.main.local -f compose.session.yaml -f compose.integration.yaml -f compose.main-local.yaml up -d --build api worker publisher publisher-2 rtc-relay
+```
+
+Перед переключением Core дождитесь readiness API/Worker:
+
+```powershell
+$ready = $false
+for ($i = 0; $i -lt 60; $i++) {
+  try { if ((Invoke-RestMethod http://127.0.0.1:48035/ready -TimeoutSec 2).status -eq 'ready') { $ready = $true; break } } catch { }
+  Start-Sleep -Seconds 2
+}
+if (-not $ready) { throw 'Browser API/Worker не готовы; Core не перезапускайте' }
+```
+
+Из `C:/project/zvonok-backend` перезапустите только Core backend с локальным opt-in overlay и тем же ключом:
+
+```powershell
+$env:BROWSER_INTEGRATION_KEY = ((Get-Content 'C:/project/zvonok-browser/.env.main.local' | Where-Object { $_ -like 'BROWSER_INTEGRATION_KEY=*' }) -split '=',2)[1]
+docker --context desktop-linux compose --env-file 'C:/project/zvonok-browser/.env.main.local' -f docker-compose.yml -f docker-compose.browser-activity.local.yml up -d backend
+```
+
+Запустите текущий frontend на привычном порту с build-time флагом (остановите только ранее запущенный Vite перед этим; не останавливайте Core):
+
+```powershell
+cd C:/project/zvonok-frontend
+$env:VITE_BROWSER_ACTIVITY = 'true'
+npm run dev -- --host 127.0.0.1 --strictPort
+```
+
+Откройте `http://localhost:3000`, войдите двумя реальными аккаунтами, начните обычный приватный звонок и выберите **Активности → Совместный браузер**. Второй пользователь принимает приглашение в том же звонке. Оба пользователя должны открыть UI с этой машины; origin выбран под существующую локальную CORS настройку `http://localhost:3000`. Для возврата к обычному режиму: закройте Activity кнопкой «Завершить для всех», примените backend compose без локального overlay (`docker compose -f docker-compose.yml up -d backend`), остановите только Browser stack командой ниже и перезапустите Vite без `VITE_BROWSER_ACTIVITY`. Не используйте `down -v`; Browser volumes и данные Core сохраняются.
+
+```powershell
+cd C:/project/zvonok-browser
+docker --context desktop-linux compose -f compose.session.yaml -f compose.integration.yaml -f compose.main-local.yaml down
+```
+
+Состояние production остается выключенным: production compose не включает этот overlay, а оба feature flag по умолчанию `false`. Integration режим не использует DEV_TOKEN; compose оставляет его пустым, а API принимает только короткие подписанные Core assertions. Ручной запуск подтверждает только локальную функциональность; p95 A/V выше 150 ms, полный 600-секундный acceptance не пройден, production readiness и удалённый ICE не подтверждены.
