@@ -18,8 +18,16 @@ describe('Browser Activity presentation boundaries', () => {
     expect(applyBrowserUpdate(closed, session(6))).toBe(closed);
     expect(applyBrowserUpdate(revoked, { ...session(6), sessionId: 'two' })).toBe(revoked);
     expect(applyBrowserUpdate(revoked, { ...session(6), media: { epoch: 'epoch2', state: 'streaming' } })).toBe(revoked);
-    expect(applyBrowserUpdate(session(5), { ...session(6), media: { epoch: 'epoch2', state: 'starting' } }, true)?.media?.epoch).toBe('epoch2');
     expect(applyBrowserUpdate(revoked, session(6))?.collaboration?.generation).toBe(6);
+  });
+  it.each(['owner', 'guest'] as const)('follows a newer quality epoch for the %s and rejects late responses', role => {
+    const before = session(5);
+    before.collaboration = { ...before.collaboration!, role };
+    const changed = { ...before, media: { epoch: 'epoch2', state: 'starting', profile: '720p30' },
+      collaboration: { ...before.collaboration!, generation: 6, epoch: 'epoch2' } };
+    expect(applyBrowserUpdate(before, changed)).toBe(changed);
+    expect(applyBrowserUpdate(changed, before)).toBe(changed);
+    expect(applyBrowserUpdate(before, { ...changed, collaboration: { ...changed.collaboration, generation: 5 } })).toBe(before);
   });
   it('maps resized contain video and rejects letterbox input', () => {
     const rect = { left: 100, top: 100, width: 640, height: 500 };

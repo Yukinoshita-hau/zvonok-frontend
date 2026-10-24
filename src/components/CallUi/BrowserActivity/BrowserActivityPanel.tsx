@@ -26,9 +26,9 @@ export function BrowserActivityPanel({ browser, visible, compact = false }: { br
     <header className={styles.toolbar}>
       <Globe2 size={18} aria-hidden="true" />
       <div className={styles.identity}><strong>Совместный браузер</strong>
-      <small role="status">{!connected ? 'Восстанавливаем подключение…' : canControl ? 'Вы управляете' : c?.controller === 'local-owner' ? 'Управляет создатель' : 'Управляет друг'}{session?.media?.profile ? ` · ${profileNames[session.media.profile] ?? 'Качество видео'}` : ''}</small>
+      <small role="status">{!connected ? 'Восстанавливаем подключение…' : canControl ? 'Вы управляете' : c?.controller === 'local-owner' ? 'Управляет создатель' : 'Управляет друг'}{profile ? ` · ${profileNames[profile] ?? 'Качество видео'} · ${session?.media?.width ?? (profile.startsWith('1080') ? 1920 : 1280)}×${session?.media?.height ?? (profile.startsWith('1080') ? 1080 : 720)} · ${session?.media?.fps ?? Number(profile.slice(profile.indexOf('p') + 1))} FPS` : ''}</small>
       </div>
-      {activity?.owner && c?.request && <><span className={styles.request}>Запрос управления</span><button disabled={!connected || busy} onClick={() => void perform('control/grant')}>Передать</button><button disabled={!connected || busy} onClick={() => void perform('control/decline')}>Отклонить</button></>}
+      {activity?.owner && c?.request && <div className={styles.requestActions}><span className={styles.request}>Запрос управления</span><button disabled={!connected || busy} onClick={() => void perform('control/grant')}>Передать</button><button disabled={!connected || busy} onClick={() => void perform('control/decline')}>Отклонить</button></div>}
       <details className={styles.menu}>
         <summary aria-label="Настройки совместного браузера" title="Настройки"><MoreHorizontal size={18} aria-hidden="true" /></summary>
         <div className={styles.menuItems}>

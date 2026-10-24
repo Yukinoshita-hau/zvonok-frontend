@@ -34,7 +34,7 @@ export function useBrowserActivity(callId: number | null, enabled: boolean) {
 		if (context.current !== callId || current.current?.activityId !== expected.activityId) throw Error('Activity завершена');
 		return r.data;
 	}, [base, callId]);
-	const update = useCallback((session: BrowserSession, allowMediaEpochChange = false) => setActivity(a => a ? { ...a, session: applyBrowserUpdate(a.session, session, allowMediaEpochChange) } : a), []);
+	const update = useCallback((session: BrowserSession) => setActivity(a => a ? { ...a, session: applyBrowserUpdate(a.session, session) } : a), []);
 	useEffect(() => {
 		setActivity(null); setConnected(false); setError(''); setNotice(''); errorSource.current = ''; setShow(true); setDeclined(undefined);
 		if (!enabled || !callId) return;
@@ -89,7 +89,7 @@ export function useBrowserActivity(callId: number | null, enabled: boolean) {
 		if (op === 'input' && (body as { type?: string }).type === 'mouseMove' && pending.current >= 4) return;
 		if (pending.current >= 16) { setError('Очередь ввода заполнена. Дождитесь обработки и повторите ввод.'); return; }
 		const expected = current.current; pending.current++;
-		tail.current = tail.current.then(async () => update(await command(op, body, expected), op === 'quality'))
+		tail.current = tail.current.then(async () => update(await command(op, body, expected)))
 			.catch(cause => { if (context.current === callId) reportError(cause, op); })
 			.finally(() => { pending.current--; });
 		return tail.current;

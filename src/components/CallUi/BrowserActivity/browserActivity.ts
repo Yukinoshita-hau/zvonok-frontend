@@ -15,10 +15,14 @@ export type InputAction = { type: 'mouseMove'; x: number; y: number }
   | { type: 'text'; text: string }
   | { type: 'keyPress'; key: 'Enter' | 'Tab' | 'Shift+Tab' | 'Backspace' | 'Delete' | 'Escape' | 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'Home' | 'End' | 'PageUp' | 'PageDown' | 'Control+A' };
 
-export function applyBrowserUpdate(previous: BrowserSession | null, next: BrowserSession, allowMediaEpochChange = false) {
+export function applyBrowserUpdate(previous: BrowserSession | null, next: BrowserSession) {
+  const previousGeneration = previous?.collaboration?.generation ?? 0;
+  const nextGeneration = next.collaboration?.generation ?? 0;
+  const rotated = previous?.media?.epoch !== next.media?.epoch;
   if (!previous || previous.sessionId !== next.sessionId || previous.status !== 'active'
-    || (!allowMediaEpochChange && previous.media?.epoch !== next.media?.epoch)
-    || (next.collaboration?.generation ?? 0) < (previous.collaboration?.generation ?? 0)) return previous;
+    || nextGeneration < previousGeneration
+    || (rotated && (nextGeneration <= previousGeneration || !next.media?.epoch
+      || next.collaboration?.epoch !== next.media.epoch))) return previous;
   return next;
 }
 // Fixed Slice 3 viewport; clicks in contain letterboxes never reach Chromium.
